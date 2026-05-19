@@ -1,0 +1,79 @@
+@{
+    ViewData["Title"] = "Submit Activation Request";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="glass-card p-5">
+            <div class="text-center mb-4">
+                <div class="stat-icon-box icon-box-cyan mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.6rem;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <h3 class="text-white fw-bold">Package Activation</h3>
+                <p class="text-secondary">Activate your account for ₹1,000 INR to unlock commissions & binary nodes</p>
+            </div>
+
+            @if (ViewBag.HasPendingRequest == true)
+            {
+                <div class="alert alert-warning glass-card border-warning text-white p-4 text-center my-4" role="alert">
+                    <i class="bi bi-clock-history text-warning fs-3 mb-2 d-block"></i>
+                    <h5 class="fw-bold mb-2">Activation Request Pending Approval</h5>
+                    <p class="text-secondary small mb-0">
+                        You have already submitted an activation request. Our financial audits team is verifying your payment. It will be activated shortly.
+                    </p>
+                    <a asp-action="Index" class="btn btn-cyber-outline mt-3 btn-sm">Return to Dashboard</a>
+                </div>
+            }
+            else
+            {
+                <div class="row g-4 my-2">
+                    <div class="col-md-6 border-end border-opacity-10 border-white">
+                        <h5 class="text-white fw-bold mb-3"><i class="bi bi-cash-coin text-info me-2"></i>Payment Instructions</h5>
+                        <p class="text-secondary small mb-4">Please transfer exactly <strong>₹1,000 INR</strong> to the following UPI address or QR and take a screenshot of your transaction reference/UTR number.</p>
+
+                        <div class="glass-card p-3 mb-3">
+                            <div class="small text-secondary mb-1">UPI Address</div>
+                            <div class="fw-bold text-white fs-5">elitemlm@paytm <i class="bi bi-clipboard ms-1 text-info small cursor-pointer" onclick="navigator.clipboard.writeText('elitemlm@paytm')"></i></div>
+                        </div>
+
+                        <div class="glass-card p-3">
+                            <div class="small text-secondary mb-1">Bank Transfer Details</div>
+                            <div class="text-white small">
+                                <strong>Bank:</strong> Cyber Bank India<br/>
+                                <strong>A/c Name:</strong> Elite MLM Technologies<br/>
+                                <strong>A/c No:</strong> 990184719047209<br/>
+                                <strong>IFSC:</strong> CYBR0001084
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5 class="text-white fw-bold mb-3"><i class="bi bi-pencil-square text-pink me-2"></i>Submit UTR / Reference</h5>
+                        
+                        <form asp-controller="User" asp-action="Activate" method="post">
+                            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                            <div class="mb-4 form-group">
+                                <label for="transactionReference">Transaction Reference ID / UTR</label>
+                                <input type="text" id="transactionReference" name="transactionReference" class="form-control auth-glow-input" placeholder="e.g. 518294029472" required />
+                                <span class="text-danger small mt-1 d-block"></span>
+                                <small class="text-muted mt-2 d-block" style="font-size: 0.75rem;">Enter the 12-digit transaction ID or reference number shown in your payment app receipts.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="glass-card p-3 bg-opacity-10 bg-info border-info border-opacity-20 d-flex gap-2">
+                                    <i class="bi bi-info-circle-fill text-info mt-1"></i>
+                                    <p class="text-secondary small mb-0">Commissions will be instantly distributed upwards up to 5 sponsor levels the moment our admin approves your request.</p>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-cyber-pink w-100 py-3 mt-3">
+                                <i class="bi bi-shield-check me-1"></i>Submit For Verification
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

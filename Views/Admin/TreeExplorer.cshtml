@@ -1,0 +1,131 @@
+@model List<MLM_Level.Models.DownlineNodeViewModel>
+@{
+    ViewData["Title"] = "Network Tree Explorer";
+    var targetUser = ViewBag.TargetUser as MLM_Level.Models.User;
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <h4 class="text-white fw-bold mb-2">Network Downline Tree Explorer</h4>
+            <p class="text-secondary mb-0">Search and navigate through any member's hierarchical downline network structures in real time.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Search Input Panel -->
+<div class="glass-card p-4 mb-4">
+    <h5 class="text-white fw-bold mb-3"><i class="bi bi-search text-info me-2"></i>Search Member Organization</h5>
+    <form asp-action="TreeExplorer" method="get">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-8">
+                <input type="text" name="searchUsername" class="form-control auth-glow-input" placeholder="Enter username (e.g. root)" value="@(targetUser?.Username)" />
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-cyber-cyan w-100 py-3">
+                    <i class="bi bi-diagram-3 me-2"></i>Load Downline Tree
+                </button>
+            </div>
+        </div>
+        @if (ViewBag.SearchError != null)
+        {
+            <div class="text-danger small mt-2"><i class="bi bi-exclamation-circle me-1"></i>@ViewBag.SearchError</div>
+        }
+    </form>
+</div>
+
+<!-- Visual tree explorer panel -->
+@if (targetUser != null)
+{
+    <div class="glass-card p-4">
+        <h5 class="text-white fw-bold mb-4 text-center">
+            Organization tree under: <strong class="text-info">@targetUser.Username</strong> (@targetUser.FullName)
+        </h5>
+
+        <div class="downline-tree-wrapper">
+            <div class="tree-root">
+                <!-- Main target node -->
+                <div class="tree-node-box @(targetUser.IsActive ? "active-node" : "inactive-node")">
+                    <div class="node-name">@targetUser.Username</div>
+                    <div class="node-meta">@targetUser.FullName</div>
+                    <div class="node-meta">Sponsor: @(targetUser.Sponsor?.Username ?? "None")</div>
+                    <span class="badge @(targetUser.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size: 0.65rem;">
+                        @(targetUser.IsActive ? "Active" : "Inactive")
+                    </span>
+                </div>
+
+                @{
+                    var lvl1Nodes = Model.Where(n => n.Level == 1).ToList();
+                }
+                @if (lvl1Nodes.Any())
+                {
+                    <ul class="tree-ul">
+                        @foreach (var lvl1 in lvl1Nodes)
+                        {
+                            <li class="tree-li">
+                                <div class="tree-node-box @(lvl1.IsActive ? "active-node" : "inactive-node")">
+                                    <div class="node-name">@lvl1.Username</div>
+                                    <div class="node-meta">@lvl1.FullName</div>
+                                    <div class="node-meta text-info">Level 1</div>
+                                    <span class="badge @(lvl1.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size: 0.65rem;">
+                                        @(lvl1.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </div>
+
+                                <!-- Level 2 nested children -->
+                                @{
+                                    var lvl2Nodes = Model.Where(n => n.Level == 2 && n.ParentId == lvl1.Id).ToList();
+                                }
+                                @if (lvl2Nodes.Any())
+                                {
+                                    <ul class="tree-ul">
+                                        @foreach (var lvl2 in lvl2Nodes)
+                                        {
+                                            <li class="tree-li">
+                                                <div class="tree-node-box @(lvl2.IsActive ? "active-node" : "inactive-node")">
+                                                    <div class="node-name">@lvl2.Username</div>
+                                                    <div class="node-meta">@lvl2.FullName</div>
+                                                    <div class="node-meta text-primary">Level 2</div>
+                                                    <span class="badge @(lvl2.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size: 0.65rem;">
+                                                        @(lvl2.IsActive ? "Active" : "Inactive")
+                                                    </span>
+                                                </div>
+
+                                                <!-- Level 3 nested children -->
+                                                @{
+                                                    var lvl3Nodes = Model.Where(n => n.Level == 3 && n.ParentId == lvl2.Id).ToList();
+                                                }
+                                                @if (lvl3Nodes.Any())
+                                                {
+                                                    <ul class="tree-ul">
+                                                        @foreach (var lvl3 in lvl3Nodes)
+                                                        {
+                                                            <li class="tree-li">
+                                                                <div class="tree-node-box @(lvl3.IsActive ? "active-node" : "inactive-node")" style="padding: 0.5rem 0.75rem;">
+                                                                    <div class="node-name" style="font-size: 0.8rem;">@lvl3.Username</div>
+                                                                    <div class="node-meta" style="font-size: 0.7rem;">@lvl3.FullName</div>
+                                                                    <div class="node-meta text-success" style="font-size: 0.7rem;">Level 3</div>
+                                                                </div>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                }
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="text-muted small mt-4 text-center">
+                        <i class="bi bi-diagram-3-fill me-1 d-block fs-3 mb-2"></i>
+                        No downline members are placed under this member yet.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

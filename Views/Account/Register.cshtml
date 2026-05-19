@@ -1,0 +1,80 @@
+@model MLM_Level.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Create Free Account";
+}
+
+<div class="auth-page" style="padding-top: 3.5rem; padding-bottom: 3.5rem;">
+    <div class="glass-card auth-card shadow-lg" style="max-width: 520px;">
+        <div class="text-center mb-4">
+            <div class="stat-icon-box icon-box-pink mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.6rem;">
+                <i class="bi bi-diagram-3"></i>
+            </div>
+            <h2 class="text-white fw-bold">Join Network</h2>
+            <p class="text-secondary small mt-1">Register under a sponsor to start earning</p>
+        </div>
+
+        <form asp-controller="Account" asp-action="Register" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+            <div class="row">
+                <div class="col-sm-6 mb-3 form-group">
+                    <label asp-for="FullName"></label>
+                    <input asp-for="FullName" class="form-control auth-glow-input" placeholder="e.g. Dileep Kumar" />
+                    <span asp-validation-for="FullName" class="text-danger small mt-1 d-block"></span>
+                </div>
+                <div class="col-sm-6 mb-3 form-group">
+                    <label asp-for="Username"></label>
+                    <input asp-for="Username" class="form-control auth-glow-input" placeholder="e.g. dileep123" />
+                    <span asp-validation-for="Username" class="text-danger small mt-1 d-block"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6 mb-3 form-group">
+                    <label asp-for="Email"></label>
+                    <input asp-for="Email" class="form-control auth-glow-input" placeholder="name@example.com" />
+                    <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+                </div>
+                <div class="col-sm-6 mb-3 form-group">
+                    <label asp-for="Phone"></label>
+                    <input asp-for="Phone" class="form-control auth-glow-input" placeholder="9876543210" />
+                    <span asp-validation-for="Phone" class="text-danger small mt-1 d-block"></span>
+                </div>
+            </div>
+
+            <div class="mb-3 form-group">
+                <label asp-for="SponsorCode"></label>
+                <div class="position-relative">
+                    <input asp-for="SponsorCode" class="form-control auth-glow-input" placeholder="Referral code (Optional)" style="border-color: rgba(6, 182, 212, 0.4);" />
+                    <span asp-validation-for="SponsorCode" class="text-danger small mt-1 d-block"></span>
+                </div>
+                <small class="text-muted mt-1 d-block" style="font-size: 0.75rem;">If empty, you will be placed under the default root node.</small>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6 mb-4 form-group">
+                    <label asp-for="Password"></label>
+                    <input asp-for="Password" class="form-control auth-glow-input" placeholder="Min 6 chars" />
+                    <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+                </div>
+                <div class="col-sm-6 mb-4 form-group">
+                    <label asp-for="ConfirmPassword"></label>
+                    <input asp-for="ConfirmPassword" class="form-control auth-glow-input" placeholder="Repeat password" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger small mt-1 d-block"></span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-cyber-pink w-100 py-3 mb-3">
+                <i class="bi bi-person-plus-fill me-1"></i>Create Account
+            </button>
+        </form>
+
+        <div class="text-center mt-3 pt-3 border-top border-opacity-10 border-white">
+            <p class="text-secondary small">Already a member? <a asp-controller="Account" asp-action="Login" class="text-info text-decoration-none fw-bold">Sign in here <i class="bi bi-arrow-right-short"></i></a></p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

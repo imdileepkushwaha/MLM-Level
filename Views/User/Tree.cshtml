@@ -1,0 +1,337 @@
+@model MLM_Level.Models.UserDownlineViewModel
+@{
+    ViewData["Title"] = "My MLM Downline Network";
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <h4 class="text-white fw-bold mb-2">My Network Downline</h4>
+            <p class="text-secondary mb-0">Explore your team network dynamically. View visually in the family tree format or categorization lists.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs Nav -->
+<ul class="nav nav-tabs glass-card p-2 border-0 mb-4 d-inline-flex gap-2" id="treeTab" role="tablist" style="border-radius: 12px;">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active btn btn-cyber-outline border-0 py-2 px-4 text-white" id="visual-tab" data-bs-toggle="tab" data-bs-target="#visual" type="button" role="tab" aria-controls="visual" aria-selected="true">
+            <i class="bi bi-diagram-3 me-2 text-info"></i>Visual Upline Tree
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link btn btn-cyber-outline border-0 py-2 px-4 text-white" id="list-tab" data-bs-toggle="tab" data-bs-target="#list" type="button" role="tab" aria-controls="list" aria-selected="false">
+            <i class="bi bi-list-stars me-2 text-info"></i>Tabular Downline List
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Contents -->
+<div class="tab-content" id="treeTabContent">
+    
+    <!-- Tab 1: Visual tree -->
+    <div class="tab-pane fade show active" id="visual" role="tabpanel" aria-labelledby="visual-tab">
+        <div class="downline-tree-wrapper">
+            <div class="tree-root">
+                <!-- Logged in User (Anchor Root node) -->
+                <div class="tree-node-box @(Model.UserInfo.IsActive ? "active-node" : "inactive-node")">
+                    <div class="node-name">@Model.UserInfo.Username</div>
+                    <div class="node-meta">@Model.UserInfo.FullName</div>
+                    <div class="node-meta">Sponsor: @(Model.UserInfo.Sponsor?.Username ?? "Root")</div>
+                    <span class="badge @(Model.UserInfo.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size: 0.65rem;">
+                        @(Model.UserInfo.IsActive ? "Active" : "Inactive")
+                    </span>
+                </div>
+
+                @if (Model.Level1.Any())
+                {
+                    <ul class="tree-ul">
+                        @foreach (var lvl1 in Model.Level1.Where(n => n.ParentId == Model.UserInfo.Id))
+                        {
+                            <li class="tree-li">
+                                <div class="tree-node-box @(lvl1.IsActive ? "active-node" : "inactive-node")">
+                                    <div class="node-name">@lvl1.Username</div>
+                                    <div class="node-meta">@lvl1.FullName</div>
+                                    <div class="node-meta text-info">Level 1</div>
+                                    <span class="badge @(lvl1.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size: 0.65rem;">
+                                        @(lvl1.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </div>
+
+                                <!-- Level 2 nested children -->
+                                @{
+                                    var lvl2Children = Model.Level2.Where(n => n.ParentId == lvl1.Id).ToList();
+                                }
+                                @if (lvl2Children.Any())
+                                {
+                                    <ul class="tree-ul">
+                                        @foreach (var lvl2 in lvl2Children)
+                                        {
+                                            <li class="tree-li">
+                                                <div class="tree-node-box @(lvl2.IsActive ? "active-node" : "inactive-node")">
+                                                    <div class="node-name">@lvl2.Username</div>
+                                                    <div class="node-meta">@lvl2.FullName</div>
+                                                    <div class="node-meta text-primary">Level 2</div>
+                                                    <span class="badge @(lvl2.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size: 0.65rem;">
+                                                        @(lvl2.IsActive ? "Active" : "Inactive")
+                                                    </span>
+                                                </div>
+
+                                                <!-- Level 3 nested children -->
+                                                @{
+                                                    var lvl3Children = Model.Level3.Where(n => n.ParentId == lvl2.Id).ToList();
+                                                }
+                                                @if (lvl3Children.Any())
+                                                {
+                                                    <ul class="tree-ul">
+                                                        @foreach (var lvl3 in lvl3Children)
+                                                        {
+                                                            <li class="tree-li">
+                                                                <div class="tree-node-box @(lvl3.IsActive ? "active-node" : "inactive-node")" style="padding: 0.5rem 0.75rem;">
+                                                                    <div class="node-name" style="font-size: 0.8rem;">@lvl3.Username</div>
+                                                                    <div class="node-meta" style="font-size: 0.7rem;">@lvl3.FullName</div>
+                                                                    <div class="node-meta text-success" style="font-size: 0.7rem;">Level 3</div>
+                                                                </div>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                }
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="text-muted small mt-4">
+                        <i class="bi bi-diagram-3-fill me-1 d-block fs-3 mb-2"></i>
+                        No downline members are placed under you yet.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: Tabular categorizations -->
+    <div class="tab-pane fade" id="list" role="tabpanel" aria-labelledby="list-tab">
+        <!-- Level Category Tabs -->
+        <div class="glass-card p-4">
+            <h5 class="text-white fw-bold mb-4">Downline Category Breakdown</h5>
+            
+            @if (Model.FullDownlineList.Any())
+            {
+                <div class="accordion glass-container border-0 overflow-hidden" id="levelAccordion">
+                    
+                    <!-- Level 1 -->
+                    <div class="accordion-item bg-transparent border-bottom border-opacity-10 border-white">
+                        <h2 class="accordion-header" id="headingOne">
+                            <button class="accordion-button bg-transparent text-white fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                <i class="bi bi-star-fill text-info me-2"></i> Level 1 (Direct Referrals)
+                                <span class="badge bg-info bg-opacity-20 text-info ms-auto me-3">@Model.Level1.Count Members</span>
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#levelAccordion">
+                            <div class="accordion-body p-0">
+                                <div class="glass-table-container">
+                                    <table class="table glass-table align-middle m-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Member Details</th>
+                                                <th>Sponsor</th>
+                                                <th>Active Status</th>
+                                                <th>Joining Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var m in Model.Level1)
+                                            {
+                                                <tr>
+                                                    <td><strong>@m.Username</strong><br/><span class="small text-muted">@m.FullName</span></td>
+                                                    <td>@m.SponsorName</td>
+                                                    <td><span class="@(m.IsActive ? "badge-active" : "badge-inactive")">@(m.IsActive ? "Active" : "Inactive")</span></td>
+                                                    <td>@m.JoinedDate.ToString("dd MMM yyyy")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Level 2 -->
+                    <div class="accordion-item bg-transparent border-bottom border-opacity-10 border-white">
+                        <h2 class="accordion-header" id="headingTwo">
+                            <button class="accordion-button bg-transparent text-white fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                <i class="bi bi-star text-info me-2"></i> Level 2
+                                <span class="badge bg-info bg-opacity-20 text-info ms-auto me-3">@Model.Level2.Count Members</span>
+                            </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#levelAccordion">
+                            <div class="accordion-body p-0">
+                                <div class="glass-table-container">
+                                    <table class="table glass-table align-middle m-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Member Details</th>
+                                                <th>Sponsor / Parent</th>
+                                                <th>Active Status</th>
+                                                <th>Joining Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var m in Model.Level2)
+                                            {
+                                                <tr>
+                                                    <td><strong>@m.Username</strong><br/><span class="small text-muted">@m.FullName</span></td>
+                                                    <td>
+                                                        Sponsor: <strong>@m.SponsorName</strong><br/>
+                                                        Parent: <strong>@m.ParentName</strong>
+                                                    </td>
+                                                    <td><span class="@(m.IsActive ? "badge-active" : "badge-inactive")">@(m.IsActive ? "Active" : "Inactive")</span></td>
+                                                    <td>@m.JoinedDate.ToString("dd MMM yyyy")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Level 3 -->
+                    <div class="accordion-item bg-transparent border-bottom border-opacity-10 border-white">
+                        <h2 class="accordion-header" id="headingThree">
+                            <button class="accordion-button bg-transparent text-white fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                <i class="bi bi-star text-info me-2"></i> Level 3
+                                <span class="badge bg-info bg-opacity-20 text-info ms-auto me-3">@Model.Level3.Count Members</span>
+                            </button>
+                        </h2>
+                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#levelAccordion">
+                            <div class="accordion-body p-0">
+                                <div class="glass-table-container">
+                                    <table class="table glass-table align-middle m-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Member Details</th>
+                                                <th>Sponsor / Parent</th>
+                                                <th>Active Status</th>
+                                                <th>Joining Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var m in Model.Level3)
+                                            {
+                                                <tr>
+                                                    <td><strong>@m.Username</strong><br/><span class="small text-muted">@m.FullName</span></td>
+                                                    <td>
+                                                        Sponsor: <strong>@m.SponsorName</strong><br/>
+                                                        Parent: <strong>@m.ParentName</strong>
+                                                    </td>
+                                                    <td><span class="@(m.IsActive ? "badge-active" : "badge-inactive")">@(m.IsActive ? "Active" : "Inactive")</span></td>
+                                                    <td>@m.JoinedDate.ToString("dd MMM yyyy")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Level 4 -->
+                    <div class="accordion-item bg-transparent border-bottom border-opacity-10 border-white">
+                        <h2 class="accordion-header" id="headingFour">
+                            <button class="accordion-button bg-transparent text-white fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                <i class="bi bi-star text-info me-2"></i> Level 4
+                                <span class="badge bg-info bg-opacity-20 text-info ms-auto me-3">@Model.Level4.Count Members</span>
+                            </button>
+                        </h2>
+                        <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#levelAccordion">
+                            <div class="accordion-body p-0">
+                                <div class="glass-table-container">
+                                    <table class="table glass-table align-middle m-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Member Details</th>
+                                                <th>Sponsor / Parent</th>
+                                                <th>Active Status</th>
+                                                <th>Joining Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var m in Model.Level4)
+                                            {
+                                                <tr>
+                                                    <td><strong>@m.Username</strong><br/><span class="small text-muted">@m.FullName</span></td>
+                                                    <td>
+                                                        Sponsor: <strong>@m.SponsorName</strong><br/>
+                                                        Parent: <strong>@m.ParentName</strong>
+                                                    </td>
+                                                    <td><span class="@(m.IsActive ? "badge-active" : "badge-inactive")">@(m.IsActive ? "Active" : "Inactive")</span></td>
+                                                    <td>@m.JoinedDate.ToString("dd MMM yyyy")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Level 5 -->
+                    <div class="accordion-item bg-transparent">
+                        <h2 class="accordion-header" id="headingFive">
+                            <button class="accordion-button bg-transparent text-white fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                                <i class="bi bi-star text-info me-2"></i> Level 5
+                                <span class="badge bg-info bg-opacity-20 text-info ms-auto me-3">@Model.Level5.Count Members</span>
+                            </button>
+                        </h2>
+                        <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#levelAccordion">
+                            <div class="accordion-body p-0">
+                                <div class="glass-table-container">
+                                    <table class="table glass-table align-middle m-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Member Details</th>
+                                                <th>Sponsor / Parent</th>
+                                                <th>Active Status</th>
+                                                <th>Joining Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var m in Model.Level5)
+                                            {
+                                                <tr>
+                                                    <td><strong>@m.Username</strong><br/><span class="small text-muted">@m.FullName</span></td>
+                                                    <td>
+                                                        Sponsor: <strong>@m.SponsorName</strong><br/>
+                                                        Parent: <strong>@m.ParentName</strong>
+                                                    </td>
+                                                    <td><span class="@(m.IsActive ? "badge-active" : "badge-inactive")">@(m.IsActive ? "Active" : "Inactive")</span></td>
+                                                    <td>@m.JoinedDate.ToString("dd MMM yyyy")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5 text-secondary">
+                    <i class="bi bi-people-fill fs-2 mb-2 d-block"></i>
+                    No network tree exists yet. Refer members to grow your downline organization!
+                </div>
+            }
+        </div>
+    </div>
+
+</div>

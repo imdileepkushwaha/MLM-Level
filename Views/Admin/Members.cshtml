@@ -1,0 +1,72 @@
+@model List<MLM_Level.Models.User>
+@{
+    ViewData["Title"] = "Manage Network Members";
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="glass-card p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h4 class="text-white fw-bold mb-2">Manage Network Members</h4>
+                <p class="text-secondary mb-0">Audit system registrations, active statuses, wallets, and sponsor lines.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    <div class="glass-table-container">
+        @if (Model.Any())
+        {
+            <table class="table glass-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Joined Date</th>
+                        <th>Member Credentials</th>
+                        <th>Contact info</th>
+                        <th>Sponsor / Parent</th>
+                        <th>Status</th>
+                        <th>Wallet Balance</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@user.JoinedDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                <strong class="text-white">@user.Username</strong><br/>
+                                <span class="small text-muted" style="font-size: 0.75rem;">@user.FullName</span>
+                            </td>
+                            <td>
+                                <span class="small text-secondary">@user.Email</span><br/>
+                                <span class="small text-muted" style="font-size: 0.75rem;">@user.Phone</span>
+                            </td>
+                            <td>
+                                Sponsor: <strong>@(user.Sponsor?.Username ?? "System")</strong><br/>
+                                Parent: <strong>@(user.Parent?.Username ?? "System")</strong>
+                            </td>
+                            <td>
+                                <span class="@(user.IsActive ? "badge-active" : "badge-inactive")">@(user.IsActive ? "Active" : "Inactive")</span>
+                            </td>
+                            <td><strong class="text-info">₹@user.WalletBalance.ToString("N2")</strong></td>
+                            <td class="text-end">
+                                <a asp-action="EditMember" asp-route-id="@user.Id" class="btn btn-cyber-cyan btn-sm px-3" style="font-size: 0.75rem;">
+                                    <i class="bi bi-pencil-square me-1"></i>Edit
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="text-center py-5 text-secondary">
+                <i class="bi bi-people-fill fs-2 mb-2 d-block text-muted"></i>
+                No members found in the network.
+            </div>
+        }
+    </div>
+</div>

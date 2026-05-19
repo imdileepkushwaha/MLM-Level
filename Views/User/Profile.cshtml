@@ -1,0 +1,83 @@
+@model MLM_Level.Models.User
+@{
+    ViewData["Title"] = "My Account Profile";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="glass-card p-5">
+            <h3 class="text-white fw-bold mb-2">My Profile Settings</h3>
+            <p class="text-secondary mb-4">View account information, sponsors details, and update personal credentials.</p>
+
+            <div class="row g-4">
+                <!-- Profile Edit Form -->
+                <div class="col-md-6 border-end border-opacity-10 border-white">
+                    <h5 class="text-white fw-bold mb-3"><i class="bi bi-person-gear text-info me-2"></i>Update Personal Details</h5>
+                    
+                    <form asp-action="Profile" method="post">
+                        <div class="mb-3 form-group">
+                            <label>Username (Read-only)</label>
+                            <input class="form-control auth-glow-input" value="@Model.Username" readonly style="opacity: 0.6; cursor: not-allowed;" />
+                        </div>
+
+                        <div class="mb-3 form-group">
+                            <label>Email Address (Read-only)</label>
+                            <input class="form-control auth-glow-input" value="@Model.Email" readonly style="opacity: 0.6; cursor: not-allowed;" />
+                        </div>
+
+                        <div class="mb-3 form-group">
+                            <label for="fullName">Full Name</label>
+                            <input type="text" id="fullName" name="fullName" class="form-control auth-glow-input" value="@Model.FullName" required />
+                        </div>
+
+                        <div class="mb-4 form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="text" id="phone" name="phone" class="form-control auth-glow-input" value="@Model.Phone" />
+                        </div>
+
+                        <button type="submit" class="btn btn-cyber-cyan w-100 py-3">
+                            <i class="bi bi-save me-1"></i>Save Changes
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Sponsor Info & Meta -->
+                <div class="col-md-6">
+                    <h5 class="text-white fw-bold mb-3"><i class="bi bi-people-fill text-pink me-2"></i>Sponsor Information</h5>
+                    
+                    <div class="glass-card p-4 mb-4">
+                        @if (Model.Sponsor != null)
+                        {
+                            <div class="text-center py-2">
+                                <div class="stat-icon-box icon-box-cyan mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.4rem;">
+                                    <i class="bi bi-person-check"></i>
+                                </div>
+                                <h6 class="text-white fw-bold mb-1">Sponsor: @Model.Sponsor.Username</h6>
+                                <p class="text-secondary small mb-3">@Model.Sponsor.FullName</p>
+                                
+                                <div class="text-start border-top border-opacity-10 border-dark pt-3 small">
+                                    <div class="text-secondary mb-1">Email: <strong class="text-white">@Model.Sponsor.Email</strong></div>
+                                    <div class="text-secondary">Phone: <strong class="text-white">@Model.Sponsor.Phone</strong></div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="bi bi-diagram-3-fill text-muted fs-3 mb-2 d-block"></i>
+                                <span class="text-secondary small">No sponsor. You are under root administration.</span>
+                            </div>
+                        }
+                    </div>
+
+                    <h5 class="text-white fw-bold mb-3"><i class="bi bi-meta text-info me-2"></i>Account Metadata</h5>
+                    <div class="glass-card p-3 bg-opacity-10 bg-info border-info border-opacity-10 small text-secondary">
+                        <div class="mb-2">Registration: <strong class="text-white">@Model.JoinedDate.ToString("dd MMM yyyy hh:mm tt")</strong></div>
+                        <div class="mb-2">Referral Code: <strong class="text-white">@Model.ReferralCode</strong></div>
+                        <div>Level Tree Parent: <strong class="text-white">@(Model.Parent?.Username ?? "Root")</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
