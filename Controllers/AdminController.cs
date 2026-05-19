@@ -476,5 +476,283 @@ namespace MLM_Level.Controllers
             TempData["SuccessMessage"] = "Reply sent successfully and ticket closed!";
             return RedirectToAction("Tickets");
         }
+
+        // GET: Admin/Ledger
+        [HttpGet]
+        public async Task<IActionResult> Ledger(string? searchUsername, string? filterType)
+        {
+            var query = _context.CommissionTrans
+                .Include(t => t.User)
+                .Include(t => t.FromUser)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchUsername))
+            {
+                query = query.Where(t => t.User.Username.Contains(searchUsername.Trim()));
+            }
+
+            if (!string.IsNullOrEmpty(filterType))
+            {
+                if (filterType == "Commission")
+                {
+                    query = query.Where(t => t.Level > 0 && t.Level <= 5);
+                }
+                else if (filterType == "P2P")
+                {
+                    query = query.Where(t => t.Level == 0);
+                }
+                else if (filterType == "Manual")
+                {
+                    query = query.Where(t => t.Level == 99);
+                }
+            }
+
+            var transactions = await query
+                .OrderByDescending(t => t.Timestamp)
+                .ToListAsync();
+
+            ViewBag.SearchUsername = searchUsername;
+            ViewBag.FilterType = filterType;
+
+            return View(transactions);
+        }
+
+        // POST: Admin/AdjustWallet
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdjustWallet(string username, decimal amount, string description)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                TempData["ErrorMessage"] = "Username is required.";
+                return RedirectToAction("Ledger");
+            }
+
+            if (amount == 0)
+            {
+                TempData["ErrorMessage"] = "Amount cannot be zero.";
+                return RedirectToAction("Ledger");
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username.Trim() && !u.IsAdmin);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Active member username not found.";
+                return RedirectToAction("Ledger");
+            }
+
+            if (user.WalletBalance + amount < 0)
+            {
+                TempData["ErrorMessage"] = "Operation cancelled. Member's wallet balance cannot be negative.";
+                return RedirectToAction("Ledger");
+            }
+
+            using (var dbTx = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    user.WalletBalance += amount;
+                    _context.Entry(user).State = EntityState.Modified;
+
+                    var adminUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == User.Identity!.Name);
+                    int adminId = adminUser?.Id ?? user.Id;
+
+                    var transaction = new CommissionTran
+                    {
+                        UserId = user.Id,
+                        FromUserId = adminId,
+                        Amount = amount,
+                        Level = 99, // Special level representing admin adjustment
+                        Timestamp = DateTime.UtcNow,
+                        Description = string.IsNullOrWhiteSpace(description) 
+                            ? "Manual Adjustment by Admin" 
+                            : $"Manual Adjustment: {description.Trim()}"
+                    };
+
+                    _context.CommissionTrans.Add(transaction);
+                    await _context.SaveChangesAsync();
+                    await dbTx.CommitAsync();
+
+                    TempData["SuccessMessage"] = $"Wallet adjusted successfully. New balance for @{user.Username}: ₹{user.WalletBalance}";
+                }
+                catch (Exception ex)
+                {
+                    await dbTx.RollbackAsync();
+                    TempData["ErrorMessage"] = "Wallet adjustment failed: " + ex.Message;
+                }
+            }
+
+            return RedirectToAction("Ledger");
+        }
+
+        // GET: Admin/Settings
+        [HttpGet]
+        public async Task<IActionResult> Settings()
+        {
+            var settings = await _context.MlmSettings.FirstOrDefaultAsync();
+            if (settings == null)
+            {
+                settings = new MlmSetting();
+                _context.MlmSettings.Add(settings);
+                await _context.SaveChangesAsync();
+            }
+            return View(settings);
+        }
+
+        // POST: Admin/Settings
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Settings(MlmSetting model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var settings = await _context.MlmSettings.FirstOrDefaultAsync();
+            if (settings == null)
+            {
+                settings = new MlmSetting();
+                _context.MlmSettings.Add(settings);
+            }
+
+            settings.Level1Commission = model.Level1Commission;
+            settings.Level2Commission = model.Level2Commission;
+            settings.Level3Commission = model.Level3Commission;
+            settings.Level4Commission = model.Level4Commission;
+            settings.Level5Commission = model.Level5Commission;
+            settings.MinWithdrawalLimit = model.MinWithdrawalLimit;
+            settings.WithdrawalFeePercent = model.WithdrawalFeePercent;
+            settings.CompanyQrCodeUrl = model.CompanyQrCodeUrl ?? string.Empty;
+            settings.BankDetails = model.BankDetails ?? string.Empty;
+
+            _context.Entry(settings).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "System settings updated successfully.";
+            return RedirectToAction("Settings");
+        }
+
+        // GET: Admin/Packages
+        [HttpGet]
+        public async Task<IActionResult> Packages()
+        {
+            var packages = await _context.Packages.OrderBy(p => p.Price).ToListAsync();
+            return View(packages);
+        }
+
+        // POST: Admin/CreatePackage
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreatePackage(string name, decimal price, string description)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                TempData["ErrorMessage"] = "Package name is required.";
+                return RedirectToAction("Packages");
+            }
+
+            if (price <= 0)
+            {
+                TempData["ErrorMessage"] = "Price must be greater than zero.";
+                return RedirectToAction("Packages");
+            }
+
+            var package = new Package
+            {
+                Name = name.Trim(),
+                Price = price,
+                Description = description?.Trim() ?? string.Empty,
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _context.Packages.Add(package);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Package '{package.Name}' created successfully.";
+            return RedirectToAction("Packages");
+        }
+
+        // POST: Admin/TogglePackage
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TogglePackage(int id)
+        {
+            var package = await _context.Packages.FindAsync(id);
+            if (package == null) return NotFound();
+
+            package.IsActive = !package.IsActive;
+            _context.Entry(package).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Package '{package.Name}' is now {(package.IsActive ? "Active" : "Inactive")}.";
+            return RedirectToAction("Packages");
+        }
+
+        // GET: Admin/Announcements
+        [HttpGet]
+        public async Task<IActionResult> Announcements()
+        {
+            var announcements = await _context.Announcements.OrderByDescending(a => a.CreatedDate).ToListAsync();
+            return View(announcements);
+        }
+
+        // POST: Admin/CreateAnnouncement
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateAnnouncement(string title, string content)
+        {
+            if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(content))
+            {
+                TempData["ErrorMessage"] = "Title and Content are required.";
+                return RedirectToAction("Announcements");
+            }
+
+            var announcement = new Announcement
+            {
+                Title = title.Trim(),
+                Content = content.Trim(),
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _context.Announcements.Add(announcement);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Announcement published successfully.";
+            return RedirectToAction("Announcements");
+        }
+
+        // POST: Admin/ToggleAnnouncement
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleAnnouncement(int id)
+        {
+            var announcement = await _context.Announcements.FindAsync(id);
+            if (announcement == null) return NotFound();
+
+            announcement.IsActive = !announcement.IsActive;
+            _context.Entry(announcement).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Announcement is now {(announcement.IsActive ? "Active" : "Inactive")}.";
+            return RedirectToAction("Announcements");
+        }
+
+        // POST: Admin/DeleteAnnouncement
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteAnnouncement(int id)
+        {
+            var announcement = await _context.Announcements.FindAsync(id);
+            if (announcement == null) return NotFound();
+
+            _context.Announcements.Remove(announcement);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Announcement deleted successfully.";
+            return RedirectToAction("Announcements");
+        }
     }
 }

@@ -1,0 +1,90 @@
+@model List<MLM_Level.Models.Package>
+@{
+    ViewData["Title"] = "MLM Packages Management";
+}
+
+<div class="row g-4 mb-4">
+    <!-- Page Info -->
+    <div class="col-lg-7">
+        <div class="glass-card p-4 h-100">
+            <h4 class="text-white fw-bold mb-2">Package Administration</h4>
+            <p class="text-secondary mb-0">Define, edit, and toggle active packages that members can choose during account activation. System supports multiple tiers with customized benefits.</p>
+        </div>
+    </div>
+
+    <!-- Create Package Form -->
+    <div class="col-lg-5">
+        <div class="glass-card p-4">
+            <h5 class="text-white fw-bold mb-3"><i class="bi bi-patch-plus text-cyan me-2"></i>Create New Package</h5>
+            <form asp-controller="Admin" asp-action="CreatePackage" method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-2 form-group">
+                    <input type="text" name="name" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Package Name (e.g. Platinum Plan)" required />
+                </div>
+                <div class="mb-2 form-group">
+                    <input type="number" step="0.01" name="price" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Price (₹)" required />
+                </div>
+                <div class="mb-2 form-group">
+                    <textarea name="description" rows="2" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Brief Description..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-cyber-cyan btn-sm w-100 py-2">
+                    <i class="bi bi-plus-circle me-1"></i>Publish Package
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Packages List -->
+<div class="row g-4">
+    @if (Model.Any())
+    {
+        @foreach (var pkg in Model)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="glass-card p-4 border border-opacity-10 @(pkg.IsActive ? "border-info" : "border-secondary") d-flex flex-column justify-content-between h-100 position-relative overflow-hidden">
+                    <!-- Status Glow Top Corner -->
+                    <div class="position-absolute top-0 end-0 px-3 py-1 text-uppercase fw-bold small rounded-bottom-start @(pkg.IsActive ? "bg-info text-dark" : "bg-secondary text-white")" style="font-size: 0.7rem;">
+                        @(pkg.IsActive ? "Active" : "Inactive")
+                    </div>
+
+                    <div>
+                        <span class="text-muted small">Package ID: #@pkg.Id</span>
+                        <h4 class="text-white fw-bold mt-1 mb-2">@pkg.Name</h4>
+                        <div class="fs-3 text-cyan fw-bold mb-3">₹@pkg.Price.ToString("N2") <span class="small text-muted text-uppercase" style="font-size: 0.8rem;">INR</span></div>
+                        <p class="text-secondary small mb-4">@pkg.Description</p>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between pt-3 border-top border-white border-opacity-10 mt-auto">
+                        <span class="text-muted small">Created: @pkg.CreatedDate.ToString("dd MMM yyyy")</span>
+                        <form asp-controller="Admin" asp-action="TogglePackage" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@pkg.Id" />
+                            @if (pkg.IsActive)
+                            {
+                                <button type="submit" class="btn btn-danger btn-sm px-3">
+                                    <i class="bi bi-x-circle me-1"></i>Disable
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-success btn-sm px-3">
+                                    <i class="bi bi-check-circle me-1"></i>Enable
+                                </button>
+                            }
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="glass-card p-5 text-center text-secondary">
+                <i class="bi bi-box fs-2 mb-2 d-block text-muted"></i>
+                No membership packages exist. Seed system defaults or create one above.
+            </div>
+        </div>
+    }
+</div>

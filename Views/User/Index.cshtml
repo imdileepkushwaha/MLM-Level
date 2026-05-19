@@ -44,6 +44,34 @@
     </div>
 </div>
 
+<!-- Announcements Notice Board -->
+@if (ViewBag.Announcements != null)
+{
+    var announcements = ViewBag.Announcements as List<MLM_Level.Models.Announcement>;
+    if (announcements != null && announcements.Any())
+    {
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="glass-card p-4 border border-opacity-15 border-info">
+                    <h5 class="text-slate-800 fw-bold mb-3"><i class="bi bi-megaphone text-info me-2"></i>Latest Notices & Updates</h5>
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var ann in announcements.Take(2))
+                        {
+                            <div class="p-3 bg-dark bg-opacity-25 rounded-3 border border-white border-opacity-5">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-white fw-bold small"><i class="bi bi-info-circle text-info me-1"></i>@ann.Title</span>
+                                    <span class="text-muted" style="font-size: 0.7rem;">@ann.CreatedDate.ToString("dd MMM yyyy hh:mm tt") UTC</span>
+                                </div>
+                                <p class="text-secondary small mb-0" style="white-space: pre-line;">@ann.Content</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
 <!-- Stats Grid -->
 <div class="row g-4 mb-4">
     <!-- Wallet Balance -->

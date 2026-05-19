@@ -133,16 +133,19 @@
         <!-- Request Form -->
         <div class="glass-card p-4 mb-4">
             <h5 class="text-slate-800 fw-bold mb-3"><i class="bi bi-cash-coin text-pink me-2"></i>Request Wallet Withdrawal</h5>
-            <p class="text-secondary small mb-4">Transfer unlocked funds from your e-wallet balance to your registered bank account.</p>
+            @{
+                var settings = ViewBag.MlmSettings as MLM_Level.Models.MlmSetting ?? new MLM_Level.Models.MlmSetting();
+            }
+            <p class="text-secondary small mb-4">Transfer unlocked funds from your e-wallet balance to your registered bank account. A processing fee of <strong>@settings.WithdrawalFeePercent%</strong> will be deducted.</p>
 
             <form asp-action="RequestWithdrawal" method="post" class="mb-3">
                 <div class="mb-3 form-group">
                     <label class="form-label text-secondary small fw-semibold">Withdrawal Amount (₹)</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light text-secondary border-end-0" style="border-radius: 10px 0 0 10px;">₹</span>
-                        <input type="number" name="amount" class="form-control" placeholder="e.g. 500" step="1" min="1" max="@Model.WalletBalance" required style="border-radius: 0 10px 10px 0; border-left: none;" />
+                        <input type="number" name="amount" class="form-control" placeholder="e.g. @settings.MinWithdrawalLimit" step="1" min="@settings.MinWithdrawalLimit" max="@Model.WalletBalance" required style="border-radius: 0 10px 10px 0; border-left: none;" />
                     </div>
-                    <small class="text-muted mt-2 d-block" style="font-size: 0.75rem;">Available limit: ₹@Model.WalletBalance.ToString("N2")</small>
+                    <small class="text-muted mt-2 d-block" style="font-size: 0.75rem;">Available limit: ₹@Model.WalletBalance.ToString("N2") | Min Limit: <strong>₹@settings.MinWithdrawalLimit.ToString("N0")</strong></small>
                 </div>
 
                 <button type="submit" class="btn btn-cyber-pink w-100 py-2 rounded-pill fw-semibold @(Model.WalletBalance <= 0 ? "disabled" : "")" @(Model.WalletBalance <= 0 ? "disabled" : "")>

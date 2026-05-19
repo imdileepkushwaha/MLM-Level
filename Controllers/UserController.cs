@@ -111,6 +111,13 @@ namespace MLM_Level.Controllers
                 .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
 
+            // Fetch live announcements for notice board
+            var activeAnnouncements = await _context.Announcements
+                .Where(a => a.IsActive)
+                .OrderByDescending(a => a.CreatedDate)
+                .ToListAsync();
+            ViewBag.Announcements = activeAnnouncements;
+
             // Create referral link
             var referralLink = $"{Request.Scheme}://{Request.Host}/Account/Register?sponsorCode={user.ReferralCode}";
 
@@ -164,13 +171,20 @@ namespace MLM_Level.Controllers
             var hasPending = await _context.ActivationRequests.AnyAsync(r => r.UserId == userId && r.Status == "Pending");
             ViewBag.HasPendingRequest = hasPending;
 
+            // Fetch dynamic settings & packages
+            var settings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
+            var activePackages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync();
+
+            ViewBag.MlmSettings = settings;
+            ViewBag.Packages = activePackages;
+
             return View();
         }
 
         // POST: User/Activate
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Activate(string transactionReference)
+        public async Task<IActionResult> Activate(string transactionReference, int packageId)
         {
             int userId = GetCurrentUserId();
             var user = await _context.Users.FindAsync(userId);
@@ -186,14 +200,26 @@ namespace MLM_Level.Controllers
             {
                 ModelState.AddModelError(string.Empty, "Transaction Reference / UTR is required.");
                 ViewBag.HasPendingRequest = false;
+                ViewBag.MlmSettings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
+                ViewBag.Packages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync();
+                return View();
+            }
+
+            var package = await _context.Packages.FindAsync(packageId);
+            if (package == null || !package.IsActive)
+            {
+                ModelState.AddModelError(string.Empty, "Invalid package selection.");
+                ViewBag.HasPendingRequest = false;
+                ViewBag.MlmSettings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
+                ViewBag.Packages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync();
                 return View();
             }
 
             var request = new ActivationRequest
             {
                 UserId = userId,
-                Amount = 1000.00m, // Standard package price
-                TransactionReference = transactionReference,
+                Amount = package.Price,
+                TransactionReference = transactionReference.Trim(),
                 Status = "Pending",
                 CreatedDate = DateTime.UtcNow
             };
@@ -201,7 +227,7 @@ namespace MLM_Level.Controllers
             _context.ActivationRequests.Add(request);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Activation request submitted! Admin will verify and activate your account shortly.";
+            TempData["SuccessMessage"] = $"Activation request for '{package.Name}' submitted! Admin will verify and activate your account shortly.";
             return RedirectToAction("Index");
         }
 
@@ -293,6 +319,9 @@ namespace MLM_Level.Controllers
 
             var totalIncome = ledger.Sum(l => l.Amount);
 
+            // Pass MLM settings to UI
+            ViewBag.MlmSettings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
+
             var viewModel = new UserWalletViewModel
             {
                 WalletBalance = user.WalletBalance,
@@ -319,6 +348,14 @@ namespace MLM_Level.Controllers
                 return RedirectToAction("Wallet");
             }
 
+            var settings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
+
+            if (amount < settings.MinWithdrawalLimit)
+            {
+                TempData["ErrorMessage"] = $"Minimum withdrawal limit is ₹{settings.MinWithdrawalLimit:N2}.";
+                return RedirectToAction("Wallet");
+            }
+
             if (user.WalletBalance < amount)
             {
                 TempData["ErrorMessage"] = "Insufficient wallet balance.";
@@ -340,7 +377,7 @@ namespace MLM_Level.Controllers
             _context.WithdrawalRequests.Add(request);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Withdrawal request submitted successfully! Funds have been locked from your wallet.";
+            TempData["SuccessMessage"] = $"Withdrawal request of ₹{amount:N2} submitted successfully! A fee of {settings.WithdrawalFeePercent}% will be applied upon payout.";
             return RedirectToAction("Wallet");
         }
 

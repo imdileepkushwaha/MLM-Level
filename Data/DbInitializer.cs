@@ -13,6 +13,12 @@ namespace MLM_Level.Data
             // Ensure database is created
             context.Database.EnsureCreated();
 
+            // Create tables if not exist
+            CreateNewTablesIfNotExist(context);
+
+            // Seed settings & packages & announcements if they don't exist
+            SeedNewSystemData(context);
+
             // Register Stored Procedures
             RegisterStoredProcedures(context);
 
@@ -87,14 +93,31 @@ namespace MLM_Level.Data
                         DECLARE @CommissionAmount DECIMAL(18,2);
                         DECLARE @SponsorActive BIT;
 
+                        -- Fetch custom level commission rates from settings
+                        DECLARE @L1 DECIMAL(18,2), @L2 DECIMAL(18,2), @L3 DECIMAL(18,2), @L4 DECIMAL(18,2), @L5 DECIMAL(18,2);
+                        SELECT TOP 1 
+                            @L1 = Level1Commission, 
+                            @L2 = Level2Commission, 
+                            @L3 = Level3Commission, 
+                            @L4 = Level4Commission, 
+                            @L5 = Level5Commission 
+                        FROM MlmSettings;
+
+                        -- Fallback to default if no settings exist
+                        SET @L1 = ISNULL(@L1, 10.0);
+                        SET @L2 = ISNULL(@L2, 5.0);
+                        SET @L3 = ISNULL(@L3, 3.0);
+                        SET @L4 = ISNULL(@L4, 2.0);
+                        SET @L5 = ISNULL(@L5, 1.0);
+
                         WHILE @Level <= 5 AND @CurrentSponsorId IS NOT NULL
                         BEGIN
                             SET @CommissionPercent = CASE @Level
-                                WHEN 1 THEN 10.0
-                                WHEN 2 THEN 5.0
-                                WHEN 3 THEN 3.0
-                                WHEN 4 THEN 2.0
-                                WHEN 5 THEN 1.0
+                                WHEN 1 THEN @L1
+                                WHEN 2 THEN @L2
+                                WHEN 3 THEN @L3
+                                WHEN 4 THEN @L4
+                                WHEN 5 THEN @L5
                                 ELSE 0.0
                             END;
 
@@ -314,6 +337,95 @@ namespace MLM_Level.Data
                     END CATCH
                 END
             ");
+        }
+
+        private static void CreateNewTablesIfNotExist(ApplicationDbContext context)
+        {
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='MlmSettings' AND xtype='U')
+                BEGIN
+                    CREATE TABLE MlmSettings (
+                        Id INT IDENTITY(1,1) PRIMARY KEY,
+                        Level1Commission DECIMAL(18,2) NOT NULL DEFAULT 10.00,
+                        Level2Commission DECIMAL(18,2) NOT NULL DEFAULT 5.00,
+                        Level3Commission DECIMAL(18,2) NOT NULL DEFAULT 3.00,
+                        Level4Commission DECIMAL(18,2) NOT NULL DEFAULT 2.00,
+                        Level5Commission DECIMAL(18,2) NOT NULL DEFAULT 1.00,
+                        MinWithdrawalLimit DECIMAL(18,2) NOT NULL DEFAULT 500.00,
+                        WithdrawalFeePercent DECIMAL(18,2) NOT NULL DEFAULT 5.00,
+                        CompanyQrCodeUrl NVARCHAR(500) NOT NULL DEFAULT '',
+                        BankDetails NVARCHAR(1000) NOT NULL DEFAULT ''
+                    );
+                END
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Packages' AND xtype='U')
+                BEGIN
+                    CREATE TABLE Packages (
+                        Id INT IDENTITY(1,1) PRIMARY KEY,
+                        Name NVARCHAR(100) NOT NULL,
+                        Price DECIMAL(18,2) NOT NULL,
+                        Description NVARCHAR(500) NOT NULL DEFAULT '',
+                        IsActive BIT NOT NULL DEFAULT 1,
+                        CreatedDate DATETIME NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Announcements' AND xtype='U')
+                BEGIN
+                    CREATE TABLE Announcements (
+                        Id INT IDENTITY(1,1) PRIMARY KEY,
+                        Title NVARCHAR(200) NOT NULL,
+                        Content NVARCHAR(MAX) NOT NULL,
+                        IsActive BIT NOT NULL DEFAULT 1,
+                        CreatedDate DATETIME NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END
+            ");
+        }
+
+        private static void SeedNewSystemData(ApplicationDbContext context)
+        {
+            if (!context.MlmSettings.Any())
+            {
+                context.MlmSettings.Add(new MlmSetting
+                {
+                    Level1Commission = 10.00m,
+                    Level2Commission = 5.00m,
+                    Level3Commission = 3.00m,
+                    Level4Commission = 2.00m,
+                    Level5Commission = 1.00m,
+                    MinWithdrawalLimit = 500.00m,
+                    WithdrawalFeePercent = 5.00m,
+                    CompanyQrCodeUrl = "",
+                    BankDetails = "Bank: Cyber Bank India\r\nA/c Name: Elite MLM Technologies\r\nA/c No: 990184719047209\r\nIFSC: CYBR0001084"
+                });
+                context.SaveChanges();
+            }
+
+            if (!context.Packages.Any())
+            {
+                context.Packages.AddRange(
+                    new Package { Name = "Starter Plan", Price = 1000.00m, Description = "Access level 1-5 commissions, binary node placement", IsActive = true },
+                    new Package { Name = "Silver Plan", Price = 2500.00m, Description = "Standard growth package with binary nodes unlocked", IsActive = true },
+                    new Package { Name = "Gold Plan", Price = 5000.00m, Description = "Premium level unlocks higher capping", IsActive = true }
+                );
+                context.SaveChanges();
+            }
+
+            if (!context.Announcements.Any())
+            {
+                context.Announcements.Add(new Announcement
+                {
+                    Title = "Welcome to Elite MLM Network!",
+                    Content = "We are thrilled to launch the new dashboard upgrades. Start expanding your network and tracking your earnings today!",
+                    IsActive = true
+                });
+                context.SaveChanges();
+            }
         }
     }
 }

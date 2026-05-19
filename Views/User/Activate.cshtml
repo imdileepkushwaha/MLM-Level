@@ -1,5 +1,7 @@
 @{
     ViewData["Title"] = "Submit Activation Request";
+    var settings = ViewBag.MlmSettings as MLM_Level.Models.MlmSetting ?? new MLM_Level.Models.MlmSetting();
+    var packages = ViewBag.Packages as List<MLM_Level.Models.Package> ?? new List<MLM_Level.Models.Package>();
 }
 
 <div class="row justify-content-center">
@@ -10,7 +12,7 @@
                     <i class="bi bi-shield-check"></i>
                 </div>
                 <h3 class="text-white fw-bold">Package Activation</h3>
-                <p class="text-secondary">Activate your account for ₹1,000 INR to unlock commissions & binary nodes</p>
+                <p class="text-secondary">Activate your account with a membership package to unlock commissions & binary nodes</p>
             </div>
 
             @if (ViewBag.HasPendingRequest == true)
@@ -24,39 +26,69 @@
                     <a asp-action="Index" class="btn btn-cyber-outline mt-3 btn-sm">Return to Dashboard</a>
                 </div>
             }
+            else if (!packages.Any())
+            {
+                <div class="alert alert-danger glass-card border-danger text-white p-4 text-center my-4" role="alert">
+                    <i class="bi bi-exclamation-triangle text-danger fs-3 mb-2 d-block"></i>
+                    <h5 class="fw-bold mb-2">No Active Packages</h5>
+                    <p class="text-secondary small mb-0">
+                        There are currently no active membership plans configured in the system. Please contact the administrator.
+                    </p>
+                </div>
+            }
             else
             {
                 <div class="row g-4 my-2">
                     <div class="col-md-6 border-end border-opacity-10 border-white">
                         <h5 class="text-white fw-bold mb-3"><i class="bi bi-cash-coin text-info me-2"></i>Payment Instructions</h5>
-                        <p class="text-secondary small mb-4">Please transfer exactly <strong>₹1,000 INR</strong> to the following UPI address or QR and take a screenshot of your transaction reference/UTR number.</p>
+                        <p class="text-secondary small mb-4">Please choose a package and transfer the exact amount to the company accounts details below.</p>
 
-                        <div class="glass-card p-3 mb-3">
-                            <div class="small text-secondary mb-1">UPI Address</div>
-                            <div class="fw-bold text-white fs-5">elitemlm@paytm <i class="bi bi-clipboard ms-1 text-info small cursor-pointer" onclick="navigator.clipboard.writeText('elitemlm@paytm')"></i></div>
-                        </div>
-
-                        <div class="glass-card p-3">
-                            <div class="small text-secondary mb-1">Bank Transfer Details</div>
-                            <div class="text-white small">
-                                <strong>Bank:</strong> Cyber Bank India<br/>
-                                <strong>A/c Name:</strong> Elite MLM Technologies<br/>
-                                <strong>A/c No:</strong> 990184719047209<br/>
-                                <strong>IFSC:</strong> CYBR0001084
+                        @if (!string.IsNullOrEmpty(settings.CompanyQrCodeUrl))
+                        {
+                            <div class="glass-card p-3 mb-3">
+                                <div class="small text-secondary mb-1">UPI Address</div>
+                                <div class="fw-bold text-white fs-5">
+                                    @settings.CompanyQrCodeUrl 
+                                    <i class="bi bi-clipboard ms-1 text-info small cursor-pointer" onclick="navigator.clipboard.writeText('@settings.CompanyQrCodeUrl')"></i>
+                                </div>
                             </div>
-                        </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(settings.BankDetails))
+                        {
+                            <div class="glass-card p-3">
+                                <div class="small text-secondary mb-1">Bank Transfer Details</div>
+                                <div class="text-white small" style="white-space: pre-line;">@settings.BankDetails</div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="glass-card p-3">
+                                <div class="small text-secondary mb-1">Bank Transfer Details</div>
+                                <div class="text-secondary small">UPI transfer is preferred. If UPI is not working, contact support.</div>
+                            </div>
+                        }
                     </div>
 
                     <div class="col-md-6">
-                        <h5 class="text-white fw-bold mb-3"><i class="bi bi-pencil-square text-pink me-2"></i>Submit UTR / Reference</h5>
+                        <h5 class="text-white fw-bold mb-3"><i class="bi bi-pencil-square text-pink me-2"></i>Select Plan & Submit UTR</h5>
                         
                         <form asp-controller="User" asp-action="Activate" method="post">
                             <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
 
+                            <div class="mb-3 form-group">
+                                <label for="packageId" class="text-secondary small fw-bold mb-1">Choose Membership Package</label>
+                                <select id="packageId" name="packageId" class="form-select auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" required>
+                                    @foreach (var pkg in packages)
+                                    {
+                                        <option value="@pkg.Id" class="bg-dark text-white">@pkg.Name - ₹@pkg.Price.ToString("N0")</option>
+                                    }
+                                </select>
+                            </div>
+
                             <div class="mb-4 form-group">
-                                <label for="transactionReference">Transaction Reference ID / UTR</label>
+                                <label for="transactionReference" class="text-secondary small fw-bold mb-1">Transaction Reference ID / UTR</label>
                                 <input type="text" id="transactionReference" name="transactionReference" class="form-control auth-glow-input" placeholder="e.g. 518294029472" required />
-                                <span class="text-danger small mt-1 d-block"></span>
                                 <small class="text-muted mt-2 d-block" style="font-size: 0.75rem;">Enter the 12-digit transaction ID or reference number shown in your payment app receipts.</small>
                             </div>
 

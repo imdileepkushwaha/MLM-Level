@@ -15,6 +15,9 @@ namespace MLM_Level.Data
         public DbSet<ActivationRequest> ActivationRequests { get; set; } = null!;
         public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; } = null!;
         public DbSet<SupportTicket> SupportTickets { get; set; } = null!;
+        public DbSet<MlmSetting> MlmSettings { get; set; } = null!;
+        public DbSet<Package> Packages { get; set; } = null!;
+        public DbSet<Announcement> Announcements { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

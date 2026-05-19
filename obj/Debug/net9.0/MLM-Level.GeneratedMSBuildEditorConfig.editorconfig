@@ -40,6 +40,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxSZWdpc3Rlci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Data/Work/MLM-Level/Views/Admin/Announcements.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cQW5ub3VuY2VtZW50cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Data/Work/MLM-Level/Views/Admin/Commissions.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cQ29tbWlzc2lvbnMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -52,6 +56,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Data/Work/MLM-Level/Views/Admin/Ledger.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cTGVkZ2VyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Data/Work/MLM-Level/Views/Admin/Login.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cTG9naW4uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -60,8 +68,16 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cTWVtYmVycy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Data/Work/MLM-Level/Views/Admin/Packages.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUGFja2FnZXMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Data/Work/MLM-Level/Views/Admin/PendingRequests.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUGVuZGluZ1JlcXVlc3RzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/Admin/Settings.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cU2V0dGluZ3MuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Data/Work/MLM-Level/Views/Admin/Tickets.cshtml]

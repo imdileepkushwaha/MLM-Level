@@ -1,0 +1,104 @@
+@model List<MLM_Level.Models.Announcement>
+@{
+    ViewData["Title"] = "System Announcements & Notice Board";
+}
+
+<div class="row g-4 mb-4">
+    <!-- Info -->
+    <div class="col-lg-7">
+        <div class="glass-card p-4 h-100">
+            <h4 class="text-white fw-bold mb-2">Notice Board & News Announcements</h4>
+            <p class="text-secondary mb-0">Publish critical network updates, promotional notifications, and alerts directly to member dashboards.</p>
+        </div>
+    </div>
+
+    <!-- Create Announcement Form -->
+    <div class="col-lg-5">
+        <div class="glass-card p-4">
+            <h5 class="text-white fw-bold mb-3"><i class="bi bi-megaphone-fill text-pink me-2"></i>Create Notice</h5>
+            <form asp-controller="Admin" asp-action="CreateAnnouncement" method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-2 form-group">
+                    <input type="text" name="title" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Notice Title (e.g. Server Maintenance)" required />
+                </div>
+                <div class="mb-2 form-group">
+                    <textarea name="content" rows="3" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Write notice content here..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-cyber-pink btn-sm w-100 py-2">
+                    <i class="bi bi-send me-1"></i>Publish Notice
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Notice Board List -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <h5 class="text-white fw-bold mb-4"><i class="bi bi-clock-history text-info me-2"></i>Announcement History</h5>
+            
+            @if (Model.Any())
+            {
+                <div class="list-group list-group-flush bg-transparent">
+                    @foreach (var announcement in Model)
+                    {
+                        <div class="list-group-item bg-transparent border-white border-opacity-10 py-4 px-0">
+                            <div class="d-flex w-100 justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="text-white fw-bold mb-1">
+                                        @announcement.Title
+                                        @if (!announcement.IsActive)
+                                        {
+                                            <span class="badge bg-opacity-10 bg-secondary text-secondary border border-secondary border-opacity-25 ms-2 fs-6" style="font-size: 0.65rem;">Inactive</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-opacity-10 bg-success text-success border border-success border-opacity-25 ms-2 fs-6" style="font-size: 0.65rem;">Live</span>
+                                        }
+                                    </h5>
+                                    <small class="text-muted"><i class="bi bi-calendar-event me-1"></i>Published on @announcement.CreatedDate.ToString("dd MMM yyyy hh:mm tt") UTC</small>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <form asp-controller="Admin" asp-action="ToggleAnnouncement" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@announcement.Id" />
+                                        @if (announcement.IsActive)
+                                        {
+                                            <button type="submit" class="btn btn-cyber-outline btn-sm">
+                                                <i class="bi bi-eye-slash me-1"></i>Hide
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="btn btn-cyber-outline btn-sm">
+                                                <i class="bi bi-eye me-1"></i>Show
+                                            </button>
+                                        }
+                                    </form>
+
+                                    <form asp-controller="Admin" asp-action="DeleteAnnouncement" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this announcement?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@announcement.Id" />
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <p class="text-secondary mb-0" style="white-space: pre-line;">@announcement.Content</p>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5 text-secondary">
+                    <i class="bi bi-chat-left-dots fs-2 mb-2 d-block text-muted"></i>
+                    No announcements have been published.
+                </div>
+            }
+        </div>
+    </div>
+</div>

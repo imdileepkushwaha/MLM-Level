@@ -226,3 +226,4 @@ C:\Data\Work\MLM-Level\obj\Debug\net9.0\MLM-Level.genruntimeconfig.cache
 C:\Data\Work\MLM-Level\obj\Debug\net9.0\ref\MLM-Level.dll
 C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\gnefdotgy3-pxhjnze6d3.gz
 C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\vmxnb370qn-zjt8uaww8e.gz
+C:\Data\Work\MLM-Level\obj\Debug\net9.0\MLM-Level.sourcelink.json

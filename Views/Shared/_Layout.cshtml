@@ -86,8 +86,20 @@
                         <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Commissions" ? "active" : "")" asp-controller="Admin" asp-action="Commissions">
                             <i class="bi bi-receipt"></i> System Commissions
                         </a>
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Ledger" ? "active" : "")" asp-controller="Admin" asp-action="Ledger">
+                            <i class="bi bi-receipt-cutoff"></i> Audit Ledger
+                        </a>
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Packages" ? "active" : "")" asp-controller="Admin" asp-action="Packages">
+                            <i class="bi bi-box-seam"></i> Packages
+                        </a>
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Announcements" ? "active" : "")" asp-controller="Admin" asp-action="Announcements">
+                            <i class="bi bi-megaphone"></i> Notice Board
+                        </a>
                         <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Tickets" ? "active" : "")" asp-controller="Admin" asp-action="Tickets">
                             <i class="bi bi-chat-dots"></i> Support Tickets
+                        </a>
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Settings" ? "active" : "")" asp-controller="Admin" asp-action="Settings">
+                            <i class="bi bi-sliders"></i> General Settings
                         </a>
                     </nav>
                 }
