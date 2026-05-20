@@ -21,6 +21,13 @@ namespace MLM_Level.Models
         public string Description { get; set; } = string.Empty;
 
         [Required]
+        [Column(TypeName = "decimal(18, 2)")]
+        public decimal RoiPercentage { get; set; } = 0m;
+
+        [Required]
+        public int RoiDurationDays { get; set; } = 0;
+
+        [Required]
         public bool IsActive { get; set; } = true;
 
         [Required]

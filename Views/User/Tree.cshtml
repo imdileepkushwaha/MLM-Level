@@ -87,17 +87,94 @@
                                                         @foreach (var lvl3 in lvl3Children)
                                                         {
                                                             <li class="tree-li">
-                                                                <div class="tree-node-box @(lvl3.IsActive ? "active-node" : "inactive-node")" style="padding: 0.5rem 0.75rem;">
-                                                                    <div class="node-name" style="font-size: 0.8rem;">@lvl3.Username</div>
-                                                                    <div class="node-meta" style="font-size: 0.7rem;">@lvl3.FullName</div>
-                                                                    <div class="node-meta text-success" style="font-size: 0.7rem;">Level 3</div>
+                                                                <div class="tree-node-box @(lvl3.IsActive ? "active-node" : "inactive-node")">
+                                                                    <div class="node-name">@lvl3.Username</div>
+                                                                    <div class="node-meta">@lvl3.FullName</div>
+                                                                    <div class="node-meta text-success">Level 3</div>
                                                                 </div>
+
+                                                                <!-- Level 4 nested children -->
+                                                                @{
+                                                                    var lvl4Children = Model.Level4.Where(n => n.ParentId == lvl3.Id).ToList();
+                                                                }
+                                                                @if (lvl4Children.Any())
+                                                                {
+                                                                    <ul class="tree-ul">
+                                                                        @foreach (var lvl4 in lvl4Children)
+                                                                        {
+                                                                            <li class="tree-li">
+                                                                                <div class="tree-node-box @(lvl4.IsActive ? "active-node" : "inactive-node")">
+                                                                                    <div class="node-name">@lvl4.Username</div>
+                                                                                    <div class="node-meta">@lvl4.FullName</div>
+                                                                                    <div class="node-meta text-warning">Level 4</div>
+                                                                                </div>
+                                                                            </li>
+                                                                        }
+                                                                    </ul>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <ul class="tree-ul">
+                                                                        <li class="tree-li">
+                                                                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                                                <div class="node-name text-muted">Blank</div>
+                                                                                <div class="node-meta text-muted">Level 4</div>
+                                                                            </div>
+                                                                        </li>
+                                                                    </ul>
+                                                                }
                                                             </li>
                                                         }
                                                     </ul>
                                                 }
+                                                else
+                                                {
+                                                    <ul class="tree-ul">
+                                                        <li class="tree-li">
+                                                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                                <div class="node-name text-muted">Blank</div>
+                                                                <div class="node-meta text-muted">Level 3</div>
+                                                            </div>
+                                                            <ul class="tree-ul">
+                                                                <li class="tree-li">
+                                                                    <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                                        <div class="node-name text-muted">Blank</div>
+                                                                        <div class="node-meta text-muted">Level 4</div>
+                                                                    </div>
+                                                                </li>
+                                                            </ul>
+                                                        </li>
+                                                    </ul>
+                                                }
                                             </li>
                                         }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <ul class="tree-ul">
+                                        <li class="tree-li">
+                                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                <div class="node-name text-muted">Blank</div>
+                                                <div class="node-meta text-muted">Level 2</div>
+                                            </div>
+                                            <ul class="tree-ul">
+                                                <li class="tree-li">
+                                                    <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                        <div class="node-name text-muted">Blank</div>
+                                                        <div class="node-meta text-muted">Level 3</div>
+                                                    </div>
+                                                    <ul class="tree-ul">
+                                                        <li class="tree-li">
+                                                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                                <div class="node-name text-muted">Blank</div>
+                                                                <div class="node-meta text-muted">Level 4</div>
+                                                            </div>
+                                                        </li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
                                     </ul>
                                 }
                             </li>
@@ -106,10 +183,38 @@
                 }
                 else
                 {
-                    <div class="text-muted small mt-4">
-                        <i class="bi bi-diagram-3-fill me-1 d-block fs-3 mb-2"></i>
-                        No downline members are placed under you yet.
-                    </div>
+                    <ul class="tree-ul">
+                        <li class="tree-li">
+                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                <div class="node-name text-muted">Blank</div>
+                                <div class="node-meta text-muted">Level 1</div>
+                            </div>
+                            <ul class="tree-ul">
+                                <li class="tree-li">
+                                    <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                        <div class="node-name text-muted">Blank</div>
+                                        <div class="node-meta text-muted">Level 2</div>
+                                    </div>
+                                    <ul class="tree-ul">
+                                        <li class="tree-li">
+                                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                <div class="node-name text-muted">Blank</div>
+                                                <div class="node-meta text-muted">Level 3</div>
+                                            </div>
+                                            <ul class="tree-ul">
+                                                <li class="tree-li">
+                                                    <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                        <div class="node-name text-muted">Blank</div>
+                                                        <div class="node-meta text-muted">Level 4</div>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
                 }
             </div>
         </div>

@@ -3,21 +3,7 @@
     ViewData["Title"] = "Member Dashboard";
 }
 
-<!-- Alert Notifications -->
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 12px;">
-        <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 12px;">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
+
 
 <div class="row g-4 mb-4">
     <!-- Active Status Banner -->
@@ -25,7 +11,7 @@
         <div class="glass-card p-3 d-flex align-items-center justify-content-between flex-wrap gap-3" style="border-left: 4px solid @(Model.UserInfo.IsActive ? "var(--accent-green)" : "var(--accent-gold)");">
             <div class="d-flex align-items-center gap-3">
                 <div class="stat-icon-box @(Model.UserInfo.IsActive ? "icon-box-green" : "icon-box-green")" style="background: @(Model.UserInfo.IsActive ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)"); color: @(Model.UserInfo.IsActive ? "#34d399" : "#fbbf24"); border-color: @(Model.UserInfo.IsActive ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)");">
-                    <i class="bi @(Model.UserInfo.IsActive ? "bi-check-shield-fill" : "bi-exclamation-shield-fill")"></i>
+                    <i class="bi @(Model.UserInfo.IsActive ? "bi-shield-fill-check" : "bi-shield-fill-exclamation")"></i>
                 </div>
                 <div>
                     <h5 class="text-slate-800 fw-bold mb-0">Account Status: @(Model.UserInfo.IsActive ? "ACTIVE" : "INACTIVE")</h5>
@@ -75,18 +61,34 @@
 <!-- Stats Grid -->
 <div class="row g-4 mb-4">
     <!-- Wallet Balance -->
-    <div class="col-md-3 col-sm-6">
-        <div class="glass-card p-4 h-100">
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card p-4 h-100 border-success">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <div>
-                    <p class="text-secondary small fw-medium mb-1">Wallet Balance</p>
-                    <h3 class="text-slate-800 fw-extrabold mb-0">₹@Model.UserInfo.WalletBalance.ToString("N2")</h3>
+                    <p class="text-secondary small fw-medium mb-1">Available Wallet</p>
+                    <h3 class="text-success fw-extrabold mb-0">₹@Model.UserInfo.WalletBalance.ToString("N2")</h3>
                 </div>
-                <div class="stat-icon-box icon-box-cyan">
+                <div class="stat-icon-box icon-box-green">
                     <i class="bi bi-wallet2"></i>
                 </div>
             </div>
-            <a asp-action="Wallet" class="small text-info text-decoration-none fw-bold">View Ledger <i class="bi bi-arrow-right-short"></i></a>
+            <a asp-action="Wallet" class="small text-success text-decoration-none fw-bold">Withdraw Funds <i class="bi bi-arrow-right-short"></i></a>
+        </div>
+    </div>
+
+    <!-- Uncleared Income -->
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card p-4 h-100 border-warning">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <p class="text-secondary small fw-medium mb-1">Uncleared Income</p>
+                    <h3 class="text-warning fw-extrabold mb-0">₹@Model.UserInfo.IncomeWallet.ToString("N2")</h3>
+                </div>
+                <div class="stat-icon-box icon-box-cyan" style="background: rgba(245,158,11,0.12); color: #fbbf24; border-color: rgba(245,158,11,0.3);">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+            </div>
+            <span class="small text-secondary">Clears at Midnight</span>
         </div>
     </div>
 

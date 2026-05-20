@@ -129,7 +129,7 @@ namespace MLM_Level.Data
                             IF @SponsorActive = 1 OR EXISTS (SELECT 1 FROM Users WHERE Id = @CurrentSponsorId AND IsAdmin = 1)
                             BEGIN
                                 UPDATE Users 
-                                SET WalletBalance = WalletBalance + @CommissionAmount 
+                                SET IncomeWallet = IncomeWallet + @CommissionAmount 
                                 WHERE Id = @CurrentSponsorId;
 
                                 INSERT INTO CommissionTrans (UserId, FromUserId, Amount, Level, Timestamp, Description)
@@ -383,6 +383,14 @@ namespace MLM_Level.Data
                         IsActive BIT NOT NULL DEFAULT 1,
                         CreatedDate DATETIME NOT NULL DEFAULT GETUTCDATE()
                     );
+                END
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF COL_LENGTH('ActivationRequests', 'PaymentSlipUrl') IS NULL
+                BEGIN
+                    ALTER TABLE ActivationRequests
+                    ADD PaymentSlipUrl NVARCHAR(255) NULL;
                 END
             ");
         }

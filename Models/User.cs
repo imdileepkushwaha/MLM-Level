@@ -57,6 +57,10 @@ namespace MLM_Level.Models
         public decimal WalletBalance { get; set; } = 0.00m;
 
         [Required]
+        [Column(TypeName = "decimal(18, 2)")]
+        public decimal IncomeWallet { get; set; } = 0.00m;
+
+        [Required]
         [MaxLength(50)]
         public string ReferralCode { get; set; } = string.Empty;
 

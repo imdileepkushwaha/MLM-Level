@@ -47,3 +47,16 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 4000);
     });
 });
+
+// Toggle password visibility utility
+function togglePasswordVisibility(btn) {
+    const input = btn.previousElementSibling;
+    const icon = btn.querySelector('i');
+    if (input.type === "password") {
+        input.type = "text";
+        icon.className = "bi bi-eye-slash";
+    } else {
+        input.type = "password";
+        icon.className = "bi bi-eye";
+    }
+}

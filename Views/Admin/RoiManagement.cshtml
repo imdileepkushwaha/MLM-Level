@@ -1,0 +1,101 @@
+@model List<MLM_Level.Models.UserPackage>
+@{
+    ViewData["Title"] = "ROI Management";
+}
+
+<div class="container py-2">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-white fw-bold mb-1">ROI Management</h2>
+            <p class="text-secondary mb-0">Manage and distribute daily Return on Investment to active members.</p>
+        </div>
+        <form asp-controller="Admin" asp-action="DistributeRoi" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-cyber-cyan shadow-sm" style="border-radius: 8px;">
+                <i class="bi bi-play-circle me-1"></i> Distribute Daily ROI
+            </button>
+        </form>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 text-success py-2">
+            <i class="bi bi-check-circle me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 text-danger py-2">
+            <i class="bi bi-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="glass-card p-4">
+        <h5 class="text-white mb-3 border-bottom border-secondary border-opacity-25 pb-2">Active ROI Packages</h5>
+        
+        <div class="glass-table-container">
+            <table class="table glass-table align-middle">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Package</th>
+                        <th>Amount</th>
+                        <th>ROI %</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var up in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-white">@up.User.Username</div>
+                                    <div class="text-secondary small">ID: @up.UserId</div>
+                                </td>
+                                <td>
+                                    <div class="text-info">@up.Package.Name</div>
+                                    <div class="text-secondary small">Activated: @up.ActivationDate.ToString("dd MMM yyyy")</div>
+                                </td>
+                                <td>
+                                    <span class="text-white fw-bold">₹@up.Amount.ToString("N2")</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary bg-opacity-25 text-primary">@up.RoiPercentage%</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-between small text-secondary mb-1">
+                                        <span>Day @up.DaysPaid</span>
+                                        <span>Total @up.RoiDurationDays</span>
+                                    </div>
+                                    <div class="progress bg-dark" style="height: 6px;">
+                                        @{
+                                            var pct = up.RoiDurationDays > 0 ? (up.DaysPaid * 100) / up.RoiDurationDays : 0;
+                                        }
+                                        <div class="progress-bar bg-cyber-cyan" role="progressbar" style="width: @pct%;" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success bg-opacity-25 text-success">
+                                        <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> Active
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                                <div class="text-muted">No active packages awaiting ROI.</div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

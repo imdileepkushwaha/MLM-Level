@@ -54,12 +54,22 @@
             <div class="row">
                 <div class="col-sm-6 mb-4 form-group">
                     <label asp-for="Password"></label>
-                    <input asp-for="Password" class="form-control auth-glow-input" placeholder="Min 6 chars" />
+                    <div class="position-relative">
+                        <input asp-for="Password" class="form-control auth-glow-input pe-5" placeholder="Min 6 chars" />
+                        <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y me-2 border-0 bg-transparent text-secondary py-0 px-2" onclick="togglePasswordVisibility(this)" style="z-index: 10;">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                     <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
                 </div>
                 <div class="col-sm-6 mb-4 form-group">
                     <label asp-for="ConfirmPassword"></label>
-                    <input asp-for="ConfirmPassword" class="form-control auth-glow-input" placeholder="Repeat password" />
+                    <div class="position-relative">
+                        <input asp-for="ConfirmPassword" class="form-control auth-glow-input pe-5" placeholder="Repeat password" />
+                        <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y me-2 border-0 bg-transparent text-secondary py-0 px-2" onclick="togglePasswordVisibility(this)" style="z-index: 10;">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                     <span asp-validation-for="ConfirmPassword" class="text-danger small mt-1 d-block"></span>
                 </div>
             </div>

@@ -1,0 +1,53 @@
+@model IEnumerable<MLM_Level.Models.CommissionTran>
+@{
+    ViewData["Title"] = "Daily Income";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="glass-card p-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="text-white fw-bold mb-1"><i class="bi bi-calendar-check text-success me-2"></i>Daily ROI Income</h4>
+                <p class="text-secondary mb-0">Track your daily returns from active packages.</p>
+            </div>
+            <div class="text-end">
+                <span class="text-secondary small d-block mb-1">Total Daily Income</span>
+                <h3 class="text-success fw-bold mb-0">₹@((ViewBag.TotalIncome ?? 0m).ToString("N2"))</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    <div class="glass-table-container">
+        @if (Model != null && Model.Any())
+        {
+            <table class="table glass-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Description</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Timestamp.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</td>
+                            <td><span class="text-info">@item.Description</span></td>
+                            <td class="text-end text-success fw-bold">+₹@item.Amount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="text-center py-5 text-secondary">
+                <i class="bi bi-inbox fs-1 mb-3 d-block opacity-50"></i>
+                <p>No daily income records found.</p>
+            </div>
+        }
+    </div>
+</div>

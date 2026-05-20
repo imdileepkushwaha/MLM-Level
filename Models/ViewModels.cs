@@ -29,6 +29,11 @@ namespace MLM_Level.Models
         [MaxLength(100)]
         public string Email { get; set; } = string.Empty;
 
+
+
+        [MaxLength(500)]
+        public string CompanyQrCodeUrl { get; set; } = string.Empty;
+
         [Required(ErrorMessage = "Full Name is required")]
         [MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
@@ -93,6 +98,7 @@ namespace MLM_Level.Models
     public class UserWalletViewModel
     {
         public decimal WalletBalance { get; set; }
+        public decimal IncomeWallet { get; set; }
         public decimal TotalIncome { get; set; }
         public List<CommissionTran> IncomeLedger { get; set; } = new();
         public List<WithdrawalRequest> Withdrawals { get; set; } = new();
@@ -144,5 +150,22 @@ namespace MLM_Level.Models
         public string Username { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public decimal TotalEarned { get; set; }
+    }
+
+    public class AdminSettingsViewModel
+    {
+        public MlmSetting Settings { get; set; } = new MlmSetting();
+        
+        // Admin Profile
+        public string AdminFullName { get; set; } = string.Empty;
+        public string AdminEmail { get; set; } = string.Empty;
+        public string AdminUsername { get; set; } = string.Empty;
+
+        // Password Update
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        public string ActiveTab { get; set; } = "general";
     }
 }

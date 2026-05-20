@@ -11,10 +11,28 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configure Cookie Authentication
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+// Register custom services
+builder.Services.AddScoped<MLM_Level.Services.IEmailService, MLM_Level.Services.EmailService>();
+builder.Services.AddHostedService<MLM_Level.Services.RoiDistributionService>();
+builder.Services.AddHostedService<MLM_Level.Services.DailyClosingService>();
+
+// Configure Cookie Authentication for Dual Roles (Admin & User)
+builder.Services.AddAuthentication(options =>
     {
+        options.DefaultScheme = "UserAuth";
+    })
+    .AddCookie("AdminAuth", options =>
+    {
+        options.Cookie.Name = ".MLM.Admin";
+        options.LoginPath = "/Admin/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+    })
+    .AddCookie("UserAuth", options =>
+    {
+        options.Cookie.Name = ".MLM.User";
         options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/AccessDenied";

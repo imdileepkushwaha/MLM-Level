@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MLM_Level.Data;
@@ -12,14 +15,16 @@ using MLM_Level.Models;
 
 namespace MLM_Level.Controllers
 {
-    [Authorize(Roles = "User")]
+    [Authorize(AuthenticationSchemes = "UserAuth", Roles = "User")]
     public class UserController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public UserController(ApplicationDbContext context)
+        public UserController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         private int GetCurrentUserId()
@@ -27,6 +32,48 @@ namespace MLM_Level.Controllers
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claim == null) throw new InvalidOperationException("User identity not found.");
             return int.Parse(claim.Value);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword, string confirmPassword)
+        {
+            if (string.IsNullOrEmpty(currentPassword) || string.IsNullOrEmpty(newPassword) || string.IsNullOrEmpty(confirmPassword))
+            {
+                return Json(new { success = false, message = "All password fields are required." });
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                return Json(new { success = false, message = "New password and confirmation password do not match." });
+            }
+
+            try
+            {
+                int userId = GetCurrentUserId();
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "User not found." });
+                }
+
+                var passwordHasher = new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
+                var verifyResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, currentPassword);
+                if (verifyResult == Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed)
+                {
+                    return Json(new { success = false, message = "Current password is incorrect." });
+                }
+
+                user.PasswordHash = passwordHasher.HashPassword(user, newPassword);
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Password updated successfully!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "An error occurred while updating the password: " + ex.Message });
+            }
         }
 
         // GET: User/Index (Dashboard)
@@ -184,7 +231,7 @@ namespace MLM_Level.Controllers
         // POST: User/Activate
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Activate(string transactionReference, int packageId)
+        public async Task<IActionResult> Activate(string transactionReference, int packageId, IFormFile? paymentSlip)
         {
             int userId = GetCurrentUserId();
             var user = await _context.Users.FindAsync(userId);
@@ -215,11 +262,27 @@ namespace MLM_Level.Controllers
                 return View();
             }
 
+            string? slipUrl = null;
+            if (paymentSlip != null && paymentSlip.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "slips");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(paymentSlip.FileName);
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await paymentSlip.CopyToAsync(stream);
+                }
+                slipUrl = "/uploads/slips/" + uniqueFileName;
+            }
+
             var request = new ActivationRequest
             {
                 UserId = userId,
                 Amount = package.Price,
+                PackageId = packageId,
                 TransactionReference = transactionReference.Trim(),
+                PaymentSlipUrl = slipUrl,
                 Status = "Pending",
                 CreatedDate = DateTime.UtcNow
             };
@@ -229,6 +292,86 @@ namespace MLM_Level.Controllers
 
             TempData["SuccessMessage"] = $"Activation request for '{package.Name}' submitted! Admin will verify and activate your account shortly.";
             return RedirectToAction("Index");
+        }
+
+        // GET: User/ActivationReport
+        [HttpGet]
+        public async Task<IActionResult> ActivationReport()
+        {
+            int userId = GetCurrentUserId();
+            var requests = await _context.ActivationRequests
+                .Where(r => r.UserId == userId)
+                .OrderByDescending(r => r.CreatedDate)
+                .ToListAsync();
+
+            return View(requests);
+        }
+
+        // GET: User/MyDirect
+        [HttpGet]
+        public async Task<IActionResult> MyDirect()
+        {
+            int userId = GetCurrentUserId();
+            var directs = await _context.Users
+                .Where(u => u.SponsorId == userId)
+                .OrderByDescending(u => u.JoinedDate)
+                .ToListAsync();
+
+            return View(directs);
+        }
+
+        // GET: User/MyDownline
+        [HttpGet]
+        public async Task<IActionResult> MyDownline()
+        {
+            int userId = GetCurrentUserId();
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            var downlineList = new List<DownlineNodeViewModel>();
+
+            try
+            {
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = "sp_GetDownlineTree";
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    var paramStartUserId = command.CreateParameter();
+                    paramStartUserId.ParameterName = "@StartUserId";
+                    paramStartUserId.Value = userId;
+                    command.Parameters.Add(paramStartUserId);
+
+                    _context.Database.OpenConnection();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var node = new DownlineNodeViewModel
+                            {
+                                Id = reader.GetInt32(0),
+                                Username = reader.GetString(1),
+                                FullName = reader.GetString(2),
+                                SponsorId = reader.GetInt32(3),
+                                ParentId = reader.IsDBNull(4) ? null : (int?)reader.GetInt32(4),
+                                Level = reader.GetInt32(5),
+                                IsActive = reader.GetBoolean(6),
+                                JoinedDate = reader.GetDateTime(7),
+                                SponsorName = reader.IsDBNull(8) ? "" : reader.GetString(8),
+                                ParentName = reader.IsDBNull(9) ? "" : reader.GetString(9)
+                            };
+
+                            downlineList.Add(node);
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Active fallbacks
+            }
+
+            return View(downlineList);
         }
 
         // GET: User/Tree (Downline Tree & Levels)
@@ -325,6 +468,7 @@ namespace MLM_Level.Controllers
             var viewModel = new UserWalletViewModel
             {
                 WalletBalance = user.WalletBalance,
+                IncomeWallet = user.IncomeWallet,
                 TotalIncome = totalIncome,
                 IncomeLedger = ledger,
                 Withdrawals = withdrawals
@@ -559,6 +703,51 @@ namespace MLM_Level.Controllers
 
             TempData["SuccessMessage"] = $"New signups will now be placed under: {targetUser.FullName} (@{targetUser.Username})!";
             return RedirectToAction("Index");
+        }
+
+        // GET: User/DailyIncome
+        [HttpGet]
+        public async Task<IActionResult> DailyIncome()
+        {
+            int userId = GetCurrentUserId();
+            var incomes = await _context.CommissionTrans
+                .Include(c => c.FromUser)
+                .Where(c => c.UserId == userId && c.Amount > 0 && c.Level == 0 && c.Description.Contains("Daily ROI"))
+                .OrderByDescending(c => c.Timestamp)
+                .ToListAsync();
+
+            ViewBag.TotalIncome = incomes.Sum(i => i.Amount);
+            return View(incomes);
+        }
+
+        // GET: User/DirectIncome
+        [HttpGet]
+        public async Task<IActionResult> DirectIncome()
+        {
+            int userId = GetCurrentUserId();
+            var incomes = await _context.CommissionTrans
+                .Include(c => c.FromUser)
+                .Where(c => c.UserId == userId && c.Amount > 0 && c.Level == 1 && c.Description.Contains("Commission"))
+                .OrderByDescending(c => c.Timestamp)
+                .ToListAsync();
+
+            ViewBag.TotalIncome = incomes.Sum(i => i.Amount);
+            return View(incomes);
+        }
+
+        // GET: User/LevelIncome
+        [HttpGet]
+        public async Task<IActionResult> LevelIncome()
+        {
+            int userId = GetCurrentUserId();
+            var incomes = await _context.CommissionTrans
+                .Include(c => c.FromUser)
+                .Where(c => c.UserId == userId && c.Amount > 0 && c.Level > 1 && c.Description.Contains("Commission"))
+                .OrderByDescending(c => c.Timestamp)
+                .ToListAsync();
+
+            ViewBag.TotalIncome = incomes.Sum(i => i.Amount);
+            return View(incomes);
         }
 
         // GET: User/GetEarningsChartData

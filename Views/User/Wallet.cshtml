@@ -3,50 +3,52 @@
     ViewData["Title"] = "E-Wallet Transactions & Withdrawals";
 }
 
-<!-- Alert Notifications -->
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 12px;">
-        <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 12px;">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
+
 
 <div class="row g-4 mb-4">
     <!-- Wallet stats -->
-    <div class="col-md-6">
+    <div class="col-lg-4 col-md-6">
         <div class="glass-card p-4 h-100 d-flex justify-content-between align-items-center">
             <div>
                 <p class="text-secondary small fw-medium mb-1">Available E-Wallet Balance</p>
-                <h2 class="text-slate-800 fw-extrabold mb-2" style="font-size: 2.5rem;">₹@Model.WalletBalance.ToString("N2")</h2>
-                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold small">
-                    <i class="bi bi-wallet2 me-1"></i> Funds Unlocked & Spendable
+                <h2 class="text-slate-800 fw-extrabold mb-2" style="font-size: 2.2rem;">₹@Model.WalletBalance.ToString("N2")</h2>
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 rounded-pill fw-bold small">
+                    <i class="bi bi-wallet2 me-1"></i> Spendable
                 </span>
             </div>
-            <div class="stat-icon-box icon-box-cyan" style="width: 64px; height: 64px; font-size: 1.8rem;">
+            <div class="stat-icon-box icon-box-green" style="width: 56px; height: 56px; font-size: 1.5rem;">
                 <i class="bi bi-cash-stack"></i>
             </div>
         </div>
     </div>
 
-    <!-- Total Income -->
-    <div class="col-md-6">
+    <!-- Uncleared Income -->
+    <div class="col-lg-4 col-md-6">
         <div class="glass-card p-4 h-100 d-flex justify-content-between align-items-center">
             <div>
-                <p class="text-secondary small fw-medium mb-1">Cumulative Level Income</p>
-                <h2 class="text-slate-800 fw-extrabold mb-2" style="font-size: 2.5rem;">₹@Model.TotalIncome.ToString("N2")</h2>
-                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2 rounded-pill fw-bold small">
-                    <i class="bi bi-graph-up-arrow me-1"></i> Total Commissions Distributed
+                <p class="text-secondary small fw-medium mb-1">Uncleared Income</p>
+                <h2 class="text-slate-800 fw-extrabold mb-2" style="font-size: 2.2rem;">₹@Model.IncomeWallet.ToString("N2")</h2>
+                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1 rounded-pill fw-bold small">
+                    <i class="bi bi-hourglass-split me-1"></i> Clears Midnight
                 </span>
             </div>
-            <div class="stat-icon-box icon-box-blue" style="width: 64px; height: 64px; font-size: 1.8rem;">
+            <div class="stat-icon-box" style="width: 56px; height: 56px; font-size: 1.5rem; background: rgba(245,158,11,0.12); color: #fbbf24; border-color: rgba(245,158,11,0.3);">
+                <i class="bi bi-hourglass-top"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Income -->
+    <div class="col-lg-4 col-md-12">
+        <div class="glass-card p-4 h-100 d-flex justify-content-between align-items-center">
+            <div>
+                <p class="text-secondary small fw-medium mb-1">Cumulative Income</p>
+                <h2 class="text-slate-800 fw-extrabold mb-2" style="font-size: 2.2rem;">₹@Model.TotalIncome.ToString("N2")</h2>
+                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1 rounded-pill fw-bold small">
+                    <i class="bi bi-graph-up-arrow me-1"></i> Total Earned
+                </span>
+            </div>
+            <div class="stat-icon-box icon-box-blue" style="width: 56px; height: 56px; font-size: 1.5rem;">
                 <i class="bi bi-trophy"></i>
             </div>
         </div>

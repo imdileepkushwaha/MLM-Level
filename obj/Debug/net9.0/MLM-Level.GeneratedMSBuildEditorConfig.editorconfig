@@ -76,6 +76,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUGVuZGluZ1JlcXVlc3RzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Data/Work/MLM-Level/Views/Admin/RoiManagement.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUm9pTWFuYWdlbWVudC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Data/Work/MLM-Level/Views/Admin/Settings.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cU2V0dGluZ3MuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -86,6 +90,14 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Data/Work/MLM-Level/Views/Admin/TreeExplorer.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cVHJlZUV4cGxvcmVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/Admin/_AdminLayout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cX0FkbWluTGF5b3V0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/Admin/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Data/Work/MLM-Level/Views/Home/Index.cshtml]
@@ -108,8 +120,32 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxBY3RpdmF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Data/Work/MLM-Level/Views/User/ActivationReport.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxBY3RpdmF0aW9uUmVwb3J0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/User/DailyIncome.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxEYWlseUluY29tZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/User/DirectIncome.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxEaXJlY3RJbmNvbWUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Data/Work/MLM-Level/Views/User/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/User/LevelIncome.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxMZXZlbEluY29tZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/User/MyDirect.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxNeURpcmVjdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/User/MyDownline.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxNeURvd25saW5lLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Data/Work/MLM-Level/Views/User/Profile.cshtml]

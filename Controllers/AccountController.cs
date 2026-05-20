@@ -25,15 +25,10 @@ namespace MLM_Level.Controllers
 
         // GET: Account/Login
         [HttpGet]
-        public IActionResult Login(string? returnUrl = null)
+        public async Task<IActionResult> Login(string? returnUrl = null)
         {
-            if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                if (User.IsInRole("Admin"))
-                    return RedirectToAction("Index", "Admin");
-                else
-                    return RedirectToAction("Index", "User");
-            }
+            var userAuth = await HttpContext.AuthenticateAsync("UserAuth");
+            if (userAuth.Succeeded) return RedirectToAction("Index", "User");
 
             ViewData["ReturnUrl"] = returnUrl;
             return View();
@@ -78,7 +73,8 @@ namespace MLM_Level.Controllers
                 new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User")
             };
 
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var scheme = user.IsAdmin ? "AdminAuth" : "UserAuth";
+            var claimsIdentity = new ClaimsIdentity(claims, scheme);
 
             var authProperties = new AuthenticationProperties
             {
@@ -86,7 +82,7 @@ namespace MLM_Level.Controllers
                 ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
             };
 
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+            await HttpContext.SignInAsync(scheme, new ClaimsPrincipal(claimsIdentity), authProperties);
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -103,15 +99,10 @@ namespace MLM_Level.Controllers
 
         // GET: Account/Register
         [HttpGet]
-        public IActionResult Register(string? sponsorCode = null)
+        public async Task<IActionResult> Register(string? sponsorCode = null)
         {
-            if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                if (User.IsInRole("Admin"))
-                    return RedirectToAction("Index", "Admin");
-                else
-                    return RedirectToAction("Index", "User");
-            }
+            var userAuth = await HttpContext.AuthenticateAsync("UserAuth");
+            if (userAuth.Succeeded) return RedirectToAction("Index", "User");
 
             var model = new RegisterViewModel();
             if (!string.IsNullOrEmpty(sponsorCode))
@@ -209,7 +200,8 @@ namespace MLM_Level.Controllers
         [HttpGet]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync("AdminAuth");
+            await HttpContext.SignOutAsync("UserAuth");
             return RedirectToAction("Index", "Home");
         }
 

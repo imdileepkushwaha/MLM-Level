@@ -9,43 +9,172 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    <header class="main-nav">
-        <nav class="navbar navbar-expand-lg navbar-dark py-3">
-            <div class="container">
-                <a class="navbar-brand nav-brand d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
-                    <i class="bi bi-diagram-3-fill text-info"></i>
-                    <span>ELITE MLM</span>
-                </a>
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav ms-auto align-items-center gap-3">
-                        @if (User.Identity != null && User.Identity.IsAuthenticated)
-                        {
-                            <li class="nav-item">
-                                <span class="nav-link text-secondary">
-                                    <i class="bi bi-person-circle me-1 text-info"></i> Welcome, <strong>@User.FindFirst("FullName")?.Value</strong>
-                                </span>
-                            </li>
-                            @if (User.IsInRole("Admin"))
-                            {
-                                <li class="nav-item">
-                                    <a class="btn btn-cyber-cyan btn-sm px-3" asp-controller="Admin" asp-action="Index">Admin Portal</a>
-                                </li>
-                            }
-                            else
-                            {
-                                <li class="nav-item">
-                                    <a class="btn btn-cyber-cyan btn-sm px-3" asp-controller="User" asp-action="Index">User Portal</a>
-                                </li>
-                            }
-                            <li class="nav-item">
-                                <a class="btn btn-cyber-outline btn-sm px-3 border-danger text-danger" asp-controller="Account" asp-action="Logout">Logout</a>
-                            </li>
-                        }
-                        else
-                        {
+    @if (User.Identity != null && User.Identity.IsAuthenticated && Context.Request.RouteValues["controller"]?.ToString() == "User")
+    {
+        var fullName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "User";
+        var initials = "";
+        if (!string.IsNullOrEmpty(fullName))
+        {
+            var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length > 0)
+            {
+                initials += parts[0][0];
+                if (parts.Length > 1) initials += parts[1][0];
+            }
+        }
+        if (string.IsNullOrEmpty(initials)) initials = "U";
+        var colorIndex = Math.Abs(fullName.GetHashCode()) % 6;
+
+        <!-- Authenticated Dashboard Mode (Panelix Layout for User) -->
+        <div class="dashboard-layout">
+            <!-- Sidebar -->
+            <aside class="dashboard-sidebar">
+                <!-- Brand logo in sidebar -->
+                <div class="dashboard-brand">
+                    <div class="dashboard-brand-logo">
+                        <i class="bi bi-diagram-3-fill"></i>
+                    </div>
+                    <a class="dashboard-brand-text" asp-controller="Home" asp-action="Index">Panelix</a>
+                </div>
+
+                <h5>Member Portal</h5>
+                <nav class="nav flex-column">
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="User" asp-action="Index">
+                        <i class="bi bi-grid"></i> Dashboard
+                    </a>
+                    
+                    <a class="sidebar-link" data-bs-toggle="collapse" href="#myTeamCollapse" role="button" aria-expanded="false" aria-controls="myTeamCollapse">
+                        <i class="bi bi-people"></i> My Team <i class="bi bi-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
+                    </a>
+                    <div class="collapse @(new[]{"MyDirect","MyDownline","Tree"}.Contains(Context.Request.RouteValues["action"]?.ToString()) ? "show" : "")" id="myTeamCollapse">
+                        <nav class="nav flex-column ms-3 mt-1 mb-2" style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 0.5rem;">
+                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "MyDirect" ? "active" : "")" asp-controller="User" asp-action="MyDirect" style="font-size: 0.9rem;">
+                                <i class="bi bi-person-check" style="font-size: 1rem;"></i> My Direct
+                            </a>
+                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "MyDownline" ? "active" : "")" asp-controller="User" asp-action="MyDownline" style="font-size: 0.9rem;">
+                                <i class="bi bi-diagram-3" style="font-size: 1rem;"></i> My Downline
+                            </a>
+                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "Tree" ? "active" : "")" asp-controller="User" asp-action="Tree" style="font-size: 0.9rem;">
+                                <i class="bi bi-diagram-2" style="font-size: 1rem;"></i> My Treeview
+                            </a>
+                        </nav>
+                    </div>
+
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Wallet" ? "active" : "")" asp-controller="User" asp-action="Wallet">
+                        <i class="bi bi-wallet2"></i> E-Wallet Ledger
+                    </a>
+
+                    <a class="sidebar-link" data-bs-toggle="collapse" href="#myIncomeCollapse" role="button" aria-expanded="false" aria-controls="myIncomeCollapse">
+                        <i class="bi bi-cash-stack"></i> My Income <i class="bi bi-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
+                    </a>
+                    <div class="collapse @(new[]{"DailyIncome","DirectIncome","LevelIncome"}.Contains(Context.Request.RouteValues["action"]?.ToString()) ? "show" : "")" id="myIncomeCollapse">
+                        <nav class="nav flex-column ms-3 mt-1 mb-2" style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 0.5rem;">
+                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "DailyIncome" ? "active" : "")" asp-controller="User" asp-action="DailyIncome" style="font-size: 0.9rem;">
+                                <i class="bi bi-calendar-check" style="font-size: 1rem;"></i> Daily Income
+                            </a>
+                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "DirectIncome" ? "active" : "")" asp-controller="User" asp-action="DirectIncome" style="font-size: 0.9rem;">
+                                <i class="bi bi-arrow-right-circle" style="font-size: 1rem;"></i> Direct Income
+                            </a>
+                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "LevelIncome" ? "active" : "")" asp-controller="User" asp-action="LevelIncome" style="font-size: 0.9rem;">
+                                <i class="bi bi-layers" style="font-size: 1rem;"></i> Level Income
+                            </a>
+                        </nav>
+                    </div>
+
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "ActivationReport" ? "active" : "")" asp-controller="User" asp-action="ActivationReport">
+                        <i class="bi bi-shield-check"></i> Activation Report
+                    </a>
+
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Profile" ? "active" : "")" asp-controller="User" asp-action="Profile">
+                        <i class="bi bi-person-gear"></i> Manage Profile
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Support" ? "active" : "")" asp-controller="User" asp-action="Support">
+                        <i class="bi bi-headset"></i> Support Helpdesk
+                    </a>
+                </nav>
+            </aside>
+
+            <!-- Main Content Area -->
+            <div class="dashboard-main-area">
+                <!-- Topbar Header -->
+                <header class="dashboard-topbar">
+                    <!-- Search Box -->
+                    <div class="topbar-search-container">
+                        <i class="bi bi-search topbar-search-icon"></i>
+                        <input type="text" class="topbar-search-input" placeholder="Search anything... (Ctrl+K)" />
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="topbar-actions">
+                        <a class="topbar-icon-btn position-relative" href="#">
+                            <i class="bi bi-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="margin-top: 8px; margin-left: -8px;"></span>
+                        </a>
+                        <a class="topbar-icon-btn" href="#">
+                            <i class="bi bi-envelope"></i>
+                        </a>
+
+                        <div class="dropdown">
+                            <button class="topbar-profile dropdown-toggle" type="button" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="avatar-circle avatar-color-@colorIndex">
+                                    @initials
+                                </div>
+                                <div class="user-profile-info">
+                                    <span class="user-profile-name">@fullName</span>
+                                    <span class="user-profile-role">Member</span>
+                                </div>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end border shadow-sm py-2" aria-labelledby="userMenuButton" style="border-radius: 12px; font-size: 0.9rem;">
+                                <li><a class="dropdown-item py-2" asp-controller="User" asp-action="Profile"><i class="bi bi-person me-2 text-secondary"></i>Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item py-2 text-danger" asp-controller="Account" asp-action="Logout"><i class="bi bi-box-arrow-right me-2 text-danger"></i>Sign Out</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </header>
+
+                <main role="main" class="dashboard-content">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm py-3 mb-4" role="alert" style="border-radius: 12px; background-color: rgba(16, 185, 129, 0.1); color: #047857; border: 1px solid rgba(16, 185, 129, 0.15);">
+                            <i class="bi bi-check-circle-fill me-2"></i> @Html.Raw(TempData["SuccessMessage"])
+                            <button type="button" class="btn-close text-success" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm py-3 mb-4" role="alert" style="border-radius: 12px; background-color: rgba(239, 68, 68, 0.1); color: #b91c1c; border: 1px solid rgba(239, 68, 68, 0.15);">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> @Html.Raw(TempData["ErrorMessage"])
+                            <button type="button" class="btn-close text-danger" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["InfoMessage"] != null)
+                    {
+                        <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm py-3 mb-4" role="alert" style="border-radius: 12px; background-color: rgba(59, 130, 246, 0.1); color: #1d4ed8; border: 1px solid rgba(59, 130, 246, 0.15);">
+                            <i class="bi bi-info-circle-fill me-2"></i> @Html.Raw(TempData["InfoMessage"])
+                            <button type="button" class="btn-close text-info" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @RenderBody()
+                </main>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Public Landing Page / Access Mode -->
+        <header class="main-nav">
+            <nav class="navbar navbar-expand-lg navbar-dark py-3">
+                <div class="container">
+                    <a class="navbar-brand nav-brand d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-diagram-3-fill text-info"></i>
+                        <span>ELITE MLM</span>
+                    </a>
+                    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav ms-auto align-items-center gap-3">
                             <li class="nav-item">
                                 <a class="nav-link text-secondary" asp-controller="Home" asp-action="Index">Home</a>
                             </li>
@@ -55,126 +184,30 @@
                             <li class="nav-item">
                                 <a class="btn btn-cyber-cyan btn-sm px-4" asp-controller="Account" asp-action="Register">Join Now</a>
                             </li>
-                        }
-                    </ul>
+                        </ul>
+                    </div>
                 </div>
-            </div>
-        </nav>
-    </header>
+            </nav>
+        </header>
 
-    @if (User.Identity != null && User.Identity.IsAuthenticated && (Context.Request.RouteValues["controller"]?.ToString() == "User" || Context.Request.RouteValues["controller"]?.ToString() == "Admin"))
-    {
-        <!-- Authenticated Dashboard Mode -->
-        <div class="dashboard-wrapper">
-            <aside class="dashboard-sidebar">
-                @if (User.IsInRole("Admin"))
-                {
-                    <h5 class="text-secondary px-3 mb-3 small text-uppercase fw-bold tracking-wider">Admin Panel</h5>
-                    <nav class="nav flex-column">
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="Admin" asp-action="Index">
-                            <i class="bi bi-speedometer2"></i> Dashboard
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Members" || Context.Request.RouteValues["action"]?.ToString() == "EditMember" ? "active" : "")" asp-controller="Admin" asp-action="Members">
-                            <i class="bi bi-people"></i> Manage Members
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "PendingRequests" ? "active" : "")" asp-controller="Admin" asp-action="PendingRequests">
-                            <i class="bi bi-patch-check"></i> Pending Approvals
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "TreeExplorer" ? "active" : "")" asp-controller="Admin" asp-action="TreeExplorer">
-                            <i class="bi bi-diagram-3"></i> Network Explorer
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Commissions" ? "active" : "")" asp-controller="Admin" asp-action="Commissions">
-                            <i class="bi bi-receipt"></i> System Commissions
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Ledger" ? "active" : "")" asp-controller="Admin" asp-action="Ledger">
-                            <i class="bi bi-receipt-cutoff"></i> Audit Ledger
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Packages" ? "active" : "")" asp-controller="Admin" asp-action="Packages">
-                            <i class="bi bi-box-seam"></i> Packages
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Announcements" ? "active" : "")" asp-controller="Admin" asp-action="Announcements">
-                            <i class="bi bi-megaphone"></i> Notice Board
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Tickets" ? "active" : "")" asp-controller="Admin" asp-action="Tickets">
-                            <i class="bi bi-chat-dots"></i> Support Tickets
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Settings" ? "active" : "")" asp-controller="Admin" asp-action="Settings">
-                            <i class="bi bi-sliders"></i> General Settings
-                        </a>
-                    </nav>
-                }
-                else
-                {
-                    <h5 class="text-secondary px-3 mb-3 small text-uppercase fw-bold tracking-wider">Member Portal</h5>
-                    <nav class="nav flex-column">
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="User" asp-action="Index">
-                            <i class="bi bi-grid-1x2"></i> Dashboard
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Activate" ? "active" : "")" asp-controller="User" asp-action="Activate">
-                            <i class="bi bi-shield-check"></i> Package Activation
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Tree" ? "active" : "")" asp-controller="User" asp-action="Tree">
-                            <i class="bi bi-diagram-2"></i> My Downline Tree
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Wallet" ? "active" : "")" asp-controller="User" asp-action="Wallet">
-                            <i class="bi bi-wallet2"></i> E-Wallet Ledger
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Profile" ? "active" : "")" asp-controller="User" asp-action="Profile">
-                            <i class="bi bi-person-gear"></i> Manage Profile
-                        </a>
-                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Support" ? "active" : "")" asp-controller="User" asp-action="Support">
-                            <i class="bi bi-headset"></i> Helpdesk / Support
-                        </a>
-                    </nav>
-                }
-            </aside>
-            <main role="main" class="dashboard-content">
-                @if (TempData["SuccessMessage"] != null)
-                {
-                    <div class="alert alert-success alert-dismissible fade show glass-card border-success text-dark py-3 mb-4" role="alert">
-                        <i class="bi bi-check-circle-fill me-2 text-success"></i> @TempData["SuccessMessage"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
-                @if (TempData["ErrorMessage"] != null)
-                {
-                    <div class="alert alert-danger alert-dismissible fade show glass-card border-danger text-dark py-3 mb-4" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i> @TempData["ErrorMessage"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
-                @if (TempData["InfoMessage"] != null)
-                {
-                    <div class="alert alert-info alert-dismissible fade show glass-card border-info text-dark py-3 mb-4" role="alert">
-                        <i class="bi bi-info-circle-fill me-2 text-info"></i> @TempData["InfoMessage"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
-                @RenderBody()
-            </main>
-        </div>
-    }
-    else
-    {
-        <!-- Public Landing Page / Access Mode -->
-        <main role="main" class="py-4">
+        <main role="main" class="py-5">
             <div class="container">
                 @if (TempData["SuccessMessage"] != null)
                 {
-                    <div class="alert alert-success alert-dismissible fade show glass-card border-success text-dark py-3 mb-4" role="alert">
-                        <i class="bi bi-check-circle-fill me-2 text-success"></i> @TempData["SuccessMessage"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm py-3 mb-4" role="alert" style="border-radius: 12px; background-color: rgba(16, 185, 129, 0.1); color: #047857;">
+                        <i class="bi bi-check-circle-fill me-2"></i> @Html.Raw(TempData["SuccessMessage"])
+                        <button type="button" class="btn-close text-success" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 }
                 @if (TempData["ErrorMessage"] != null)
                 {
-                    <div class="alert alert-danger alert-dismissible fade show glass-card border-danger text-dark py-3 mb-4" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i> @TempData["ErrorMessage"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm py-3 mb-4" role="alert" style="border-radius: 12px; background-color: rgba(239, 68, 68, 0.1); color: #b91c1c;">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> @Html.Raw(TempData["ErrorMessage"])
+                        <button type="button" class="btn-close text-danger" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 }
+                @RenderBody()
             </div>
-            @RenderBody()
         </main>
     }
 
