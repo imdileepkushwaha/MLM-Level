@@ -133,6 +133,50 @@ namespace MLM_Level.Migrations
                     b.ToTable("CommissionTrans");
                 });
 
+            modelBuilder.Entity("MLM_Level.Models.KycDetail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BankPassbookUrl")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PanCardUrl")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("RejectionReason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("KycDetails");
+                });
+
             modelBuilder.Entity("MLM_Level.Models.MlmSetting", b =>
                 {
                     b.Property<int>("Id")
@@ -140,6 +184,9 @@ namespace MLM_Level.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("AdminChargePercent")
+                        .HasColumnType("decimal(18, 2)");
 
                     b.Property<string>("BankDetails")
                         .IsRequired()
@@ -219,6 +266,9 @@ namespace MLM_Level.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("TdsPercent")
+                        .HasColumnType("decimal(18, 2)");
 
                     b.Property<string>("WhatsAppAccessToken")
                         .IsRequired()
@@ -343,6 +393,9 @@ namespace MLM_Level.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<decimal>("IncomeWallet")
+                        .HasColumnType("decimal(18, 2)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -420,6 +473,9 @@ namespace MLM_Level.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastPaidDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("PackageId")
                         .HasColumnType("int");
@@ -506,6 +562,17 @@ namespace MLM_Level.Migrations
                         .IsRequired();
 
                     b.Navigation("FromUser");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MLM_Level.Models.KycDetail", b =>
+                {
+                    b.HasOne("MLM_Level.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

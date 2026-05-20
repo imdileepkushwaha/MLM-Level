@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
 </head>
 <body>
     @{
@@ -29,77 +30,98 @@
     <div class="dashboard-layout">
         <!-- Sidebar -->
         <aside class="dashboard-sidebar">
-            <div class="dashboard-brand">
-                <div class="dashboard-brand-logo">
-                    <i class="bi bi-diagram-3-fill"></i>
+            <div class="dashboard-brand d-flex justify-content-between align-items-center pe-3">
+                <div class="d-flex align-items-center">
+                    <div class="dashboard-brand-logo">
+                        <i class="bi bi-diagram-3-fill"></i>
+                    </div>
+                    <a class="dashboard-brand-text" asp-controller="Home" asp-action="Index">Elite Admin</a>
                 </div>
-                <a class="dashboard-brand-text" asp-controller="Home" asp-action="Index">Panelix</a>
+                <button class="btn btn-sm btn-light d-lg-none" type="button" onclick="document.querySelector('.dashboard-sidebar').classList.remove('sidebar-open')">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
 
-            <h5>Main</h5>
-            <nav class="nav flex-column">
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="Admin" asp-action="Index">
-                    <i class="bi bi-grid"></i> Dashboard
-                </a>
-            </nav>
+            <div class="sidebar-scrollable">
+                <h5>Main</h5>
+                <nav class="nav flex-column">
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="Admin" asp-action="Index">
+                        <i class="bi bi-grid"></i> Dashboard
+                    </a>
+                </nav>
 
-            <h5>Network & Members</h5>
-            <nav class="nav flex-column">
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Members" || Context.Request.RouteValues["action"]?.ToString() == "EditMember" ? "active" : "")" asp-controller="Admin" asp-action="Members">
-                    <i class="bi bi-people"></i> Manage Members
-                </a>
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "PendingRequests" ? "active" : "")" asp-controller="Admin" asp-action="PendingRequests">
-                    <i class="bi bi-patch-check"></i> Pending Approvals
-                </a>
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "TreeExplorer" ? "active" : "")" asp-controller="Admin" asp-action="TreeExplorer">
-                    <i class="bi bi-diagram-3"></i> Network Explorer
-                </a>
-            </nav>
+                <h5>Network</h5>
+                <nav class="nav flex-column">
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Members" ? "active" : "")" asp-controller="Admin" asp-action="Members">
+                        <i class="bi bi-people"></i> All Members
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "PendingRequests" ? "active" : "")" asp-controller="Admin" asp-action="PendingRequests">
+                        <i class="bi bi-hourglass-split"></i> Pending Withdrawals
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "PendingActivations" ? "active" : "")" asp-controller="Admin" asp-action="PendingActivations">
+                        <i class="bi bi-shield-lock"></i> Activation Requests
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "KycApprovals" ? "active" : "")" asp-controller="Admin" asp-action="KycApprovals">
+                        <i class="bi bi-shield-check"></i> KYC Approvals
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "TreeExplorer" ? "active" : "")" asp-controller="Admin" asp-action="TreeExplorer">
+                        <i class="bi bi-diagram-3"></i> Network Explorer
+                    </a>
+                </nav>
 
-            <h5>Financials & Notices</h5>
-            <nav class="nav flex-column">
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Commissions" ? "active" : "")" asp-controller="Admin" asp-action="Commissions">
-                    <i class="bi bi-currency-exchange"></i> Commissions Log
-                </a>
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "RoiManagement" ? "active" : "")" asp-controller="Admin" asp-action="RoiManagement">
-                    <i class="bi bi-graph-up-arrow"></i> ROI Management
-                </a>
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Ledger" ? "active" : "")" asp-controller="Admin" asp-action="Ledger">
-                    <i class="bi bi-receipt-cutoff"></i> Audit Ledger
-                </a>
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Packages" ? "active" : "")" asp-controller="Admin" asp-action="Packages">
-                    <i class="bi bi-box-seam"></i> Packages
-                </a>
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Announcements" ? "active" : "")" asp-controller="Admin" asp-action="Announcements">
-                    <i class="bi bi-megaphone"></i> Notice Board
-                </a>
-            </nav>
+                <h5>Financials & Notices</h5>
+                <nav class="nav flex-column">
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Commissions" ? "active" : "")" asp-controller="Admin" asp-action="Commissions">
+                        <i class="bi bi-currency-exchange"></i> Commissions Log
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "RoiManagement" ? "active" : "")" asp-controller="Admin" asp-action="RoiManagement">
+                        <i class="bi bi-graph-up-arrow"></i> ROI Management
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Ledger" ? "active" : "")" asp-controller="Admin" asp-action="Ledger">
+                        <i class="bi bi-receipt-cutoff"></i> Audit Ledger
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Packages" ? "active" : "")" asp-controller="Admin" asp-action="Packages">
+                        <i class="bi bi-box-seam"></i> Packages
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Announcements" ? "active" : "")" asp-controller="Admin" asp-action="Announcements">
+                        <i class="bi bi-megaphone"></i> Notice Board
+                    </a>
+                </nav>
 
-            <h5>System</h5>
-            <nav class="nav flex-column">
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Tickets" ? "active" : "")" asp-controller="Admin" asp-action="Tickets">
-                    <i class="bi bi-chat-dots"></i> Support Tickets
-                </a>
-                <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Settings" ? "active" : "")" asp-controller="Admin" asp-action="Settings">
-                    <i class="bi bi-sliders"></i> General Settings
-                </a>
-            </nav>
+                <h5>System</h5>
+                <nav class="nav flex-column">
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Tickets" ? "active" : "")" asp-controller="Admin" asp-action="Tickets">
+                        <i class="bi bi-chat-dots"></i> Support Tickets
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Settings" ? "active" : "")" asp-controller="Admin" asp-action="Settings">
+                        <i class="bi bi-sliders"></i> General Settings
+                    </a>
+
+                    <a class="sidebar-link text-danger" asp-controller="Account" asp-action="Logout">
+                        <i class="bi bi-box-arrow-right text-danger"></i> Sign Out
+                    </a>
+                </nav>
+            </div>
         </aside>
 
         <!-- Main Content Area -->
         <div class="dashboard-main-area">
             <!-- Topbar Header -->
-            <header class="dashboard-topbar">
-                <div class="topbar-search-container">
-                    <i class="bi bi-search topbar-search-icon"></i>
-                    <input type="text" class="topbar-search-input" placeholder="Search anything... (Ctrl+K)" />
+            <header class="dashboard-topbar d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <!-- Mobile Hamburger -->
+                    <button class="btn btn-light d-block d-lg-none me-3" type="button" onclick="document.querySelector('.dashboard-sidebar').classList.toggle('sidebar-open')">
+                        <i class="bi bi-list fs-4"></i>
+                    </button>
+
+                    <div class="topbar-search-container d-none d-md-flex">
+                        <i class="bi bi-search topbar-search-icon"></i>
+                        <input type="text" class="topbar-search-input" placeholder="Search anything... (Ctrl+K)" />
+                    </div>
                 </div>
 
                 <div class="topbar-actions">
-                    <a class="topbar-icon-btn position-relative" href="#">
-                        <i class="bi bi-bell"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="margin-top: 8px; margin-left: -8px;"></span>
-                    </a>
+                    @await Html.PartialAsync("_AdminNotifications")
                     <a class="topbar-icon-btn" href="#">
                         <i class="bi bi-envelope"></i>
                     </a>
@@ -153,6 +175,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/admin-tables.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

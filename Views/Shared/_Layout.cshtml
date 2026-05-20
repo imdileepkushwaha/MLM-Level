@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @if (User.Identity != null && User.Identity.IsAuthenticated && Context.Request.RouteValues["controller"]?.ToString() == "User")
+    {
+        <link rel="stylesheet" href="~/css/user.css" asp-append-version="true" />
+    }
 </head>
 <body>
     @if (User.Identity != null && User.Identity.IsAuthenticated && Context.Request.RouteValues["controller"]?.ToString() == "User")
@@ -30,88 +34,113 @@
             <!-- Sidebar -->
             <aside class="dashboard-sidebar">
                 <!-- Brand logo in sidebar -->
-                <div class="dashboard-brand">
-                    <div class="dashboard-brand-logo">
-                        <i class="bi bi-diagram-3-fill"></i>
+                <div class="dashboard-brand d-flex justify-content-between align-items-center pe-3">
+                    <div class="d-flex align-items-center">
+                        <div class="dashboard-brand-logo">
+                            <i class="bi bi-diagram-3-fill"></i>
+                        </div>
+                        <a class="dashboard-brand-text" asp-controller="Home" asp-action="Index"> Elite MLM</a>
                     </div>
-                    <a class="dashboard-brand-text" asp-controller="Home" asp-action="Index">Panelix</a>
+                    <button class="btn btn-sm btn-light d-lg-none" type="button" onclick="document.querySelector('.dashboard-sidebar').classList.remove('sidebar-open')">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                 </div>
 
-                <h5>Member Portal</h5>
-                <nav class="nav flex-column">
-                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="User" asp-action="Index">
-                        <i class="bi bi-grid"></i> Dashboard
-                    </a>
-                    
-                    <a class="sidebar-link" data-bs-toggle="collapse" href="#myTeamCollapse" role="button" aria-expanded="false" aria-controls="myTeamCollapse">
-                        <i class="bi bi-people"></i> My Team <i class="bi bi-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
-                    </a>
-                    <div class="collapse @(new[]{"MyDirect","MyDownline","Tree"}.Contains(Context.Request.RouteValues["action"]?.ToString()) ? "show" : "")" id="myTeamCollapse">
-                        <nav class="nav flex-column ms-3 mt-1 mb-2" style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 0.5rem;">
-                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "MyDirect" ? "active" : "")" asp-controller="User" asp-action="MyDirect" style="font-size: 0.9rem;">
-                                <i class="bi bi-person-check" style="font-size: 1rem;"></i> My Direct
-                            </a>
-                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "MyDownline" ? "active" : "")" asp-controller="User" asp-action="MyDownline" style="font-size: 0.9rem;">
-                                <i class="bi bi-diagram-3" style="font-size: 1rem;"></i> My Downline
-                            </a>
-                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "Tree" ? "active" : "")" asp-controller="User" asp-action="Tree" style="font-size: 0.9rem;">
-                                <i class="bi bi-diagram-2" style="font-size: 1rem;"></i> My Treeview
-                            </a>
-                        </nav>
-                    </div>
+                <div class="sidebar-scrollable">
+                    <h5>Member Portal</h5>
+                    <nav class="nav flex-column">
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="User" asp-action="Index">
+                            <i class="bi bi-grid"></i> Dashboard
+                        </a>
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Wallet" ? "active" : "")" asp-controller="User" asp-action="Wallet">
+                            <i class="bi bi-wallet2"></i> E-Wallet
+                        </a>
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "IncomeTransactions" ? "active" : "")" asp-controller="User" asp-action="IncomeTransactions">
+                            <i class="bi bi-receipt-cutoff"></i> Income Transactions
+                        </a>
+                        
+                        <a class="sidebar-link" data-bs-toggle="collapse" href="#myTeamCollapse" role="button" aria-expanded="false" aria-controls="myTeamCollapse">
+                            <i class="bi bi-people"></i> My Team <i class="bi bi-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
+                        </a>
+                        <div class="collapse @(new[]{"MyDirect","MyDownline","Tree"}.Contains(Context.Request.RouteValues["action"]?.ToString()) ? "show" : "")" id="myTeamCollapse">
+                            <nav class="nav flex-column ms-3 mt-1 mb-2" style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 0.5rem;">
+                                <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "MyDirect" ? "active" : "")" asp-controller="User" asp-action="MyDirect" style="font-size: 0.9rem;">
+                                    <i class="bi bi-person-check" style="font-size: 1rem;"></i> My Direct
+                                </a>
+                                <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "MyDownline" ? "active" : "")" asp-controller="User" asp-action="MyDownline" style="font-size: 0.9rem;">
+                                    <i class="bi bi-diagram-3" style="font-size: 1rem;"></i> My Downline
+                                </a>
+                                <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "Tree" ? "active" : "")" asp-controller="User" asp-action="Tree" style="font-size: 0.9rem;">
+                                    <i class="bi bi-tree" style="font-size: 1rem;"></i> Tree View
+                                </a>
+                            </nav>
+                        </div>
 
-                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Wallet" ? "active" : "")" asp-controller="User" asp-action="Wallet">
-                        <i class="bi bi-wallet2"></i> E-Wallet Ledger
-                    </a>
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Packages" ? "active" : "")" asp-controller="User" asp-action="Packages">
+                            <i class="bi bi-box-seam"></i> Packages
+                        </a>
 
-                    <a class="sidebar-link" data-bs-toggle="collapse" href="#myIncomeCollapse" role="button" aria-expanded="false" aria-controls="myIncomeCollapse">
-                        <i class="bi bi-cash-stack"></i> My Income <i class="bi bi-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
-                    </a>
-                    <div class="collapse @(new[]{"DailyIncome","DirectIncome","LevelIncome"}.Contains(Context.Request.RouteValues["action"]?.ToString()) ? "show" : "")" id="myIncomeCollapse">
-                        <nav class="nav flex-column ms-3 mt-1 mb-2" style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 0.5rem;">
-                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "DailyIncome" ? "active" : "")" asp-controller="User" asp-action="DailyIncome" style="font-size: 0.9rem;">
-                                <i class="bi bi-calendar-check" style="font-size: 1rem;"></i> Daily Income
-                            </a>
-                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "DirectIncome" ? "active" : "")" asp-controller="User" asp-action="DirectIncome" style="font-size: 0.9rem;">
-                                <i class="bi bi-arrow-right-circle" style="font-size: 1rem;"></i> Direct Income
-                            </a>
-                            <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "LevelIncome" ? "active" : "")" asp-controller="User" asp-action="LevelIncome" style="font-size: 0.9rem;">
-                                <i class="bi bi-layers" style="font-size: 1rem;"></i> Level Income
-                            </a>
-                        </nav>
-                    </div>
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Kyc" ? "active" : "")" asp-controller="User" asp-action="Kyc">
+                            <i class="bi bi-shield-check"></i> KYC Verification
+                        </a>
 
-                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "ActivationReport" ? "active" : "")" asp-controller="User" asp-action="ActivationReport">
-                        <i class="bi bi-shield-check"></i> Activation Report
-                    </a>
+                        <a class="sidebar-link" data-bs-toggle="collapse" href="#myIncomeCollapse" role="button" aria-expanded="false" aria-controls="myIncomeCollapse">
+                            <i class="bi bi-cash-stack"></i> My Income <i class="bi bi-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
+                        </a>
+                        <div class="collapse @(new[]{"DailyIncome","DirectIncome","LevelIncome"}.Contains(Context.Request.RouteValues["action"]?.ToString()) ? "show" : "")" id="myIncomeCollapse">
+                            <nav class="nav flex-column ms-3 mt-1 mb-2" style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 0.5rem;">
+                                <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "DailyIncome" ? "active" : "")" asp-controller="User" asp-action="DailyIncome" style="font-size: 0.9rem;">
+                                    <i class="bi bi-calendar-check" style="font-size: 1rem;"></i> Daily Income
+                                </a>
+                                <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "DirectIncome" ? "active" : "")" asp-controller="User" asp-action="DirectIncome" style="font-size: 0.9rem;">
+                                    <i class="bi bi-arrow-right-circle" style="font-size: 1rem;"></i> Direct Income
+                                </a>
+                                <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "LevelIncome" ? "active" : "")" asp-controller="User" asp-action="LevelIncome" style="font-size: 0.9rem;">
+                                    <i class="bi bi-layers" style="font-size: 1rem;"></i> Level Income
+                                </a>
+                            </nav>
+                        </div>
 
-                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Profile" ? "active" : "")" asp-controller="User" asp-action="Profile">
-                        <i class="bi bi-person-gear"></i> Manage Profile
-                    </a>
-                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Support" ? "active" : "")" asp-controller="User" asp-action="Support">
-                        <i class="bi bi-headset"></i> Support Helpdesk
-                    </a>
-                </nav>
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "ActivationReport" ? "active" : "")" asp-controller="User" asp-action="ActivationReport">
+                            <i class="bi bi-shield-check"></i> Activation Report
+                        </a>
+
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Profile" ? "active" : "")" asp-controller="User" asp-action="Profile">
+                            <i class="bi bi-person-gear"></i> Manage Profile
+                        </a>
+                        <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Support" ? "active" : "")" asp-controller="User" asp-action="Support">
+                            <i class="bi bi-headset"></i> Support Helpdesk
+                        </a>
+                        
+                        <a class="sidebar-link text-danger" asp-controller="Account" asp-action="Logout">
+                            <i class="bi bi-box-arrow-right text-danger"></i> Sign Out
+                        </a>
+                    </nav>
+                </div>
             </aside>
 
             <!-- Main Content Area -->
             <div class="dashboard-main-area">
                 <!-- Topbar Header -->
-                <header class="dashboard-topbar">
-                    <!-- Search Box -->
-                    <div class="topbar-search-container">
-                        <i class="bi bi-search topbar-search-icon"></i>
-                        <input type="text" class="topbar-search-input" placeholder="Search anything... (Ctrl+K)" />
+                <header class="dashboard-topbar d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <!-- Mobile Hamburger -->
+                        <button class="btn btn-light d-block d-lg-none me-3" type="button" onclick="document.querySelector('.dashboard-sidebar').classList.toggle('sidebar-open')">
+                            <i class="bi bi-list fs-4"></i>
+                        </button>
+
+                        <!-- Search Box -->
+                        <div class="topbar-search-container d-none d-md-flex">
+                            <i class="bi bi-search topbar-search-icon"></i>
+                            <input type="text" class="topbar-search-input" placeholder="Search anything... (Ctrl+K)" />
+                        </div>
                     </div>
 
                     <!-- Actions -->
                     <div class="topbar-actions">
-                        <a class="topbar-icon-btn position-relative" href="#">
-                            <i class="bi bi-bell"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="margin-top: 8px; margin-left: -8px;"></span>
-                        </a>
-                        <a class="topbar-icon-btn" href="#">
-                            <i class="bi bi-envelope"></i>
+                        @await Html.PartialAsync("_MemberNotifications")
+                        <a class="topbar-icon-btn" asp-controller="User" asp-action="Support" title="Support">
+                            <i class="bi bi-headset"></i>
                         </a>
 
                         <div class="dropdown">
@@ -214,6 +243,10 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (User.Identity?.IsAuthenticated == true && Context.Request.RouteValues["controller"]?.ToString() == "User")
+    {
+        <script src="~/js/admin-tables.js" asp-append-version="true"></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

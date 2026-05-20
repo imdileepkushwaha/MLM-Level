@@ -100,7 +100,7 @@ namespace MLM_Level.Models
         public decimal WalletBalance { get; set; }
         public decimal IncomeWallet { get; set; }
         public decimal TotalIncome { get; set; }
-        public List<CommissionTran> IncomeLedger { get; set; } = new();
+        public int LedgerEntryCount { get; set; }
         public List<WithdrawalRequest> Withdrawals { get; set; } = new();
     }
 
@@ -167,5 +167,39 @@ namespace MLM_Level.Models
         public string ConfirmPassword { get; set; } = string.Empty;
 
         public string ActiveTab { get; set; } = "general";
+    }
+
+    public class AdminNotificationItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Icon { get; set; } = "bi-bell";
+        public string IconClass { get; set; } = "topbar-notif-icon-default";
+        public string Action { get; set; } = string.Empty;
+        public string Controller { get; set; } = "Admin";
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class AdminNotificationsViewModel
+    {
+        public int TotalCount { get; set; }
+        public List<AdminNotificationItem> Items { get; set; } = new();
+    }
+
+    public class MemberNotificationItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Icon { get; set; } = "bi-bell";
+        public string IconClass { get; set; } = "topbar-notif-icon-default";
+        public string Action { get; set; } = string.Empty;
+        public string Controller { get; set; } = "User";
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class MemberNotificationsViewModel
+    {
+        public int TotalCount { get; set; }
+        public List<MemberNotificationItem> Items { get; set; } = new();
     }
 }

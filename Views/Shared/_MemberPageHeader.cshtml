@@ -1,0 +1,34 @@
+@model MLM_Level.Models.MemberPageHeaderViewModel
+<div class="member-page-header @Model.ThemeClass mb-4">
+    <div class="member-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="member-page-icon"><i class="bi @Model.Icon"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">@Model.Title</h2>
+                    @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+                    {
+                        <p class="mb-0 text-white-50 small mt-1">@Model.Subtitle</p>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            @if (!string.IsNullOrWhiteSpace(Model.Badge))
+            {
+                <span class="member-header-badge"><i class="bi bi-stars me-1"></i>@Model.Badge</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.ActionUrl) && !string.IsNullOrWhiteSpace(Model.ActionText))
+            {
+                <a asp-controller="User" asp-action="@Model.ActionUrl" class="member-header-btn ms-lg-2 mt-2 mt-lg-0 d-inline-flex">
+                    @if (!string.IsNullOrWhiteSpace(Model.ActionIcon))
+                    {
+                        <i class="bi @Model.ActionIcon me-1"></i>
+                    }
+                    @Model.ActionText
+                </a>
+            }
+        </div>
+    </div>
+</div>

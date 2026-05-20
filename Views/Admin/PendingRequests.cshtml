@@ -1,125 +1,112 @@
 @model MLM_Level.Models.AdminApprovalsViewModel
 @{
-    ViewData["Title"] = "Pending Activations & Withdrawals Approvals";
+    ViewData["Title"] = "Pending Approvals";
+    var withdrawals = Model.WithdrawalRequests;
+    var withdrawalTotal = withdrawals.Sum(w => w.Amount);
 }
 
-<div class="row g-4 mb-4">
-    <div class="col-12">
-        <div class="glass-card p-4">
-            <h4 class="text-white fw-bold mb-2">Audit & Approvals Queue</h4>
-            <p class="text-secondary mb-0">Approve new network activations to distribute payouts, or verify withdrawal requests to authorize cash outs.</p>
+<div class="admin-page-header admin-theme-amber mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Pending Approvals</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Withdrawal requests awaiting your review and payout</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end d-flex flex-wrap gap-2 justify-content-lg-end">
+            <a asp-action="PendingActivations" class="admin-header-btn">
+                <i class="bi bi-shield-lock me-1"></i>Activation queue
+            </a>
+            <span class="admin-header-badge">
+                <i class="bi bi-wallet2 me-1"></i>@withdrawals.Count pending
+            </span>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Activations Table -->
-    <div class="col-lg-6">
-        <div class="glass-card p-4">
-            <h5 class="text-white fw-bold mb-4">
-                <i class="bi bi-shield-check text-info me-2"></i>Account Activations Queue
-            </h5>
-
-            <div class="glass-table-container">
-                @if (Model.ActivationRequests.Any())
-                {
-                    <table class="table glass-table align-middle">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Member Details</th>
-                                <th>UTR/Reference</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var req in Model.ActivationRequests)
-                            {
-                                <tr>
-                                    <td>@req.CreatedDate.ToString("dd MMM yyyy")</td>
-                                    <td>
-                                        <strong class="text-white">@req.User.Username</strong><br/>
-                                        <span class="small text-muted" style="font-size: 0.75rem;">@req.User.FullName</span>
-                                    </td>
-                                    <td><code class="text-cyan font-monospace">@req.TransactionReference</code></td>
-                                    <td class="text-end">
-                                        <div class="d-flex gap-2 justify-content-end">
-                                            <form asp-action="ApproveActivation" asp-route-id="@req.Id" method="post">
-                                                <button type="submit" class="btn btn-success btn-sm px-3" style="font-size: 0.75rem;"><i class="bi bi-check-lg me-1"></i>Approve</button>
-                                            </form>
-                                            <form asp-action="RejectActivation" asp-route-id="@req.Id" method="post">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm px-2" style="font-size: 0.75rem;"><i class="bi bi-trash"></i></button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <div class="text-center py-5 text-secondary small">
-                        <i class="bi bi-check-circle fs-2 mb-2 d-block text-muted"></i>
-                        No pending activations are in the system queue.
-                    </div>
-                }
-            </div>
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Pending withdrawals</p>
+            <p class="admin-stat-value text-warning mb-0">@withdrawals.Count</p>
         </div>
     </div>
-
-    <!-- Withdrawals Table -->
-    <div class="col-lg-6">
-        <div class="glass-card p-4">
-            <h5 class="text-white fw-bold mb-4">
-                <i class="bi bi-wallet2 text-pink me-2"></i>Withdrawal Requests Queue
-            </h5>
-
-            <div class="glass-table-container">
-                @if (Model.WithdrawalRequests.Any())
-                {
-                    <table class="table glass-table align-middle">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Member Details</th>
-                                <th>Cashout Amount</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var w in Model.WithdrawalRequests)
-                            {
-                                <tr>
-                                    <td>@w.CreatedDate.ToString("dd MMM yyyy")</td>
-                                    <td>
-                                        <strong class="text-white">@w.User.Username</strong><br/>
-                                        <span class="small text-muted" style="font-size: 0.75rem;">Wallet Bal: ₹@w.User.WalletBalance.ToString("N2")</span>
-                                    </td>
-                                    <td><strong class="text-warning">₹@w.Amount.ToString("N2")</strong></td>
-                                    <td class="text-end">
-                                        <div class="d-flex gap-2 justify-content-end">
-                                            <form asp-action="ApproveWithdrawal" asp-route-id="@w.Id" method="post">
-                                                <button type="submit" class="btn btn-success btn-sm px-3" style="font-size: 0.75rem;"><i class="bi bi-check-lg me-1"></i>Approve</button>
-                                            </form>
-                                            <form asp-action="RejectWithdrawal" asp-route-id="@w.Id" method="post">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm px-3" style="font-size: 0.75rem;"><i class="bi bi-arrow-counterclockwise me-1"></i>Reject</button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <div class="text-center py-5 text-secondary small">
-                        <i class="bi bi-check-circle fs-2 mb-2 d-block text-muted"></i>
-                        No pending withdrawal requests in system queue.
-                    </div>
-                }
-            </div>
+    <div class="col-md-4">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Total amount</p>
+            <p class="admin-stat-value text-danger mb-0" style="font-size:1rem;">&#8377;@withdrawalTotal.ToString("N0")</p>
         </div>
     </div>
+    <div class="col-md-4">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Activations</p>
+            <p class="admin-stat-value text-info mb-0" style="font-size:1rem;">
+                <a asp-action="PendingActivations" class="text-decoration-none">View queue <i class="bi bi-arrow-right"></i></a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card admin-table-card" data-admin-table data-page-size="10" data-search-placeholder="Search withdrawals..." data-count-label="pending">
+    <div class="admin-table-header flex-wrap gap-2">
+        <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-wallet2 text-warning me-2"></i>Withdrawal queue
+        </h5>
+        <span class="admin-record-badge" data-admin-table-count>@withdrawals.Count pending</span>
+        <a asp-action="ExportPendingWithdrawalsCsv" class="btn btn-sm admin-btn-outline">
+            <i class="bi bi-download me-1"></i>Export CSV
+        </a>
+        <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:220px;max-width:320px;">
+            <i class="bi bi-search admin-search-icon"></i>
+            <input type="search" data-admin-table-search class="form-control admin-search-input"
+                   placeholder="Search member or amount..." autocomplete="off" />
+        </div>
+    </div>
+    @if (withdrawals.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Member</th>
+                        <th>Amount</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var w in withdrawals)
+                    {
+                        var searchText = $"{w.User?.Username} {w.User?.FullName} {w.Amount}".ToLowerInvariant();
+                        <tr data-search="@searchText">
+                            <td class="admin-subtext">@w.CreatedDate.ToString("dd MMM")</td>
+                            <td>
+                                <div class="fw-bold text-dark small">@(w.User?.Username ?? "-")</div>
+                                <div class="admin-subtext">Bal: &#8377;@(w.User?.WalletBalance.ToString("N0") ?? "0")</div>
+                            </td>
+                            <td class="fw-bold text-warning">&#8377;@w.Amount.ToString("N2")</td>
+                            <td class="text-end">
+                                <form asp-action="ApproveWithdrawal" asp-route-id="@w.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-2 me-1"><i class="bi bi-check-lg"></i></button>
+                                </form>
+                                <form asp-action="RejectWithdrawal" asp-route-id="@w.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        @await Html.PartialAsync("_AdminNoResults")
+    }
 </div>

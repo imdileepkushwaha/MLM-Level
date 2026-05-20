@@ -1,43 +1,98 @@
 @model List<MLM_Level.Models.UserPackage>
 @{
     ViewData["Title"] = "ROI Management";
+    var packages = Model ?? new List<MLM_Level.Models.UserPackage>();
+    var totalAmount = packages.Sum(p => p.Amount);
+    var avgProgress = packages.Any() ? (int)packages.Average(p => p.RoiDurationDays > 0 ? (p.DaysPaid * 100.0 / p.RoiDurationDays) : 0) : 0;
 }
 
-<div class="container py-2">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="text-white fw-bold mb-1">ROI Management</h2>
-            <p class="text-secondary mb-0">Manage and distribute daily Return on Investment to active members.</p>
+<div class="admin-page-header admin-theme-teal mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">ROI Management</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Active packages awaiting daily return on investment</p>
+                </div>
+            </div>
         </div>
-        <form asp-controller="Admin" asp-action="DistributeRoi" method="post">
-            @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-cyber-cyan shadow-sm" style="border-radius: 8px;">
-                <i class="bi bi-play-circle me-1"></i> Distribute Daily ROI
-            </button>
-        </form>
+        <div class="col-lg-4 text-lg-end">
+            <form asp-controller="Admin" asp-action="DistributeRoi" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn admin-btn-primary px-4 py-2">
+                    <i class="bi bi-play-circle me-2"></i>Distribute Daily ROI
+                </button>
+            </form>
+        </div>
     </div>
+</div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 text-success py-2">
-            <i class="bi bi-check-circle me-2"></i> @TempData["SuccessMessage"]
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <p class="admin-stat-label">Active packages</p>
+                    <p class="admin-stat-value text-success mb-0">@packages.Count</p>
+                </div>
+                <div class="admin-stat-icon admin-stat-icon-teal"><i class="bi bi-box-seam"></i></div>
+            </div>
         </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 text-danger py-2">
-            <i class="bi bi-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <p class="admin-stat-label">Total invested</p>
+                    <p class="admin-stat-value text-primary mb-0" style="font-size:1.1rem;">&#8377;@totalAmount.ToString("N0")</p>
+                </div>
+                <div class="admin-stat-icon admin-stat-icon-blue"><i class="bi bi-cash-stack"></i></div>
+            </div>
         </div>
-    }
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <p class="admin-stat-label">Avg progress</p>
+                    <p class="admin-stat-value text-info mb-0">@avgProgress%</p>
+                </div>
+                <div class="admin-stat-icon admin-stat-icon-violet"><i class="bi bi-percent"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <p class="admin-stat-label">Due today</p>
+                    <p class="admin-stat-value text-warning mb-0">@packages.Count</p>
+                </div>
+                <div class="admin-stat-icon admin-stat-icon-amber"><i class="bi bi-calendar-check"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <div class="glass-card p-4">
-        <h5 class="text-white mb-3 border-bottom border-secondary border-opacity-25 pb-2">Active ROI Packages</h5>
-        
-        <div class="glass-table-container">
-            <table class="table glass-table align-middle">
+<div class="glass-card admin-table-card" data-admin-table data-page-size="10" data-search-placeholder="Search member or package..." data-count-label="packages">
+    <div class="admin-table-header flex-wrap gap-2">
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-graph-up text-success me-2"></i>Active ROI packages</h5>
+        <span class="admin-record-badge" data-admin-table-count>@packages.Count packages</span>
+        <div class="admin-search-wrap admin-table-search-wrap" style="min-width:220px;max-width:320px;">
+            <i class="bi bi-search admin-search-icon"></i>
+            <input type="search" data-admin-table-search class="form-control admin-search-input"
+                   placeholder="Search member or package..." autocomplete="off" />
+        </div>
+    </div>
+    @if (packages.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table" id="roiTable">
                 <thead>
                     <tr>
-                        <th>User</th>
+                        <th>Member</th>
                         <th>Package</th>
                         <th>Amount</th>
                         <th>ROI %</th>
@@ -46,56 +101,45 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model != null && Model.Any())
+                    @foreach (var up in packages)
                     {
-                        foreach (var up in Model)
-                        {
-                            <tr>
-                                <td>
-                                    <div class="fw-bold text-white">@up.User.Username</div>
-                                    <div class="text-secondary small">ID: @up.UserId</div>
-                                </td>
-                                <td>
-                                    <div class="text-info">@up.Package.Name</div>
-                                    <div class="text-secondary small">Activated: @up.ActivationDate.ToString("dd MMM yyyy")</div>
-                                </td>
-                                <td>
-                                    <span class="text-white fw-bold">₹@up.Amount.ToString("N2")</span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-primary bg-opacity-25 text-primary">@up.RoiPercentage%</span>
-                                </td>
-                                <td>
-                                    <div class="d-flex justify-content-between small text-secondary mb-1">
-                                        <span>Day @up.DaysPaid</span>
-                                        <span>Total @up.RoiDurationDays</span>
+                        var pct = up.RoiDurationDays > 0 ? (up.DaysPaid * 100) / up.RoiDurationDays : 0;
+                        var initial = up.User?.Username?.Length > 0 ? up.User.Username[0].ToString().ToUpper() : "?";
+                        var searchText = $"{up.User?.Username} {up.User?.FullName} {up.Package?.Name} {up.Amount} {up.RoiPercentage}".ToLowerInvariant();
+                        <tr data-search="@searchText">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="admin-avatar">@initial</div>
+                                    <div>
+                                        <div class="fw-bold text-dark small">@(up.User?.Username ?? "-")</div>
+                                        <div class="admin-subtext">@(up.User?.FullName ?? "-")</div>
                                     </div>
-                                    <div class="progress bg-dark" style="height: 6px;">
-                                        @{
-                                            var pct = up.RoiDurationDays > 0 ? (up.DaysPaid * 100) / up.RoiDurationDays : 0;
-                                        }
-                                        <div class="progress-bar bg-cyber-cyan" role="progressbar" style="width: @pct%;" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-success bg-opacity-25 text-success">
-                                        <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> Active
-                                    </span>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="6" class="text-center py-5">
-                                <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary opacity-50"></i>
-                                <div class="text-muted">No active packages awaiting ROI.</div>
+                                </div>
                             </td>
+                            <td>
+                                <div class="fw-semibold text-dark small">@(up.Package?.Name ?? "-")</div>
+                                <div class="admin-subtext">@up.ActivationDate.ToString("dd MMM yyyy")</div>
+                            </td>
+                            <td class="fw-bold text-dark">&#8377;@up.Amount.ToString("N2")</td>
+                            <td><span class="admin-badge-type admin-type-commission">@up.RoiPercentage%</span></td>
+                            <td style="min-width:140px;">
+                                <div class="d-flex justify-content-between admin-subtext mb-1">
+                                    <span>Day @up.DaysPaid</span>
+                                    <span>/ @up.RoiDurationDays</span>
+                                </div>
+                                <div class="progress admin-progress">
+                                    <div class="progress-bar admin-progress-bar" style="width:@pct%"></div>
+                                </div>
+                            </td>
+                            <td><span class="admin-badge-success"><i class="bi bi-circle-fill me-1" style="font-size:0.4rem;"></i>Active</span></td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
-    </div>
+    }
+    else
+    {
+        @await Html.PartialAsync("_AdminNoResults")
+    }
 </div>

@@ -1,182 +1,289 @@
 @model IEnumerable<MLM_Level.Models.SupportTicket>
 @{
-    ViewData["Title"] = "Customer Tickets Inbox";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Support Tickets";
+    var tickets = Model.ToList();
+    var pendingCount = tickets.Count(t => t.Status == "Pending");
+    var resolvedCount = tickets.Count(t => t.Status == "Resolved");
+    var todayUtc = DateTime.UtcNow.Date;
+    var todayCount = tickets.Count(t => t.CreatedAt.Date == todayUtc);
 }
 
-<div class="container py-4">
-    <!-- Page Title and Stats Header -->
-    <div class="row align-items-center mb-4">
-        <div class="col-md-6 col-12 text-md-start text-center mb-3 mb-md-0">
-            <h1 class="h2 text-slate-800 fw-bold mb-1"><i class="bi bi-chat-dots-fill text-primary me-2"></i>Helpdesk Tickets Inbox</h1>
-            <p class="text-secondary small mb-0">Manage customer queries, resolve disputes, and submit responses to members.</p>
-        </div>
-        <div class="col-md-6 col-12 text-md-end text-center d-flex justify-content-md-end justify-content-center gap-2">
-            <div class="glass-card px-3 py-2 text-center" style="min-width: 140px;">
-                <div class="h4 text-warning fw-bold mb-0">@Model.Count(t => t.Status == "Pending")</div>
-                <div class="small text-secondary text-uppercase" style="font-size: 0.65rem;">Pending Tickets</div>
+<!-- Page Header -->
+<div class="tickets-page-header rounded-4 mb-4">
+    <div class="tickets-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="tickets-page-icon">
+                    <i class="bi bi-chat-dots-fill"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Support Tickets</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Manage member queries, reply, and resolve helpdesk requests</p>
+                </div>
             </div>
-            <div class="glass-card px-3 py-2 text-center" style="min-width: 140px;">
-                <div class="h4 text-success fw-bold mb-0">@Model.Count(t => t.Status == "Resolved")</div>
-                <div class="small text-secondary text-uppercase" style="font-size: 0.65rem;">Resolved Tickets</div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            @if (pendingCount > 0)
+            {
+                <span class="tickets-header-badge">
+                    <i class="bi bi-exclamation-circle me-1"></i>@pendingCount need attention
+                </span>
+            }
+            else
+            {
+                <span class="tickets-header-badge tickets-header-badge-clear">
+                    <i class="bi bi-check-circle me-1"></i>All caught up
+                </span>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="glass-card tickets-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="tickets-stat-label mb-1">Total</p>
+                    <h3 class="tickets-stat-value text-primary mb-0">@tickets.Count</h3>
+                </div>
+                <div class="tickets-stat-icon tickets-stat-icon-blue"><i class="bi bi-inbox"></i></div>
             </div>
         </div>
     </div>
-
-    <!-- Alert Notifications -->
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    <!-- Tickets List Table -->
-    <div class="glass-card p-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="text-slate-800 fw-bold mb-0"><i class="bi bi-envelope-paper text-primary me-2"></i>Inbox Logs</h5>
-        </div>
-
-        @if (!Model.Any())
-        {
-            <div class="text-center py-5">
-                <div class="display-1 text-muted mb-3"><i class="bi bi-check-circle text-success opacity-50"></i></div>
-                <h5 class="text-slate-700 fw-semibold">Inbox is clear!</h5>
-                <p class="text-secondary small">No customer service tickets exist in the system yet.</p>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card tickets-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="tickets-stat-label mb-1">Pending</p>
+                    <h3 class="tickets-stat-value text-warning mb-0">@pendingCount</h3>
+                </div>
+                <div class="tickets-stat-icon tickets-stat-icon-amber"><i class="bi bi-clock-history"></i></div>
             </div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                        <tr class="text-secondary small border-bottom border-light">
-                            <th>ID</th>
-                            <th>MEMBER DETAILS</th>
-                            <th>SUBJECT</th>
-                            <th>SUBMITTED DATE</th>
-                            <th>STATUS</th>
-                            <th class="text-end">ACTION</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var ticket in Model)
-                        {
-                            <tr class="border-bottom border-light">
-                                <td class="fw-bold text-slate-800">#@ticket.Id</td>
-                                <td>
-                                    <div class="fw-bold text-slate-800">@ticket.User.FullName</div>
-                                    <div class="small text-secondary"><i class="bi bi-person me-1"></i>@@@ticket.User.Username</div>
-                                </td>
-                                <td>
-                                    <div class="fw-semibold text-slate-800 text-truncate" style="max-width: 250px;">@ticket.Subject</div>
-                                    <div class="small text-muted text-truncate" style="max-width: 300px;">@ticket.Message</div>
-                                </td>
-                                <td class="small text-secondary">@ticket.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</td>
-                                <td>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card tickets-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="tickets-stat-label mb-1">Resolved</p>
+                    <h3 class="tickets-stat-value text-success mb-0">@resolvedCount</h3>
+                </div>
+                <div class="tickets-stat-icon tickets-stat-icon-green"><i class="bi bi-check-all"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card tickets-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="tickets-stat-label mb-1">Today</p>
+                    <h3 class="tickets-stat-value text-info mb-0">@todayCount</h3>
+                    <span class="text-muted" style="font-size:0.7rem;">new tickets</span>
+                </div>
+                <div class="tickets-stat-icon tickets-stat-icon-cyan"><i class="bi bi-calendar-day"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (tickets.Any())
+{
+<div data-admin-table data-page-size="10" data-search-placeholder="Search member, subject, or message..." data-count-label="tickets">
+    <div class="glass-card p-3 mb-4 tickets-toolbar">
+        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+            <span class="text-muted small fw-semibold mb-0"><i class="bi bi-funnel me-1"></i>Filter by status</span>
+            <div class="d-flex flex-wrap gap-2" role="group">
+                <button type="button" class="tickets-filter-btn active" data-status="all">All (@tickets.Count)</button>
+                <button type="button" class="tickets-filter-btn" data-status="pending">Pending (@pendingCount)</button>
+                <button type="button" class="tickets-filter-btn" data-status="resolved">Resolved (@resolvedCount)</button>
+            </div>
+        </div>
+        <div class="admin-table-empty-banner d-none mb-0 mt-2" data-admin-table-empty role="status">
+            <span class="admin-table-empty-banner-icon" aria-hidden="true"><i class="bi bi-search"></i></span>
+            <span>No tickets match your search or filter. Try another keyword or clear filters.</span>
+        </div>
+    </div>
+
+    <div class="glass-card admin-table-card">
+        <div class="admin-table-header flex-wrap gap-2">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="bi bi-envelope-paper text-primary me-2"></i>Inbox
+            </h5>
+            <span class="admin-record-badge" data-admin-table-count>@tickets.Count tickets</span>
+            <div class="admin-search-wrap admin-table-search-wrap tickets-search-wrap" style="min-width:220px;max-width:320px;">
+                <i class="bi bi-search admin-search-icon tickets-search-icon"></i>
+                <input type="search" data-admin-table-search class="form-control admin-search-input tickets-search-input"
+                       placeholder="Search member, subject, message..." autocomplete="off" />
+            </div>
+        </div>
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Member</th>
+                        <th>Subject</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ticketTableBody">
+                    @foreach (var ticket in tickets)
+                    {
+                        var user = ticket.User;
+                        var userName = user?.Username ?? "unknown";
+                        var fullName = user?.FullName ?? "Unknown";
+                        var initial = string.IsNullOrWhiteSpace(userName) ? "?" : userName.Trim()[0].ToString().ToUpper();
+                        var statusKey = ticket.Status == "Pending" ? "pending" : "resolved";
+                        var timeSpan = DateTime.UtcNow - ticket.CreatedAt;
+                        string timeAgo;
+                        if (timeSpan.TotalMinutes < 1) { timeAgo = "Just now"; }
+                        else if (timeSpan.TotalHours < 1) { timeAgo = $"{(int)timeSpan.TotalMinutes} min ago"; }
+                        else if (timeSpan.TotalDays < 1) { timeAgo = $"{(int)timeSpan.TotalHours} hr ago"; }
+                        else if (timeSpan.TotalDays < 30) { timeAgo = $"{(int)timeSpan.TotalDays} days ago"; }
+                        else { timeAgo = ticket.CreatedAt.ToString("dd MMM yyyy"); }
+                        var searchText = $"{userName} {fullName} {ticket.Subject} {ticket.Message}".ToLowerInvariant();
+
+                        <tr class="tickets-row" data-status="@statusKey" data-search="@searchText" data-ticket-id="@ticket.Id">
+                            <td>
+                                <span class="tickets-id-badge">#@ticket.Id</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="tickets-avatar">@initial</div>
+                                    <div>
+                                        <div class="fw-bold text-dark small">@fullName</div>
+                                        <div class="text-muted tickets-subtext">@("@" + userName)</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark small tickets-subject">@ticket.Subject</div>
+                                <div class="text-muted tickets-preview">@(ticket.Message.Length > 80 ? ticket.Message.Substring(0, 80).TrimEnd() + "..." : ticket.Message)</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark small">@ticket.CreatedAt.ToString("dd MMM yyyy")</div>
+                                <div class="text-muted tickets-subtext" title="@ticket.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")">@timeAgo</div>
+                            </td>
+                            <td>
+                                @if (ticket.Status == "Pending")
+                                {
+                                    <span class="tickets-status-badge tickets-status-pending">
+                                        <i class="bi bi-clock me-1"></i>Pending
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="tickets-status-badge tickets-status-resolved">
+                                        <i class="bi bi-check-all me-1"></i>Resolved
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex flex-wrap gap-2 justify-content-end">
                                     @if (ticket.Status == "Pending")
                                     {
-                                        <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-1 rounded-pill small"><i class="bi bi-clock-history me-1"></i>Pending</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill small"><i class="bi bi-check-all me-1"></i>Resolved</span>
-                                    }
-                                </td>
-                                <td class="text-end">
-                                    @if (ticket.Status == "Pending")
-                                    {
-                                        <button class="btn btn-sm btn-primary rounded-pill px-3 me-1" data-bs-toggle="modal" data-bs-target="#replyModal-@ticket.Id">
-                                            <i class="bi bi-reply me-1"></i>Reply & Resolve
+                                        <button class="btn tickets-btn-reply" type="button" data-bs-toggle="modal" data-bs-target="#replyModal-@ticket.Id">
+                                            <i class="bi bi-reply me-1"></i>Reply
                                         </button>
                                     }
-                                    <button class="btn btn-sm btn-light border rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#ticketDetails-@ticket.Id">
-                                        <i class="bi bi-eye me-1"></i>View Thread
+                                    <button class="btn tickets-btn-view" type="button" data-bs-toggle="collapse" data-bs-target="#ticketDetails-@ticket.Id">
+                                        <i class="bi bi-eye me-1"></i>View
                                     </button>
-                                </td>
-                            </tr>
-                            <!-- Details Thread Collapse -->
-                            <tr class="collapse" id="ticketDetails-@ticket.Id">
-                                <td colspan="6" class="bg-light bg-opacity-30 p-4 border-bottom border-light">
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3 mb-md-0">
-                                            <div class="p-3 bg-white rounded shadow-sm border h-100">
-                                                <div class="d-flex justify-content-between mb-2">
-                                                    <span class="fw-bold text-slate-800"><i class="bi bi-person text-secondary me-1"></i>Member's Original Query:</span>
-                                                    <span class="small text-muted">@ticket.CreatedAt.ToString("g")</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="collapse tickets-detail-row admin-table-detail-row" id="ticketDetails-@ticket.Id" data-detail-for="@ticket.Id">
+                            <td colspan="6" class="p-0 border-0">
+                                <div class="tickets-thread-panel">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="tickets-thread-box">
+                                                <div class="tickets-thread-label">
+                                                    <i class="bi bi-person text-secondary me-1"></i>Member query
+                                                    <span class="text-muted fw-normal ms-auto">@ticket.CreatedAt.ToString("g")</span>
                                                 </div>
-                                                <p class="text-secondary mb-0 text-break" style="white-space: pre-wrap;">@ticket.Message</p>
+                                                <p class="mb-0 text-secondary small" style="white-space:pre-wrap;">@ticket.Message</p>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <div class="p-3 bg-white rounded shadow-sm border h-100">
+                                            <div class="tickets-thread-box tickets-thread-box-reply">
                                                 @if (!string.IsNullOrEmpty(ticket.AdminResponse))
                                                 {
-                                                    <div class="d-flex justify-content-between mb-2">
-                                                        <span class="fw-bold text-success"><i class="bi bi-shield-check me-1"></i>Resolved Response:</span>
+                                                    <div class="tickets-thread-label text-success">
+                                                        <i class="bi bi-shield-check me-1"></i>Admin response
                                                     </div>
-                                                    <p class="text-slate-700 mb-0 text-break" style="white-space: pre-wrap;">@ticket.AdminResponse</p>
+                                                    <p class="mb-0 text-dark small" style="white-space:pre-wrap;">@ticket.AdminResponse</p>
                                                 }
                                                 else
                                                 {
-                                                    <div class="text-center py-4 text-warning small">
-                                                        <i class="bi bi-clock-history display-6 mb-2 d-block"></i>
-                                                        No response submitted yet. Use the "Reply & Resolve" button to resolve.
+                                                    <div class="text-center py-3 text-muted small">
+                                                        <i class="bi bi-hourglass-split fs-4 d-block mb-2 text-warning"></i>
+                                                        Awaiting your response. Use Reply to resolve this ticket.
                                                     </div>
                                                 }
                                             </div>
                                         </div>
                                     </div>
-                                </td>
-                            </tr>
-
-                            <!-- Reply Modal -->
-                            @if (ticket.Status == "Pending")
-                            {
-                                <div class="modal fade" id="replyModal-@ticket.Id" tabindex="-1" aria-labelledby="replyModalLabel-@ticket.Id" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                                            <div class="modal-header border-0 pb-0">
-                                                <h5 class="modal-title fw-bold text-slate-800" id="replyModalLabel-@ticket.Id"><i class="bi bi-reply-fill text-primary me-2"></i>Reply to Customer</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <form asp-action="ReplyTicket" method="post">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@ticket.Id" />
-                                                <div class="modal-body py-4">
-                                                    <div class="mb-3 p-3 bg-light rounded-3">
-                                                        <div class="fw-bold text-slate-700 small mb-1">Original Query Details:</div>
-                                                        <div class="text-secondary small text-break" style="max-height: 100px; overflow-y: auto;">
-                                                            <strong>Subject:</strong> @ticket.Subject <br/>
-                                                            <strong>Query:</strong> @ticket.Message
-                                                        </div>
-                                                    </div>
-                                                    <div class="mb-0">
-                                                        <label class="form-label text-secondary small fw-semibold">Write Resolution / Response</label>
-                                                        <textarea name="adminResponse" class="form-control rounded-3" rows="5" placeholder="Provide resolution updates or instructions. Submitting this will mark the ticket as resolved." required></textarea>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer border-0 pt-0 justify-content-end">
-                                                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-primary rounded-pill px-4">Submit & Resolve</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
                                 </div>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
+                            </td>
+                        </tr>
+
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
+
 </div>
+
+    @foreach (var ticket in tickets.Where(t => t.Status == "Pending"))
+    {
+        <div class="modal fade" id="replyModal-@ticket.Id" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold text-dark">
+                            <i class="bi bi-reply-fill text-primary me-2"></i>Reply to #@ticket.Id
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form asp-action="ReplyTicket" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@ticket.Id" />
+                        <div class="modal-body p-4 pt-3">
+                            <div class="tickets-modal-query mb-3">
+                                <div class="fw-semibold text-dark small mb-1">@ticket.Subject</div>
+                                <div class="text-muted small" style="max-height:100px;overflow-y:auto;">@ticket.Message</div>
+                            </div>
+                            <label class="settings-label">Your response</label>
+                            <textarea name="adminResponse" class="form-control settings-input" rows="5"
+                                      placeholder="Write resolution or instructions. Ticket will be marked resolved." required></textarea>
+                        </div>
+                        <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn settings-save-btn">Submit &amp; Resolve</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="glass-card text-center py-5 tickets-empty-state">
+        <div class="tickets-empty-icon mx-auto mb-4">
+            <i class="bi bi-check-circle"></i>
+        </div>
+        <h4 class="fw-bold text-dark mb-2">Inbox is clear</h4>
+        <p class="text-muted mb-0 mx-auto" style="max-width:360px;">
+            No support tickets yet. Member queries will appear here when submitted.
+        </p>
+    </div>
+}
+

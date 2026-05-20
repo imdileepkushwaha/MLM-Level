@@ -5,7 +5,11 @@ using MLM_Level.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+var mvc = builder.Services.AddControllersWithViews();
+if (builder.Environment.IsDevelopment())
+{
+    mvc.AddRazorRuntimeCompilation();
+}
 
 // Register DbContext with MS SQL Server Connection String
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -13,6 +17,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Register custom services
 builder.Services.AddScoped<MLM_Level.Services.IEmailService, MLM_Level.Services.EmailService>();
+builder.Services.AddScoped<MLM_Level.Services.IAdminNotificationService, MLM_Level.Services.AdminNotificationService>();
+builder.Services.AddScoped<MLM_Level.Services.IMemberNotificationService, MLM_Level.Services.MemberNotificationService>();
 builder.Services.AddHostedService<MLM_Level.Services.RoiDistributionService>();
 builder.Services.AddHostedService<MLM_Level.Services.DailyClosingService>();
 

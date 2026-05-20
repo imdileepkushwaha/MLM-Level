@@ -1,93 +1,196 @@
 @model List<MLM_Level.Models.Package>
 @{
-    ViewData["Title"] = "MLM Packages Management";
+    ViewData["Title"] = "Package Administration";
 }
 
-<div class="row g-4 mb-4">
-    <!-- Page Info -->
-    <div class="col-lg-7">
-        <div class="glass-card p-4 h-100">
-            <h4 class="text-white fw-bold mb-2">Package Administration</h4>
-            <p class="text-secondary mb-0">Define, edit, and toggle active packages that members can choose during account activation. System supports multiple tiers with customized benefits.</p>
+<div class="admin-page-header admin-theme-violet mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-layers-fill"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Package Administration</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Manage membership tiers, pricing, and ROI structure</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <button type="button" class="btn admin-btn-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+                <i class="bi bi-plus-circle-fill me-2"></i>New Package
+            </button>
         </div>
     </div>
+</div>
 
-    <!-- Create Package Form -->
-    <div class="col-lg-5">
-        <div class="glass-card p-4">
-            <h5 class="text-white fw-bold mb-3"><i class="bi bi-patch-plus text-cyan me-2"></i>Create New Package</h5>
+<div class="modal fade" id="createPackageModal" tabindex="-1" aria-labelledby="createPackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
             <form asp-controller="Admin" asp-action="CreatePackage" method="post">
                 @Html.AntiForgeryToken()
-                <div class="mb-2 form-group">
-                    <input type="text" name="name" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Package Name (e.g. Platinum Plan)" required />
-                </div>
-                <div class="mb-2 form-group row g-2">
-                    <div class="col-6">
-                        <input type="number" step="0.01" name="price" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Price (₹)" required />
+                <div class="modal-header ">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="pkg-modal-icon">
+                            <i class="bi bi-boxes"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-dark mb-0" id="createPackageModalLabel">Configure New Package</h5>
+                            <p class="text-muted small mb-0 mt-1">Fill in the details to launch a new membership tier</p>
+                        </div>
                     </div>
-                    <div class="col-6">
-                        <input type="number" step="0.01" name="roiPercentage" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Daily ROI %" required />
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 pt-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="settings-label"><i class="bi bi-tag-fill text-primary me-1"></i>Package Name</label>
+                            <input type="text" name="name" class="form-control settings-input" placeholder="e.g. VIP Gold Plan" required autofocus />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="settings-label"><i class="bi bi-currency-rupee text-success me-1"></i>Investment Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text border-0 text-success fw-bold" style="background:#f0fdf4;">&#8377;</span>
+                                <input type="number" step="0.01" name="price" class="form-control settings-input" placeholder="5000" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="settings-label"><i class="bi bi-graph-up-arrow text-warning me-1"></i>Daily ROI Rate</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" name="roiPercentage" class="form-control settings-input" placeholder="2.5" required />
+                                <span class="input-group-text border-0 text-warning fw-bold" style="background:#fffbeb;">%</span>
+                            </div>
+                            <div class="form-text text-muted small">Daily return % credited to member wallet</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="settings-label"><i class="bi bi-calendar-check text-info me-1"></i>ROI Duration</label>
+                            <div class="input-group">
+                                <input type="number" name="roiDurationDays" class="form-control settings-input" placeholder="100" required />
+                                <span class="input-group-text border-0 text-info fw-semibold" style="background:#f0f9ff;">Days</span>
+                            </div>
+                            <div class="form-text text-muted small">Total days ROI will be paid</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="settings-label"><i class="bi bi-file-text-fill text-secondary me-1"></i>Package Description</label>
+                            <textarea name="description" class="form-control settings-input" rows="4"
+                                      placeholder="Describe the benefits and features of this package..." required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="pkg-modal-tip rounded-3 p-3">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <i class="bi bi-lightbulb-fill text-warning"></i>
+                                    <span class="fw-bold text-dark small">Quick Tip</span>
+                                </div>
+                                <p class="text-muted small mb-0">
+                                    Total ROI = <strong>Daily ROI % × Duration Days</strong>. Example: 2.5% × 100 days = <strong>250% total return</strong>.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="mb-2 form-group">
-                    <input type="number" name="roiDurationDays" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="ROI Duration (Days)" required />
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn admin-btn-primary rounded-pill px-4">
+                        <i class="bi bi-rocket-takeoff-fill me-2"></i>Publish Package
+                    </button>
                 </div>
-                <div class="mb-2 form-group">
-                    <textarea name="description" rows="2" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Brief Description..." required></textarea>
-                </div>
-                <button type="submit" class="btn btn-cyber-cyan btn-sm w-100 py-2">
-                    <i class="bi bi-plus-circle me-1"></i>Publish Package
-                </button>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Packages List -->
+<!-- Section Title -->
+<div class="d-flex align-items-center gap-3 mb-4">
+    <h5 class="fw-bold text-dark mb-0">Deployed Packages</h5>
+    <span class="badge rounded-pill fw-bold px-3 py-2" style="background:linear-gradient(135deg,#6366f1,#4f46e5); font-size:0.78rem; box-shadow:0 4px 10px rgba(99,102,241,0.3);">@Model.Count Total</span>
+    <div class="flex-grow-1" style="height: 1px; background: #e2e8f0;"></div>
+</div>
+
 <div class="row g-4">
     @if (Model.Any())
     {
         @foreach (var pkg in Model)
         {
-            <div class="col-md-6 col-lg-4">
-                <div class="glass-card p-4 border border-opacity-10 @(pkg.IsActive ? "border-info" : "border-secondary") d-flex flex-column justify-content-between h-100 position-relative overflow-hidden">
-                    <!-- Status Glow Top Corner -->
-                    <div class="position-absolute top-0 end-0 px-3 py-1 text-uppercase fw-bold small rounded-bottom-start @(pkg.IsActive ? "bg-info text-dark" : "bg-secondary text-white")" style="font-size: 0.7rem;">
-                        @(pkg.IsActive ? "Active" : "Inactive")
+            <div class="col-md-6 col-xl-4">
+                <div class="pkg-card @(pkg.IsActive ? "pkg-card-active" : "pkg-card-inactive")">
+
+                    <!-- Top accent bar -->
+                    <div class="pkg-card-accent @(pkg.IsActive ? "pkg-accent-active" : "pkg-accent-inactive")"></div>
+
+                    <!-- Status Badge -->
+                    <div class="pkg-status-badge @(pkg.IsActive ? "pkg-status-active" : "pkg-status-inactive")">
+                        @if (pkg.IsActive)
+                        {
+                            <span class="pkg-pulse-dot"></span>
+                            <span>Active</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-pause-fill me-1" style="font-size:0.65rem;"></i>
+                            <span>Inactive</span>
+                        }
                     </div>
 
-                    <div>
-                        <span class="text-muted small">Package ID: #@pkg.Id</span>
-                        <h4 class="text-white fw-bold mt-1 mb-2">@pkg.Name</h4>
-                        <div class="fs-3 text-cyan fw-bold mb-2">₹@pkg.Price.ToString("N2") <span class="small text-muted text-uppercase" style="font-size: 0.8rem;">INR</span></div>
-                        
-                        <div class="d-flex flex-wrap gap-2 mb-3">
-                            <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25"><i class="bi bi-graph-up me-1"></i>@pkg.RoiPercentage% Daily ROI</span>
-                            <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25"><i class="bi bi-calendar3 me-1"></i>@pkg.RoiDurationDays Days</span>
+                    <div class="pkg-card-body">
+                        <!-- ID & Name -->
+                        <div class="text-center mb-3 pt-3">
+                            <span class="pkg-id-badge">ID #@pkg.Id</span>
+                            <h3 class="fw-bolder mt-3 mb-0" style="font-size:1.6rem; color:#0f172a; letter-spacing:-0.03em;">@pkg.Name</h3>
                         </div>
 
-                        <p class="text-secondary small mb-4">@pkg.Description</p>
-                    </div>
+                        <!-- Price -->
+                        <div class="pkg-price-box">
+                            <div class="pkg-price-amount">
+                                <span class="pkg-currency">&#8377;</span>
+                                <span class="pkg-price">@pkg.Price.ToString("N0")</span>
+                            </div>
+                            <span class="pkg-price-label">one-time investment</span>
+                        </div>
 
-                    <div class="d-flex align-items-center justify-content-between pt-3 border-top border-white border-opacity-10 mt-auto">
-                        <span class="text-muted small">Created: @pkg.CreatedDate.ToString("dd MMM yyyy")</span>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-outline-info btn-sm px-2" data-bs-toggle="modal" data-bs-target="#editPackageModal-@pkg.Id">
-                                <i class="bi bi-pencil-square"></i>
+                        <!-- Stats -->
+                        <div class="pkg-stats-grid">
+                            <div class="pkg-stat-item">
+                                <div class="pkg-stat-icon" style="background:linear-gradient(135deg,#10b981,#059669);">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                </div>
+                                <div>
+                                    <div class="pkg-stat-value">@pkg.RoiPercentage%</div>
+                                    <div class="pkg-stat-label">Daily ROI</div>
+                                </div>
+                            </div>
+                            <div class="pkg-stat-item">
+                                <div class="pkg-stat-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+                                    <i class="bi bi-clock"></i>
+                                </div>
+                                <div>
+                                    <div class="pkg-stat-value">@pkg.RoiDurationDays</div>
+                                    <div class="pkg-stat-label">Days</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <p class="pkg-desc">@pkg.Description</p>
+
+                        <!-- Actions -->
+                        <div class="pkg-actions">
+                            <button type="button" class="btn btn-outline-secondary flex-grow-1 rounded-pill fw-semibold" data-bs-toggle="modal" data-bs-target="#editPackageModal-@pkg.Id">
+                                <i class="bi bi-pencil me-1"></i> Edit
                             </button>
-                            <form asp-controller="Admin" asp-action="TogglePackage" method="post" class="d-inline">
+                            <form asp-controller="Admin" asp-action="TogglePackage" method="post" class="flex-grow-1">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@pkg.Id" />
                                 @if (pkg.IsActive)
                                 {
-                                    <button type="submit" class="btn btn-danger btn-sm px-3">
-                                        <i class="bi bi-x-circle me-1"></i>Disable
+                                    <button type="submit" class="btn btn-outline-danger w-100 rounded-pill fw-semibold">
+                                        <i class="bi bi-power me-1"></i> Disable
                                     </button>
                                 }
                                 else
                                 {
-                                    <button type="submit" class="btn btn-success btn-sm px-3">
-                                        <i class="bi bi-check-circle me-1"></i>Enable
+                                    <button type="submit" class="btn btn-success w-100 rounded-pill fw-semibold shadow-sm">
+                                        <i class="bi bi-play-fill me-1"></i> Enable
                                     </button>
                                 }
                             </form>
@@ -96,48 +199,44 @@
                 </div>
             </div>
 
-            <!-- Edit Package Modal -->
+            <!-- Edit Modal -->
             <div class="modal fade" id="editPackageModal-@pkg.Id" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content glass-card border border-secondary border-opacity-25">
-                        <div class="modal-header border-bottom border-secondary border-opacity-25">
-                            <h5 class="modal-title text-white"><i class="bi bi-pencil-square text-info me-2"></i>Edit Package</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="modal-content border-0 rounded-4 shadow-lg">
+                        <div class="modal-header border-bottom px-4 pt-4 pb-3">
+                            <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i> Edit @pkg.Name</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <form asp-controller="Admin" asp-action="EditPackage" method="post">
                             <div class="modal-body p-4">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@pkg.Id" />
-                                
                                 <div class="mb-3">
-                                    <label class="form-label text-secondary small mb-1">Package Name</label>
-                                    <input type="text" name="name" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" value="@pkg.Name" required />
+                                    <label class="form-label fw-semibold text-muted small">Package Name</label>
+                                    <input type="text" name="name" class="form-control bg-light border-0 rounded-3" value="@pkg.Name" required />
                                 </div>
-                                
-                                <div class="row mb-3 g-3">
+                                <div class="row g-3 mb-3">
                                     <div class="col-6">
-                                        <label class="form-label text-secondary small mb-1">Price (₹)</label>
-                                        <input type="number" step="0.01" name="price" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" value="@pkg.Price" required />
+                                        <label class="form-label fw-semibold text-muted small">Price (&#8377;)</label>
+                                        <input type="number" step="0.01" name="price" class="form-control bg-light border-0 rounded-3" value="@pkg.Price" required />
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label text-secondary small mb-1">Daily ROI %</label>
-                                        <input type="number" step="0.01" name="roiPercentage" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" value="@pkg.RoiPercentage" required />
+                                        <label class="form-label fw-semibold text-muted small">Daily ROI %</label>
+                                        <input type="number" step="0.01" name="roiPercentage" class="form-control bg-light border-0 rounded-3" value="@pkg.RoiPercentage" required />
                                     </div>
                                 </div>
-                                
                                 <div class="mb-3">
-                                    <label class="form-label text-secondary small mb-1">ROI Duration (Days)</label>
-                                    <input type="number" name="roiDurationDays" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" value="@pkg.RoiDurationDays" required />
+                                    <label class="form-label fw-semibold text-muted small">Duration (Days)</label>
+                                    <input type="number" name="roiDurationDays" class="form-control bg-light border-0 rounded-3" value="@pkg.RoiDurationDays" required />
                                 </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label text-secondary small mb-1">Description</label>
-                                    <textarea name="description" rows="2" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" required>@pkg.Description</textarea>
+                                <div>
+                                    <label class="form-label fw-semibold text-muted small">Description</label>
+                                    <textarea name="description" class="form-control bg-light border-0 rounded-3" style="height:90px" required>@pkg.Description</textarea>
                                 </div>
                             </div>
-                            <div class="modal-footer border-top border-secondary border-opacity-25 p-3">
-                                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">Cancel</button>
-                                <button type="submit" class="btn btn-sm btn-cyber-cyan px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+                            <div class="modal-footer border-top px-4 pb-4 pt-3">
+                                <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary px-4 rounded-pill fw-bold shadow-sm"><i class="bi bi-check2 me-1"></i> Save Changes</button>
                             </div>
                         </form>
                     </div>
@@ -148,10 +247,119 @@
     else
     {
         <div class="col-12">
-            <div class="glass-card p-5 text-center text-secondary">
-                <i class="bi bi-box fs-2 mb-2 d-block text-muted"></i>
-                No membership packages exist. Seed system defaults or create one above.
+            <div class="card border-0 rounded-4 shadow-sm text-center py-5">
+                <div class="card-body py-5">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width:90px;height:90px;background:#eff6ff;color:#3b82f6;">
+                        <i class="bi bi-box-seam fs-1"></i>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-2">No Packages Yet</h4>
+                    <p class="text-muted mb-4">Create your first package to start accepting members.</p>
+                    <button class="btn btn-primary px-5 rounded-pill fw-bold shadow-sm" type="button" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+                        <i class="bi bi-plus-lg me-2"></i> Create Package
+                    </button>
+                </div>
             </div>
         </div>
     }
 </div>
+
+<style>
+.pkg-modal-icon {
+    width: 46px;
+    height: 46px;
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    box-shadow: 0 6px 14px rgba(139, 92, 246, 0.35);
+}
+.pkg-modal-tip {
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border: 1px dashed rgba(139, 92, 246, 0.25);
+}
+/* ─── Card Base ─── */
+.pkg-card {
+    background: #ffffff;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.pkg-card-active  { box-shadow: 0 6px 24px rgba(59,130,246,0.1),  0 2px 6px rgba(0,0,0,0.04); }
+.pkg-card-inactive { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+.pkg-card-active:hover  { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(59,130,246,0.18) !important; }
+.pkg-card-inactive:hover { transform: translateY(-8px); box-shadow: 0 16px 36px rgba(0,0,0,0.1) !important; }
+
+/* Top accent bar */
+.pkg-card-accent { height: 4px; width: 100%; }
+.pkg-accent-active  { background: linear-gradient(90deg, #3b82f6, #6366f1); }
+.pkg-accent-inactive { background: #cbd5e1; }
+
+/* Status Badge */
+.pkg-status-badge {
+    position: absolute; top: 18px; right: 18px;
+    display: flex; align-items: center;
+    padding: 4px 12px; border-radius: 50px;
+    font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; z-index: 2;
+}
+.pkg-status-active  { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #059669; }
+.pkg-status-inactive { background: rgba(100,116,139,0.08); border: 1px solid rgba(100,116,139,0.2); color: #64748b; }
+
+/* Pulse Dot */
+.pkg-pulse-dot {
+    display: inline-block;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #10b981; margin-right: 6px;
+    box-shadow: 0 0 0 0 rgba(16,185,129,0.5);
+    animation: pkgPulse 1.8s ease-out infinite;
+}
+@@keyframes pkgPulse {
+    0%   { box-shadow: 0 0 0 0   rgba(16,185,129,0.5); }
+    70%  { box-shadow: 0 0 0 8px rgba(16,185,129,0);   }
+    100% { box-shadow: 0 0 0 0   rgba(16,185,129,0);   }
+}
+
+/* Card Body */
+.pkg-card-body {
+    padding: 1rem 1.75rem 1.75rem;
+    display: flex; flex-direction: column;
+    height: calc(100% - 4px);
+}
+.pkg-id-badge {
+    display: inline-block;
+    background: #f1f5f9; color: #64748b;
+    font-size: 0.72rem; font-weight: 600;
+    padding: 3px 12px; border-radius: 50px; letter-spacing: 0.5px;
+}
+
+/* Price Box */
+.pkg-price-box {
+    text-align: center;
+    background: linear-gradient(135deg, #eff6ff, #eef2ff);
+    border-radius: 14px; padding: 1.2rem; margin-bottom: 1.1rem;
+    border: 1px solid rgba(59,130,246,0.1);
+}
+.pkg-price-amount { display: flex; align-items: flex-start; justify-content: center; line-height: 1; }
+.pkg-currency { font-size: 1.3rem; font-weight: 700; color: #6366f1; margin-top: 8px; margin-right: 2px; }
+.pkg-price    { font-size: 2.8rem; font-weight: 800; color: #3b82f6; letter-spacing: -0.04em; }
+.pkg-price-label { display: block; font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-top: 4px; }
+
+/* Stats */
+.pkg-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.9rem; }
+.pkg-stat-item  { display: flex; align-items: center; gap: 0.6rem; background: #f8fafc; border-radius: 12px; padding: 0.7rem; border: 1px solid #e2e8f0; }
+.pkg-stat-icon  { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; flex-shrink: 0; }
+.pkg-stat-value { font-size: 1rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
+.pkg-stat-label { font-size: 0.62rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+
+/* Description */
+.pkg-desc { font-size: 0.82rem; color: #64748b; line-height: 1.55; flex-grow: 1; margin-bottom: 1.1rem; }
+
+/* Actions */
+.pkg-actions { display: flex; gap: 0.5rem; margin-top: auto; }
+</style>

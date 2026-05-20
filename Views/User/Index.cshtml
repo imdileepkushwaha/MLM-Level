@@ -1,250 +1,208 @@
 @model MLM_Level.Models.UserDashboardViewModel
 @{
     ViewData["Title"] = "Member Dashboard";
+    var announcements = ViewBag.Announcements as List<MLM_Level.Models.Announcement>;
+    var leaderboard = ViewBag.Leaderboard as List<MLM_Level.Models.LeaderboardItemViewModel>;
 }
 
+@await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
+{
+    Title = $"Welcome, {Model.UserInfo.FullName?.Split(' ').FirstOrDefault() ?? Model.UserInfo.Username}",
+    Subtitle = "Track earnings, team growth and account activity in one place",
+    Icon = "bi-grid-fill",
+    ThemeClass = "member-theme-violet",
+    Badge = Model.UserInfo.IsActive ? "Active Member" : "Activation Required",
+    ActionText = Model.UserInfo.IsActive ? "Withdraw" : "Activate Now",
+    ActionUrl = Model.UserInfo.IsActive ? "Wallet" : "Activate",
+    ActionIcon = Model.UserInfo.IsActive ? "bi-wallet2" : "bi-shield-check"
+})
 
+<div class="member-quick-actions mb-4">
+    <a asp-action="Wallet" class="member-quick-btn"><i class="bi bi-wallet2 text-success"></i> E-Wallet</a>
+    <a asp-action="Tree" class="member-quick-btn"><i class="bi bi-diagram-3 text-primary"></i> My Team</a>
+    <a asp-action="Kyc" class="member-quick-btn"><i class="bi bi-shield-check text-info"></i> KYC</a>
+    <a asp-action="Support" class="member-quick-btn"><i class="bi bi-headset text-warning"></i> Support</a>
+    @if (!Model.UserInfo.IsActive)
+    {
+        <a asp-action="Activate" class="member-quick-btn" style="border-color:rgba(236,72,153,0.35);color:#db2777!important;"><i class="bi bi-lightning-charge"></i> Activate</a>
+    }
+</div>
+
+<div class="member-status-strip @(Model.UserInfo.IsActive ? "is-active" : "is-inactive") mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div class="d-flex align-items-center gap-3">
+        <div class="member-stat-icon @(Model.UserInfo.IsActive ? "member-stat-icon-green" : "member-stat-icon-amber")">
+            <i class="bi @(Model.UserInfo.IsActive ? "bi-shield-fill-check" : "bi-shield-fill-exclamation")"></i>
+        </div>
+        <div>
+            <div class="fw-bold text-dark">Account @(Model.UserInfo.IsActive ? "Active" : "Inactive")</div>
+            <div class="text-muted small mb-0">
+                @(Model.UserInfo.IsActive
+                    ? $"Activated {Model.UserInfo.ActivationDate?.ToString("dd MMM yyyy")}"
+                    : "Complete activation to unlock commissions and withdrawals")
+            </div>
+        </div>
+    </div>
+    <span class="badge rounded-pill px-3 py-2 @(Model.UserInfo.IsActive ? "bg-success bg-opacity-10 text-success" : "bg-warning bg-opacity-10 text-warning")">
+        @(Model.UserInfo.IsActive ? "Earning enabled" : "Pending activation")
+    </span>
+</div>
+
+@if (announcements != null && announcements.Any())
+{
+    <div class="glass-card member-panel-card p-4 mb-4">
+        <h5 class="member-panel-title mb-3"><i class="bi bi-megaphone text-primary me-2"></i>Latest Notices</h5>
+        @foreach (var ann in announcements.Take(3))
+        {
+            <div class="member-announcement-item">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                    <span class="fw-bold text-dark small">@ann.Title</span>
+                    <span class="text-muted flex-shrink-0" style="font-size:0.7rem;">@ann.CreatedDate.ToString("dd MMM yyyy")</span>
+                </div>
+                <p class="text-secondary small mb-0" style="white-space:pre-line;">@ann.Content</p>
+            </div>
+        }
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Available wallet</p>
+                    <p class="member-stat-value text-success">₹@Model.UserInfo.WalletBalance.ToString("N2")</p>
+                    <a asp-action="Wallet" class="member-stat-link text-success">Withdraw <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="member-stat-icon member-stat-icon-green"><i class="bi bi-wallet2"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Uncleared income</p>
+                    <p class="member-stat-value text-warning">₹@Model.UserInfo.IncomeWallet.ToString("N2")</p>
+                    <span class="text-muted small">Clears at midnight</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-amber"><i class="bi bi-hourglass-split"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Total earnings</p>
+                    <p class="member-stat-value">₹@Model.TotalEarnings.ToString("N2")</p>
+                    <span class="text-muted small">All levels combined</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-blue"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Direct referrals</p>
+                    <p class="member-stat-value">@Model.DirectReferralCount</p>
+                    <a asp-action="MyDirect" class="member-stat-link text-primary">View team <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="member-stat-icon member-stat-icon-violet"><i class="bi bi-person-check-fill"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Network size</p>
+                    <p class="member-stat-value">@Model.TotalTeamCount</p>
+                    <span class="text-muted small">Active: <strong>@Model.ActiveTeamCount</strong></span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-rose"><i class="bi bi-people-fill"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="row g-4 mb-4">
-    <!-- Active Status Banner -->
-    <div class="col-12">
-        <div class="glass-card p-3 d-flex align-items-center justify-content-between flex-wrap gap-3" style="border-left: 4px solid @(Model.UserInfo.IsActive ? "var(--accent-green)" : "var(--accent-gold)");">
-            <div class="d-flex align-items-center gap-3">
-                <div class="stat-icon-box @(Model.UserInfo.IsActive ? "icon-box-green" : "icon-box-green")" style="background: @(Model.UserInfo.IsActive ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)"); color: @(Model.UserInfo.IsActive ? "#34d399" : "#fbbf24"); border-color: @(Model.UserInfo.IsActive ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)");">
-                    <i class="bi @(Model.UserInfo.IsActive ? "bi-shield-fill-check" : "bi-shield-fill-exclamation")"></i>
-                </div>
-                <div>
-                    <h5 class="text-slate-800 fw-bold mb-0">Account Status: @(Model.UserInfo.IsActive ? "ACTIVE" : "INACTIVE")</h5>
-                    <p class="text-secondary small mb-0">
-                        @(Model.UserInfo.IsActive ? $"Activated on {Model.UserInfo.ActivationDate?.ToString("dd MMM yyyy")}" : "Purchase package to activate and start earning commission.")
-                    </p>
-                </div>
+    <div class="col-lg-8">
+        <div class="glass-card member-panel-card p-4 h-100">
+            <h5 class="member-panel-title mb-1"><i class="bi bi-bar-chart-line text-primary me-2"></i>30-Day Earnings</h5>
+            <p class="text-muted small mb-3">Daily commissions and transfers</p>
+            <div style="position:relative;height:260px;">
+                <canvas id="earningsChart"></canvas>
             </div>
-            @if (!Model.UserInfo.IsActive)
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="glass-card member-panel-card p-4 h-100">
+            <h5 class="member-panel-title mb-2"><i class="bi bi-trophy text-warning me-2"></i>Top Earners</h5>
+            @if (leaderboard != null && leaderboard.Any())
             {
-                <a asp-controller="User" asp-action="Activate" class="btn btn-cyber-pink btn-sm px-4 py-2">
-                    <i class="bi bi-shield-check me-1"></i>Activate Now
-                </a>
+                int rank = 1;
+                foreach (var item in leaderboard)
+                {
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-light">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-light text-dark">#@rank</span>
+                            <div>
+                                <div class="fw-semibold text-dark small">@item.FullName</div>
+                                <div class="text-muted" style="font-size:0.72rem;">@@@item.Username</div>
+                            </div>
+                        </div>
+                        <span class="text-success fw-bold small">₹@item.TotalEarned.ToString("N0")</span>
+                    </div>
+                    rank++;
+                }
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted small">No leaderboard data yet.</div>
             }
         </div>
     </div>
 </div>
 
-<!-- Announcements Notice Board -->
-@if (ViewBag.Announcements != null)
-{
-    var announcements = ViewBag.Announcements as List<MLM_Level.Models.Announcement>;
-    if (announcements != null && announcements.Any())
-    {
-        <div class="row g-4 mb-4">
-            <div class="col-12">
-                <div class="glass-card p-4 border border-opacity-15 border-info">
-                    <h5 class="text-slate-800 fw-bold mb-3"><i class="bi bi-megaphone text-info me-2"></i>Latest Notices & Updates</h5>
-                    <div class="d-flex flex-column gap-2">
-                        @foreach (var ann in announcements.Take(2))
-                        {
-                            <div class="p-3 bg-dark bg-opacity-25 rounded-3 border border-white border-opacity-5">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="text-white fw-bold small"><i class="bi bi-info-circle text-info me-1"></i>@ann.Title</span>
-                                    <span class="text-muted" style="font-size: 0.7rem;">@ann.CreatedDate.ToString("dd MMM yyyy hh:mm tt") UTC</span>
-                                </div>
-                                <p class="text-secondary small mb-0" style="white-space: pre-line;">@ann.Content</p>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-}
-
-<!-- Stats Grid -->
-<div class="row g-4 mb-4">
-    <!-- Wallet Balance -->
-    <div class="col-lg-3 col-md-4 col-sm-6">
-        <div class="glass-card p-4 h-100 border-success">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <p class="text-secondary small fw-medium mb-1">Available Wallet</p>
-                    <h3 class="text-success fw-extrabold mb-0">₹@Model.UserInfo.WalletBalance.ToString("N2")</h3>
-                </div>
-                <div class="stat-icon-box icon-box-green">
-                    <i class="bi bi-wallet2"></i>
-                </div>
-            </div>
-            <a asp-action="Wallet" class="small text-success text-decoration-none fw-bold">Withdraw Funds <i class="bi bi-arrow-right-short"></i></a>
-        </div>
-    </div>
-
-    <!-- Uncleared Income -->
-    <div class="col-lg-3 col-md-4 col-sm-6">
-        <div class="glass-card p-4 h-100 border-warning">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <p class="text-secondary small fw-medium mb-1">Uncleared Income</p>
-                    <h3 class="text-warning fw-extrabold mb-0">₹@Model.UserInfo.IncomeWallet.ToString("N2")</h3>
-                </div>
-                <div class="stat-icon-box icon-box-cyan" style="background: rgba(245,158,11,0.12); color: #fbbf24; border-color: rgba(245,158,11,0.3);">
-                    <i class="bi bi-hourglass-split"></i>
-                </div>
-            </div>
-            <span class="small text-secondary">Clears at Midnight</span>
-        </div>
-    </div>
-
-    <!-- Total Income -->
-    <div class="col-md-3 col-sm-6">
-        <div class="glass-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <p class="text-secondary small fw-medium mb-1">Total Earnings</p>
-                    <h3 class="text-slate-800 fw-extrabold mb-0">₹@Model.TotalEarnings.ToString("N2")</h3>
-                </div>
-                <div class="stat-icon-box icon-box-blue">
-                    <i class="bi bi-graph-up-arrow"></i>
-                </div>
-            </div>
-            <span class="small text-secondary">Earned from 5 Levels</span>
-        </div>
-    </div>
-
-    <!-- Direct Referrals -->
-    <div class="col-md-3 col-sm-6">
-        <div class="glass-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <p class="text-secondary small fw-medium mb-1">Direct Referrals</p>
-                    <h3 class="text-slate-800 fw-extrabold mb-0">@Model.DirectReferralCount</h3>
-                </div>
-                <div class="stat-icon-box icon-box-green">
-                    <i class="bi bi-person-check-fill"></i>
-                </div>
-            </div>
-            <a asp-action="Tree" class="small text-info text-decoration-none fw-bold">Explore Downline <i class="bi bi-arrow-right-short"></i></a>
-        </div>
-    </div>
-
-    <!-- Total Team -->
-    <div class="col-md-3 col-sm-6">
-        <div class="glass-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <p class="text-secondary small fw-medium mb-1">Network Team Size</p>
-                    <h3 class="text-slate-800 fw-extrabold mb-0">@Model.TotalTeamCount</h3>
-                </div>
-                <div class="stat-icon-box icon-box-pink">
-                    <i class="bi bi-people-fill"></i>
-                </div>
-            </div>
-            <span class="small text-secondary">Active: <strong>@Model.ActiveTeamCount</strong> members</span>
-        </div>
-    </div>
-</div>
-
-<!-- Analytics and Leaderboard Section -->
-<div class="row g-4 mb-4">
-    <!-- Chart Analytics -->
-    <div class="col-lg-8 col-12">
-        <div class="glass-card p-4 h-100">
-            <h5 class="text-slate-800 fw-bold mb-3"><i class="bi bi-bar-chart-line text-primary me-2"></i>30-Day Earnings Performance</h5>
-            <p class="text-secondary small mb-4">Live analytics showing daily level commissions and P2P incoming transfers over the last month.</p>
-            <div style="position: relative; height: 260px; width: 100%;">
-                <canvas id="earningsChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Network Leaderboard -->
-    <div class="col-lg-4 col-12">
-        <div class="glass-card p-4 h-100">
-            <h5 class="text-slate-800 fw-bold mb-2"><i class="bi bi-trophy text-warning me-2"></i>Top Earners Leaderboard</h5>
-            <p class="text-secondary small mb-4">Top income performers on our network.</p>
-            <div class="leaderboard-list">
-                @{
-                    var leaderboard = ViewBag.Leaderboard as List<MLM_Level.Models.LeaderboardItemViewModel>;
-                    int rank = 1;
-                }
-                @if (leaderboard != null && leaderboard.Any())
-                {
-                    @foreach (var item in leaderboard)
-                    {
-                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-light">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; background: @(rank == 1 ? "rgba(245,158,11,0.15)" : rank == 2 ? "rgba(148,163,184,0.15)" : rank == 3 ? "rgba(180,83,9,0.15)" : "rgba(15,23,42,0.05)"); color: @(rank == 1 ? "#d97706" : rank == 2 ? "#64748b" : rank == 3 ? "#9a3412" : "#334155"); font-size: 0.85rem;">
-                                    #@rank
-                                </div>
-                                <div>
-                                    <div class="fw-bold text-slate-800 small">@item.FullName</div>
-                                    <div class="text-secondary" style="font-size: 0.75rem;">@@@item.Username</div>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <span class="text-success fw-bold small">₹@item.TotalEarned.ToString("N0")</span>
-                            </div>
-                        </div>
-                        rank++;
-                    }
-                }
-                else
-                {
-                    <div class="text-center py-5 text-secondary small">
-                        <i class="bi bi-award mb-2 display-6 d-block text-muted"></i>
-                        No network transactions recorded yet.
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Referral Link & Content Grid -->
 <div class="row g-4">
-    <!-- Left Column: Referral Link and Recent Earnings -->
-    <div class="col-lg-7 col-12">
-        <!-- Referral Link & Placement Placer -->
-        <div class="glass-card p-4 mb-4">
-            <h5 class="text-slate-800 fw-bold mb-2"><i class="bi bi-share text-primary me-2"></i>My Sponsor Link</h5>
-            <p class="text-secondary small mb-3">Invite new members using your unique code to build your network team.</p>
-            <div class="copy-link-container mb-4">
+    <div class="col-lg-7">
+        <div class="glass-card member-panel-card p-4 mb-4">
+            <h5 class="member-panel-title mb-2"><i class="bi bi-share text-primary me-2"></i>Referral link</h5>
+            <p class="text-muted small mb-3">Share this link to invite new members to your network.</p>
+            <div class="copy-link-container mb-3">
                 <input id="referralLink" class="copy-link-input" value="@Model.ReferralLink" readonly />
-                <button id="copyBtn" onclick="copyReferralLink()" class="btn btn-cyber-cyan btn-sm px-4">
+                <button id="copyBtn" type="button" onclick="copyReferralLink()" class="btn btn-cyber-cyan btn-sm px-4">
                     <i class="bi bi-copy me-1"></i>Copy
                 </button>
             </div>
-
-            <!-- Placement Configuration -->
-            <div class="border-top border-light pt-3">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                    <div>
-                        <h6 class="text-slate-800 fw-bold mb-1"><i class="bi bi-diagram-3 text-info me-2"></i>Dynamic Downline Placement Placer</h6>
-                        <p class="text-secondary small mb-0">
-                            Currently placing new recruits under: 
-                            <strong class="text-info">
-                                @(Model.UserInfo.DefaultPlacement != null ? $"{Model.UserInfo.DefaultPlacement.FullName} (@@{Model.UserInfo.DefaultPlacement.Username})" : "Directly Under Myself (Direct)")
-                            </strong>
-                        </p>
-                    </div>
-                    <button class="btn btn-sm btn-light border rounded-pill px-3 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#placementPlacerModal">
-                        <i class="bi bi-gear-fill text-secondary me-1"></i>Set Parent Node
-                    </button>
+            <div class="border-top pt-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="small text-muted">
+                    Placement node:
+                    <strong class="text-dark">
+                        @(Model.UserInfo.DefaultPlacement != null ? $"{Model.UserInfo.DefaultPlacement.FullName} (@{Model.UserInfo.DefaultPlacement.Username})" : "Direct under you")
+                    </strong>
                 </div>
+                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#placementPlacerModal">
+                    <i class="bi bi-gear me-1"></i>Set placement
+                </button>
             </div>
         </div>
 
-        <!-- Recent Transactions -->
-        <div class="glass-card p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="text-slate-800 fw-bold mb-0"><i class="bi bi-receipt-cutoff text-primary me-2"></i>Recent Commissions</h5>
-                <a asp-action="Wallet" class="small text-info text-decoration-none">View Full Ledger</a>
+        <div class="glass-card admin-table-card member-table-card" data-admin-table data-page-size="5" data-search-placeholder="Search commissions..." data-count-label="records">
+            <div class="admin-table-header flex-wrap gap-2">
+                <h5 class="member-panel-title mb-0"><i class="bi bi-receipt text-primary me-2"></i>Recent commissions</h5>
+                <a asp-controller="User" asp-action="IncomeTransactions" class="member-stat-link text-primary ms-lg-auto">All transactions <i class="bi bi-arrow-right"></i></a>
             </div>
-            <div class="glass-table-container">
-                @if (Model.RecentTransactions.Any())
-                {
-                    <table class="table glass-table align-middle">
+            @if (Model.RecentTransactions.Any())
+            {
+                <div class="admin-table-scroll">
+                    <table class="table admin-table">
                         <thead>
-                            <tr class="text-secondary small border-bottom border-light">
+                            <tr>
                                 <th>Date</th>
-                                <th>From Member</th>
+                                <th>From</th>
                                 <th>Level</th>
                                 <th>Amount</th>
                             </tr>
@@ -252,155 +210,104 @@
                         <tbody>
                             @foreach (var tx in Model.RecentTransactions)
                             {
-                                <tr>
-                                    <td class="small text-secondary">@tx.Timestamp.ToString("dd MMM hh:mm tt")</td>
+                                var searchText = $"{tx.FromUser.Username} {tx.FromUser.FullName} {tx.Level} {tx.Amount}".ToLowerInvariant();
+                                <tr data-search="@searchText">
+                                    <td class="admin-subtext">@tx.Timestamp.ToString("dd MMM")</td>
                                     <td>
-                                        <strong class="text-slate-800">@tx.FromUser.Username</strong> <br/>
-                                        <span class="small text-muted">@tx.FromUser.FullName</span>
+                                        <div class="fw-semibold text-dark small">@tx.FromUser.Username</div>
+                                        <div class="admin-subtext">@tx.FromUser.FullName</div>
                                     </td>
                                     <td>
                                         @if (tx.Level > 0)
                                         {
-                                            <span class="badge bg-opacity-10 bg-info text-info border border-info border-opacity-25 px-2 py-1">Lvl @tx.Level</span>
+                                            <span class="admin-badge-type admin-type-commission">L@tx.Level</span>
                                         }
                                         else
                                         {
-                                            <span class="badge bg-opacity-10 bg-secondary text-secondary border border-secondary border-opacity-25 px-2 py-1">P2P</span>
+                                            <span class="admin-badge-type">P2P</span>
                                         }
                                     </td>
-                                    <td>
-                                        @if (tx.Amount > 0)
-                                        {
-                                            <strong class="text-success">+₹@tx.Amount.ToString("N2")</strong>
-                                        }
-                                        else
-                                        {
-                                            <strong class="text-danger">-₹@Math.Abs(tx.Amount).ToString("N2")</strong>
-                                        }
+                                    <td class="fw-bold @(tx.Amount > 0 ? "text-success" : "text-danger")">
+                                        @(tx.Amount > 0 ? "+" : "")₹@tx.Amount.ToString("N2")
                                     </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
-                }
-                else
-                {
-                    <div class="text-center py-4 text-secondary small">
-                        <i class="bi bi-receipt mb-2 display-6 d-block text-muted"></i>
-                        No commissions received yet.
-                    </div>
-                }
-            </div>
+                </div>
+            }
+            else
+            {
+                <div class="p-4 text-center text-muted small">No commissions received yet.</div>
+            }
         </div>
     </div>
 
-    <!-- Right Column: Requests Auditing -->
-    <div class="col-lg-5 col-12">
-        <!-- Activation requests -->
-        <div class="glass-card p-4 mb-4">
-            <h5 class="text-slate-800 fw-bold mb-3"><i class="bi bi-shield-check text-primary me-2"></i>Activations Log</h5>
-            <div class="glass-table-container">
-                @if (Model.ActivationRequests.Any())
+    <div class="col-lg-5">
+        <div class="glass-card member-panel-card p-4 mb-4">
+            <h5 class="member-panel-title mb-3"><i class="bi bi-shield-check text-info me-2"></i>Activations</h5>
+            @if (Model.ActivationRequests.Any())
+            {
+                @foreach (var req in Model.ActivationRequests.Take(5))
                 {
-                    <table class="table glass-table align-middle">
-                        <thead>
-                            <tr class="text-secondary small border-bottom border-light">
-                                <th>Reference/UTR</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var req in Model.ActivationRequests)
-                            {
-                                <tr>
-                                    <td>
-                                        <strong class="text-slate-800">@req.TransactionReference</strong><br/>
-                                        <span class="small text-muted" style="font-size: 0.75rem;">@req.CreatedDate.ToString("dd MMM yyyy")</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-opacity-10 @(req.Status == "Approved" ? "bg-success text-success" : req.Status == "Pending" ? "bg-warning text-warning" : "bg-danger text-danger") px-3 py-1 rounded-pill small">@req.Status</span>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <div class="text-center py-3 text-secondary small">
-                        No activation requests submitted.
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-light">
+                        <div>
+                            <div class="fw-semibold text-dark small">@req.TransactionReference</div>
+                            <div class="admin-subtext">@req.CreatedDate.ToString("dd MMM yyyy")</div>
+                        </div>
+                        <span class="badge rounded-pill @(req.Status == "Approved" ? "bg-success" : req.Status == "Pending" ? "bg-warning" : "bg-danger") bg-opacity-10 text-dark">@req.Status</span>
                     </div>
                 }
-            </div>
+            }
+            else
+            {
+                <p class="text-muted small mb-0">No activation requests yet.</p>
+            }
         </div>
-
-        <!-- Withdrawal requests -->
-        <div class="glass-card p-4">
-            <h5 class="text-slate-800 fw-bold mb-3"><i class="bi bi-cash-stack text-primary me-2"></i>Withdrawals Log</h5>
-            <div class="glass-table-container">
-                @if (Model.WithdrawalRequests.Any())
+        <div class="glass-card member-panel-card p-4">
+            <h5 class="member-panel-title mb-3"><i class="bi bi-cash-stack text-warning me-2"></i>Withdrawals</h5>
+            @if (Model.WithdrawalRequests.Any())
+            {
+                @foreach (var w in Model.WithdrawalRequests.Take(5))
                 {
-                    <table class="table glass-table align-middle">
-                        <thead>
-                            <tr class="text-secondary small border-bottom border-light">
-                                <th>Amount</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var w in Model.WithdrawalRequests)
-                            {
-                                <tr>
-                                    <td>
-                                        <strong class="text-slate-800">₹@w.Amount.ToString("N2")</strong><br/>
-                                        <span class="small text-muted" style="font-size: 0.75rem;">@w.CreatedDate.ToString("dd MMM yyyy")</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-opacity-10 @(w.Status == "Approved" ? "bg-success text-success" : w.Status == "Pending" ? "bg-warning text-warning" : "bg-danger text-danger") px-3 py-1 rounded-pill small">@w.Status</span>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <div class="text-center py-3 text-secondary small">
-                        No withdrawals requested.
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-light">
+                        <div>
+                            <div class="fw-semibold text-dark small">₹@w.Amount.ToString("N2")</div>
+                            <div class="admin-subtext">@w.CreatedDate.ToString("dd MMM yyyy")</div>
+                        </div>
+                        <span class="badge rounded-pill @(w.Status == "Approved" ? "bg-success" : w.Status == "Pending" ? "bg-warning" : "bg-danger") bg-opacity-10 text-dark">@w.Status</span>
                     </div>
                 }
-            </div>
+            }
+            else
+            {
+                <p class="text-muted small mb-0">No withdrawal requests yet.</p>
+            }
         </div>
     </div>
 </div>
 
-<!-- Placement Placer Modal -->
-<div class="modal fade" id="placementPlacerModal" tabindex="-1" aria-labelledby="placementPlacerModalLabel" aria-hidden="true">
+<div class="modal fade" id="placementPlacerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:20px;">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-slate-800" id="placementPlacerModalLabel"><i class="bi bi-diagram-3-fill text-info me-2"></i>Set Downline Placement</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold"><i class="bi bi-diagram-3 text-info me-2"></i>Set downline placement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="SetPlacementNode" method="post">
                 @Html.AntiForgeryToken()
                 <div class="modal-body py-4">
-                    <p class="text-secondary small mb-3">
-                        By default, new recruits sign up directly under you. To place them under another team member in your downline tree, type their username below.
-                    </p>
-                    <div class="mb-3">
-                        <label class="form-label text-secondary small fw-semibold">Upline Target Username</label>
-                        <input type="text" name="placementUsername" class="form-control rounded-3" placeholder="e.g. root" required />
-                        <div class="form-text text-muted small mt-1">Note: The user MUST be a verified member of your downline network tree.</div>
-                    </div>
+                    <p class="text-muted small">Enter a username from your downline to place new recruits under them.</p>
+                    <label class="form-label small fw-semibold">Upline username</label>
+                    <input type="text" name="placementUsername" class="form-control rounded-3" placeholder="e.g. member01" required />
                 </div>
-                <div class="modal-footer border-0 pt-0 justify-content-end gap-2">
+                <div class="modal-footer border-0 pt-0">
                     @if (Model.UserInfo.DefaultPlacementId != null)
                     {
-                        <button type="submit" name="placementUsername" value="" class="btn btn-outline-danger rounded-pill px-3 me-auto">Reset to Direct</button>
+                        <button type="submit" name="placementUsername" value="" class="btn btn-outline-danger rounded-pill me-auto">Reset to direct</button>
                     }
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4">Save Placement</button>
+                    <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill">Save</button>
                 </div>
             </form>
         </div>
@@ -408,99 +315,53 @@
 </div>
 
 @section Scripts {
-    <!-- Load Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <script>
         function copyReferralLink() {
-            var copyText = document.getElementById("referralLink");
-            copyText.select();
-            copyText.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(copyText.value);
-            
-            var copyBtn = document.getElementById("copyBtn");
-            copyBtn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied!';
-            copyBtn.classList.remove("btn-cyber-cyan");
-            copyBtn.classList.add("btn-success");
-            
-            setTimeout(function() {
-                copyBtn.innerHTML = '<i class="bi bi-copy me-1"></i>Copy';
-                copyBtn.classList.remove("btn-success");
-                copyBtn.classList.add("btn-cyber-cyan");
+            var el = document.getElementById("referralLink");
+            navigator.clipboard.writeText(el.value);
+            var btn = document.getElementById("copyBtn");
+            btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied!';
+            setTimeout(function () {
+                btn.innerHTML = '<i class="bi bi-copy me-1"></i>Copy';
             }, 2000);
         }
-
-        // Fetch and Render Earnings Analytics Chart
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             fetch('/User/GetEarningsChartData')
-                .then(response => response.json())
+                .then(r => r.json())
                 .then(data => {
-                    const dates = data.map(item => item.date);
-                    const amounts = data.map(item => item.amount);
-
-                    const ctx = document.getElementById('earningsChart').getContext('2d');
-                    
-                    // Create gradient for lines
-                    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
-                    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
-
+                    var ctx = document.getElementById('earningsChart').getContext('2d');
+                    var gradient = ctx.createLinearGradient(0, 0, 0, 260);
+                    gradient.addColorStop(0, 'rgba(124, 58, 237, 0.35)');
+                    gradient.addColorStop(1, 'rgba(124, 58, 237, 0)');
                     new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: dates,
+                            labels: data.map(d => d.date),
                             datasets: [{
-                                label: 'Daily Earnings (₹)',
-                                data: amounts,
-                                borderColor: '#3b82f6',
-                                borderWidth: 3,
-                                fill: true,
+                                label: 'Earnings',
+                                data: data.map(d => d.amount),
+                                borderColor: '#7c3aed',
                                 backgroundColor: gradient,
+                                fill: true,
                                 tension: 0.35,
-                                pointBackgroundColor: '#3b82f6',
-                                pointBorderColor: '#fff',
-                                pointHoverRadius: 6
+                                borderWidth: 2.5
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                }
-                            },
+                            plugins: { legend: { display: false } },
                             scales: {
-                                x: {
-                                    grid: {
-                                        display: false
-                                    },
-                                    ticks: {
-                                        color: '#64748b',
-                                        font: {
-                                            size: 10
-                                        }
-                                    }
-                                },
+                                x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
                                 y: {
-                                    grid: {
-                                        color: 'rgba(100, 116, 139, 0.08)'
-                                    },
-                                    ticks: {
-                                        color: '#64748b',
-                                        font: {
-                                            size: 10
-                                        },
-                                        callback: function(value) {
-                                            return '₹' + value;
-                                        }
-                                    }
+                                    grid: { color: 'rgba(100,116,139,0.08)' },
+                                    ticks: { color: '#64748b', callback: v => '₹' + v }
                                 }
                             }
                         }
                     });
-                })
-                .catch(err => console.error("Error loading chart analytics: ", err));
+                });
         });
     </script>
 }

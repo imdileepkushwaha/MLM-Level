@@ -441,7 +441,7 @@ namespace MLM_Level.Controllers
             return View(viewModel);
         }
 
-        // GET: User/Wallet (Transaction Ledger & Withdraw)
+        // GET: User/Wallet
         [HttpGet]
         public async Task<IActionResult> Wallet()
         {
@@ -449,20 +449,15 @@ namespace MLM_Level.Controllers
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
 
-            var ledger = await _context.CommissionTrans
-                .Include(t => t.FromUser)
-                .Where(t => t.UserId == userId)
-                .OrderByDescending(t => t.Timestamp)
-                .ToListAsync();
-
             var withdrawals = await _context.WithdrawalRequests
                 .Where(w => w.UserId == userId)
                 .OrderByDescending(w => w.CreatedDate)
                 .ToListAsync();
 
-            var totalIncome = ledger.Sum(l => l.Amount);
+            var ledgerQuery = _context.CommissionTrans.Where(t => t.UserId == userId);
+            var totalIncome = await ledgerQuery.SumAsync(t => t.Amount);
+            var ledgerCount = await ledgerQuery.CountAsync();
 
-            // Pass MLM settings to UI
             ViewBag.MlmSettings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
 
             var viewModel = new UserWalletViewModel
@@ -470,11 +465,29 @@ namespace MLM_Level.Controllers
                 WalletBalance = user.WalletBalance,
                 IncomeWallet = user.IncomeWallet,
                 TotalIncome = totalIncome,
-                IncomeLedger = ledger,
+                LedgerEntryCount = ledgerCount,
                 Withdrawals = withdrawals
             };
 
             return View(viewModel);
+        }
+
+        // GET: User/IncomeTransactions
+        [HttpGet]
+        public async Task<IActionResult> IncomeTransactions()
+        {
+            int userId = GetCurrentUserId();
+            var ledger = await _context.CommissionTrans
+                .AsNoTracking()
+                .Include(t => t.FromUser)
+                .Where(t => t.UserId == userId)
+                .OrderByDescending(t => t.Timestamp)
+                .ToListAsync();
+
+            ViewBag.TotalIncome = ledger.Sum(l => l.Amount);
+            ViewBag.CreditTotal = ledger.Where(l => l.Amount > 0).Sum(l => l.Amount);
+            ViewBag.DebitTotal = ledger.Where(l => l.Amount < 0).Sum(l => Math.Abs(l.Amount));
+            return View("IncomeTransactions", ledger);
         }
 
         // POST: User/RequestWithdrawal
@@ -485,6 +498,13 @@ namespace MLM_Level.Controllers
             int userId = GetCurrentUserId();
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
+
+            var kyc = await _context.KycDetails.FirstOrDefaultAsync(k => k.UserId == userId);
+            if (kyc == null || kyc.Status != "Approved")
+            {
+                TempData["ErrorMessage"] = "You must complete and get your KYC approved before requesting withdrawals.";
+                return RedirectToAction("Kyc");
+            }
 
             if (amount <= 0)
             {
@@ -773,6 +793,67 @@ namespace MLM_Level.Controllers
             }).ToList();
 
             return Json(chartData);
+        }
+        // KYC Actions
+        [HttpGet]
+        public async Task<IActionResult> Kyc()
+        {
+            var userId = GetCurrentUserId();
+            var kyc = await _context.KycDetails.FirstOrDefaultAsync(k => k.UserId == userId);
+            return View(kyc ?? new KycDetail { UserId = userId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadKyc(IFormFile panCard, IFormFile bankPassbook)
+        {
+            var userId = GetCurrentUserId();
+            var kyc = await _context.KycDetails.FirstOrDefaultAsync(k => k.UserId == userId);
+
+            if (kyc != null && kyc.Status == "Approved")
+            {
+                TempData["Error"] = "Your KYC is already approved and cannot be changed.";
+                return RedirectToAction("Kyc");
+            }
+
+            if (kyc == null)
+            {
+                kyc = new KycDetail { UserId = userId };
+                _context.KycDetails.Add(kyc);
+            }
+
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "kyc");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            if (panCard != null && panCard.Length > 0)
+            {
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + panCard.FileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await panCard.CopyToAsync(fileStream);
+                }
+                kyc.PanCardUrl = "/uploads/kyc/" + uniqueFileName;
+            }
+
+            if (bankPassbook != null && bankPassbook.Length > 0)
+            {
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + bankPassbook.FileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await bankPassbook.CopyToAsync(fileStream);
+                }
+                kyc.BankPassbookUrl = "/uploads/kyc/" + uniqueFileName;
+            }
+
+            kyc.Status = "Pending";
+            kyc.UpdatedDate = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync();
+            
+            TempData["Success"] = "KYC Documents submitted successfully for review.";
+            return RedirectToAction("Kyc");
         }
     }
 }

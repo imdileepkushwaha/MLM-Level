@@ -1,0 +1,98 @@
+@model IEnumerable<MLM_Level.Models.ActivationRequest>
+@{
+    ViewData["Title"] = "Activation Requests";
+    var list = Model.ToList();
+}
+
+<div class="admin-page-header admin-theme-amber mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-shield-lock"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Activation Requests</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Approve new member activations and distribute commissions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <a asp-action="PendingRequests" class="admin-header-btn">
+                <i class="bi bi-wallet2 me-1"></i>Withdrawals queue
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- <div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card admin-stat-card text-center h-100">
+            <p class="admin-stat-label">Pending</p>
+            <p class="admin-stat-value text-warning mb-0">@list.Count</p>
+        </div>
+    </div>
+    <div class="col-md-8 d-flex align-items-center">
+        <p class="text-muted small mb-0">
+            <i class="bi bi-info-circle me-1"></i>Approving activates the account and triggers level commission distribution.
+        </p>
+    </div>
+</div> -->
+
+<div class="glass-card admin-table-card" data-admin-table data-page-size="10" data-search-placeholder="Search member or UTR..." data-count-label="pending">
+    <div class="admin-table-header flex-wrap gap-2">
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-shield-check text-info me-2"></i>Activation queue</h5>
+        <span class="admin-record-badge" data-admin-table-count>@list.Count pending</span>
+        <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:220px;max-width:320px;">
+            <i class="bi bi-search admin-search-icon"></i>
+            <input type="search" data-admin-table-search class="form-control admin-search-input"
+                   placeholder="Search member or UTR..." autocomplete="off" />
+        </div>
+    </div>
+    @if (list.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Member</th>
+                        <th>UTR / Reference</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var req in list)
+                    {
+                        var searchText = $"{req.User?.Username} {req.User?.FullName} {req.TransactionReference}".ToLowerInvariant();
+                        <tr data-search="@searchText">
+                            <td class="admin-subtext">@req.CreatedDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                <div class="fw-bold text-dark small">@(req.User?.Username ?? "-")</div>
+                                <div class="admin-subtext">@(req.User?.FullName ?? "-")</div>
+                            </td>
+                            <td><code class="text-primary small">@req.TransactionReference</code></td>
+                            <td class="text-end">
+                                <form asp-action="ApproveActivation" asp-route-id="@req.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 me-1">
+                                        <i class="bi bi-check-lg me-1"></i>Approve
+                                    </button>
+                                </form>
+                                <form asp-action="RejectActivation" asp-route-id="@req.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        @await Html.PartialAsync("_AdminNoResults")
+    }
+</div>

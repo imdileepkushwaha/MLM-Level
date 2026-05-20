@@ -1,0 +1,185 @@
+@model IEnumerable<MLM_Level.Models.KycDetail>
+@{
+    ViewData["Title"] = "KYC Approvals";
+    var list = Model.ToList();
+    var pending = list.Count(k => k.Status == "Pending");
+    var approved = list.Count(k => k.Status == "Approved");
+    var rejected = list.Count(k => k.Status == "Rejected");
+}
+
+<div class="admin-page-header admin-theme-amber mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-shield-check"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">KYC Approvals</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Verify PAN and bank documents for withdrawal eligibility</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            @if (pending > 0)
+            {
+                <span class="admin-header-badge"><i class="bi bi-hourglass me-1"></i>@pending pending review</span>
+            }
+            else
+            {
+                <span class="admin-header-badge"><i class="bi bi-check-circle me-1"></i>Queue clear</span>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-4">
+        <div class="glass-card admin-stat-card text-center h-100">
+            <p class="admin-stat-label">Pending</p>
+            <p class="admin-stat-value text-warning mb-0">@pending</p>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="glass-card admin-stat-card text-center h-100">
+            <p class="admin-stat-label">Approved</p>
+            <p class="admin-stat-value text-success mb-0">@approved</p>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="glass-card admin-stat-card text-center h-100">
+            <p class="admin-stat-label">Rejected</p>
+            <p class="admin-stat-value text-danger mb-0">@rejected</p>
+        </div>
+    </div>
+</div>
+
+@if (list.Any())
+{
+<div data-admin-table data-page-size="10" data-search-placeholder="Search member..." data-count-label="submissions">
+    <div class="glass-card p-3 mb-4">
+        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+            <span class="text-muted small fw-semibold mb-0"><i class="bi bi-funnel me-1"></i>Filter by status</span>
+            <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                <button type="button" class="admin-filter-btn active" data-kyc="all">All (@list.Count)</button>
+                <button type="button" class="admin-filter-btn" data-kyc="pending">Pending (@pending)</button>
+                <button type="button" class="admin-filter-btn" data-kyc="approved">Approved (@approved)</button>
+                <button type="button" class="admin-filter-btn" data-kyc="rejected">Rejected (@rejected)</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card admin-table-card">
+        <div class="admin-table-header flex-wrap gap-2">
+            <h5 class="fw-bold text-dark mb-0"><i class="bi bi-file-earmark-person text-warning me-2"></i>KYC submissions</h5>
+            <span class="admin-record-badge" data-admin-table-count>@list.Count submissions</span>
+            <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:220px;max-width:320px;">
+                <i class="bi bi-search admin-search-icon"></i>
+                <input type="search" data-admin-table-search class="form-control admin-search-input"
+                       placeholder="Search member..." autocomplete="off" />
+            </div>
+        </div>
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>PAN card</th>
+                        <th>Bank passbook</th>
+                        <th>Submitted</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var kyc in list)
+                    {
+                        var statusKey = kyc.Status.ToLowerInvariant();
+                        var search = $"{kyc.User?.FullName} {kyc.User?.Username}".ToLowerInvariant();
+                        <tr class="kyc-row" data-kyc="@statusKey" data-search="@search">
+                            <td>
+                                <div class="fw-bold text-dark">@(kyc.User?.FullName ?? "-")</div>
+                                <div class="admin-subtext">@("@" + (kyc.User?.Username ?? "-"))</div>
+                            </td>
+                            <td>
+                                <a href="@kyc.PanCardUrl" target="_blank">
+                                    <img src="@kyc.PanCardUrl" class="rounded border" style="width:72px;height:46px;object-fit:cover;" alt="PAN" />
+                                </a>
+                            </td>
+                            <td>
+                                <a href="@kyc.BankPassbookUrl" target="_blank">
+                                    <img src="@kyc.BankPassbookUrl" class="rounded border" style="width:72px;height:46px;object-fit:cover;" alt="Bank" />
+                                </a>
+                            </td>
+                            <td class="admin-subtext">@kyc.CreatedDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (kyc.Status == "Pending")
+                                {
+                                    <span class="admin-badge-pending">Pending</span>
+                                }
+                                else if (kyc.Status == "Approved")
+                                {
+                                    <span class="admin-badge-success">Approved</span>
+                                }
+                                else
+                                {
+                                    <span class="admin-badge-danger">Rejected</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (kyc.Status == "Pending")
+                                {
+                                    <form asp-action="UpdateKycStatus" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@kyc.Id" />
+                                        <input type="hidden" name="status" value="Approved" />
+                                        <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 me-1"><i class="bi bi-check-lg"></i></button>
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#rejectKyc-@kyc.Id"><i class="bi bi-x-lg"></i></button>
+                                }
+                                else
+                                {
+                                    <span class="admin-subtext">@(kyc.UpdatedDate?.ToString("dd MMM yyyy") ?? "-")</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+    @foreach (var kyc in list.Where(k => k.Status == "Pending"))
+    {
+        <div class="modal fade" id="rejectKyc-@kyc.Id" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
+                    <form asp-action="UpdateKycStatus" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@kyc.Id" />
+                        <input type="hidden" name="status" value="Rejected" />
+                        <div class="modal-body p-4">
+                            <h5 class="fw-bold text-danger mb-3">Reject KYC</h5>
+                            <label class="settings-label">Reason</label>
+                            <input type="text" name="rejectionReason" class="form-control settings-input" placeholder="e.g. Blur image" required />
+                        </div>
+                        <div class="modal-footer border-0 px-4 pb-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger rounded-pill px-4">Reject</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="glass-card text-center py-5">
+        <div class="admin-empty-icon mb-4" style="background:rgba(245,158,11,0.1);color:#d97706;"><i class="bi bi-shield"></i></div>
+        <h5 class="fw-bold text-dark">No KYC records</h5>
+        <p class="text-muted small mb-0">Member KYC submissions will appear here.</p>
+    </div>
+}
+

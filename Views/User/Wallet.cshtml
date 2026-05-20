@@ -1,272 +1,225 @@
 @model MLM_Level.Models.UserWalletViewModel
 @{
-    ViewData["Title"] = "E-Wallet Transactions & Withdrawals";
+    ViewData["Title"] = "E-Wallet";
+    var settings = ViewBag.MlmSettings as MLM_Level.Models.MlmSetting ?? new MLM_Level.Models.MlmSetting();
+    var withdrawals = Model.Withdrawals.ToList();
+    var canWithdraw = Model.WalletBalance > 0;
 }
 
+@await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
+{
+    Title = "E-Wallet",
+    Subtitle = "Withdraw to bank, transfer to members, and track withdrawal requests",
+    Icon = "bi-wallet2",
+    ThemeClass = "member-theme-emerald",
+    Badge = $"₹{Model.WalletBalance:N0} available"
+})
 
-
-<div class="row g-4 mb-4">
-    <!-- Wallet stats -->
+<div class="row g-3 mb-4">
     <div class="col-lg-4 col-md-6">
-        <div class="glass-card p-4 h-100 d-flex justify-content-between align-items-center">
-            <div>
-                <p class="text-secondary small fw-medium mb-1">Available E-Wallet Balance</p>
-                <h2 class="text-slate-800 fw-extrabold mb-2" style="font-size: 2.2rem;">₹@Model.WalletBalance.ToString("N2")</h2>
-                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 rounded-pill fw-bold small">
-                    <i class="bi bi-wallet2 me-1"></i> Spendable
-                </span>
-            </div>
-            <div class="stat-icon-box icon-box-green" style="width: 56px; height: 56px; font-size: 1.5rem;">
-                <i class="bi bi-cash-stack"></i>
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Available balance</p>
+                    <p class="member-stat-value text-success">₹@Model.WalletBalance.ToString("N2")</p>
+                    <span class="wallet-chip wallet-chip-success">Ready to withdraw</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-green"><i class="bi bi-wallet2"></i></div>
             </div>
         </div>
     </div>
-
-    <!-- Uncleared Income -->
     <div class="col-lg-4 col-md-6">
-        <div class="glass-card p-4 h-100 d-flex justify-content-between align-items-center">
-            <div>
-                <p class="text-secondary small fw-medium mb-1">Uncleared Income</p>
-                <h2 class="text-slate-800 fw-extrabold mb-2" style="font-size: 2.2rem;">₹@Model.IncomeWallet.ToString("N2")</h2>
-                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1 rounded-pill fw-bold small">
-                    <i class="bi bi-hourglass-split me-1"></i> Clears Midnight
-                </span>
-            </div>
-            <div class="stat-icon-box" style="width: 56px; height: 56px; font-size: 1.5rem; background: rgba(245,158,11,0.12); color: #fbbf24; border-color: rgba(245,158,11,0.3);">
-                <i class="bi bi-hourglass-top"></i>
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Uncleared income</p>
+                    <p class="member-stat-value text-warning">₹@Model.IncomeWallet.ToString("N2")</p>
+                    <span class="text-muted small">Clears at midnight</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-amber"><i class="bi bi-hourglass-split"></i></div>
             </div>
         </div>
     </div>
-
-    <!-- Total Income -->
     <div class="col-lg-4 col-md-12">
-        <div class="glass-card p-4 h-100 d-flex justify-content-between align-items-center">
-            <div>
-                <p class="text-secondary small fw-medium mb-1">Cumulative Income</p>
-                <h2 class="text-slate-800 fw-extrabold mb-2" style="font-size: 2.2rem;">₹@Model.TotalIncome.ToString("N2")</h2>
-                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1 rounded-pill fw-bold small">
-                    <i class="bi bi-graph-up-arrow me-1"></i> Total Earned
-                </span>
-            </div>
-            <div class="stat-icon-box icon-box-blue" style="width: 56px; height: 56px; font-size: 1.5rem;">
-                <i class="bi bi-trophy"></i>
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Lifetime earned</p>
+                    <p class="member-stat-value">₹@Model.TotalIncome.ToString("N2")</p>
+                    <a asp-controller="User" asp-action="IncomeTransactions" class="member-stat-link text-primary small">View all transactions <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="member-stat-icon member-stat-icon-blue"><i class="bi bi-graph-up-arrow"></i></div>
             </div>
         </div>
     </div>
 </div>
 
 <div class="row g-4">
-    <!-- Left Column: Payout Ledger -->
-    <div class="col-lg-7 col-12">
-        <div class="glass-card p-4 h-100" id="printArea">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="text-slate-800 fw-bold mb-0"><i class="bi bi-receipt text-primary me-2 text-print-dark"></i>Income Transaction Ledger</h5>
-                <button onclick="window.print()" class="btn btn-sm btn-light border rounded-pill px-3 shadow-sm d-print-none fw-semibold">
-                    <i class="bi bi-printer me-1"></i>Print Statement
-                </button>
-            </div>
-            
-            <!-- Company Letterhead for Printing -->
-            <div class="d-none d-print-block mb-4 border-bottom pb-3">
-                <h3 class="fw-bold text-dark mb-1">ELITE MLM PLATFORM</h3>
-                <p class="text-muted small mb-0">Official E-Wallet Income Statement & Transaction Ledger</p>
-                <p class="text-muted small mb-0">Generated on: @DateTime.UtcNow.ToString("dd MMM yyyy, hh:mm tt") UTC</p>
-            </div>
-
-            <div class="glass-table-container">
-                @if (Model.IncomeLedger.Any())
-                {
-                    <table class="table glass-table align-middle">
-                        <thead>
-                            <tr class="text-secondary small border-bottom border-light">
-                                <th>Date</th>
-                                <th>Description / Source</th>
-                                <th>Level</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var tx in Model.IncomeLedger)
-                            {
-                                <tr class="border-bottom border-light">
-                                    <td class="small text-secondary">@tx.Timestamp.ToString("dd MMM yyyy hh:mm tt")</td>
-                                    <td>
-                                        <div class="fw-bold text-slate-800 text-print-dark">@tx.Description</div>
-                                        <div class="small text-muted">Source: @tx.FromUser.FullName (@@@tx.FromUser.Username)</div>
-                                    </td>
-                                    <td>
-                                        @if (tx.Level > 0)
-                                        {
-                                            <span class="badge bg-opacity-10 bg-info text-info border border-info border-opacity-25 px-2 py-1">Level @tx.Level</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-opacity-10 bg-secondary text-secondary border border-secondary border-opacity-25 px-2 py-1">P2P</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (tx.Amount > 0)
-                                        {
-                                            <strong class="text-success">+₹@tx.Amount.ToString("N2")</strong>
-                                        }
-                                        else
-                                        {
-                                            <strong class="text-danger">-₹@Math.Abs(tx.Amount).ToString("N2")</strong>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <div class="text-center py-5 text-secondary">
-                        <i class="bi bi-file-earmark-text display-6 mb-2 d-block text-muted"></i>
-                        No transactions recorded in your wallet ledger yet.
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-
-    <!-- Right Column: Withdraw Request Form & History -->
-    <div class="col-lg-5 col-12 d-print-none">
-        <!-- Request Form -->
-        <div class="glass-card p-4 mb-4">
-            <h5 class="text-slate-800 fw-bold mb-3"><i class="bi bi-cash-coin text-pink me-2"></i>Request Wallet Withdrawal</h5>
-            @{
-                var settings = ViewBag.MlmSettings as MLM_Level.Models.MlmSetting ?? new MLM_Level.Models.MlmSetting();
-            }
-            <p class="text-secondary small mb-4">Transfer unlocked funds from your e-wallet balance to your registered bank account. A processing fee of <strong>@settings.WithdrawalFeePercent%</strong> will be deducted.</p>
-
-            <form asp-action="RequestWithdrawal" method="post" class="mb-3">
-                <div class="mb-3 form-group">
-                    <label class="form-label text-secondary small fw-semibold">Withdrawal Amount (₹)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light text-secondary border-end-0" style="border-radius: 10px 0 0 10px;">₹</span>
-                        <input type="number" name="amount" class="form-control" placeholder="e.g. @settings.MinWithdrawalLimit" step="1" min="@settings.MinWithdrawalLimit" max="@Model.WalletBalance" required style="border-radius: 0 10px 10px 0; border-left: none;" />
-                    </div>
-                    <small class="text-muted mt-2 d-block" style="font-size: 0.75rem;">Available limit: ₹@Model.WalletBalance.ToString("N2") | Min Limit: <strong>₹@settings.MinWithdrawalLimit.ToString("N0")</strong></small>
+    <div class="col-lg-5 col-12">
+        <div class="glass-card wallet-withdraw-card member-panel-card h-100">
+            <div class="wallet-withdraw-header">
+                <div class="wallet-withdraw-header-icon"><i class="bi bi-bank2"></i></div>
+                <div>
+                    <h5 class="wallet-withdraw-title mb-1">Request wallet withdrawal</h5>
+                    <p class="wallet-withdraw-subtitle mb-0">Transfer spendable balance to your bank account</p>
                 </div>
+            </div>
 
-                <button type="submit" class="btn btn-cyber-pink w-100 py-2 rounded-pill fw-semibold @(Model.WalletBalance <= 0 ? "disabled" : "")" @(Model.WalletBalance <= 0 ? "disabled" : "")>
-                    <i class="bi bi-box-arrow-right me-1"></i>Request Cashout
+            <div class="wallet-info-pills">
+                <div class="wallet-info-pill">
+                    <span class="wallet-info-pill-label">Available</span>
+                    <span class="wallet-info-pill-value text-success">₹@Model.WalletBalance.ToString("N0")</span>
+                </div>
+                <div class="wallet-info-pill">
+                    <span class="wallet-info-pill-label">Min withdraw</span>
+                    <span class="wallet-info-pill-value">₹@settings.MinWithdrawalLimit.ToString("N0")</span>
+                </div>
+                <div class="wallet-info-pill">
+                    <span class="wallet-info-pill-label">Processing fee</span>
+                    <span class="wallet-info-pill-value text-warning">@settings.WithdrawalFeePercent%</span>
+                </div>
+            </div>
+
+            <form asp-action="RequestWithdrawal" method="post" class="wallet-withdraw-form">
+                @Html.AntiForgeryToken()
+                <label class="wallet-field-label" for="withdrawAmount">Withdrawal amount</label>
+                <div class="wallet-amount-input-wrap">
+                    <span class="wallet-amount-prefix">₹</span>
+                    <input type="number" id="withdrawAmount" name="amount" class="wallet-amount-input"
+                           placeholder="@settings.MinWithdrawalLimit.ToString("N0")"
+                           step="1" min="@settings.MinWithdrawalLimit" max="@Model.WalletBalance"
+                           required @(canWithdraw ? "" : "disabled") />
+                </div>
+                <p class="wallet-field-hint" id="withdrawHint">
+                    Enter between ₹@settings.MinWithdrawalLimit.ToString("N0") and ₹@Model.WalletBalance.ToString("N2")
+                </p>
+
+                <button type="submit" class="btn wallet-btn-withdraw w-100" @(canWithdraw ? "" : "disabled")>
+                    <i class="bi bi-send-fill me-2"></i>Submit withdrawal request
                 </button>
             </form>
 
-            <div class="border-top border-light pt-3 text-center">
-                <span class="text-secondary small me-2">Or, transfer to another member:</span>
-                <button class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#p2pTransferModal" @(Model.WalletBalance <= 0 ? "disabled" : "")>
-                    <i class="bi bi-arrow-left-right me-1"></i>P2P Transfer
-                </button>
+            <div class="wallet-p2p-divider">
+                <span>or send to a member</span>
             </div>
-        </div>
 
-        <!-- Withdrawal Logs -->
-        <div class="glass-card p-4">
-            <h5 class="text-slate-800 fw-bold mb-3"><i class="bi bi-clock-history text-info me-2"></i>Withdrawal Requests Log</h5>
-            <div class="glass-table-container">
-                @if (Model.Withdrawals.Any())
-                {
-                    <table class="table glass-table align-middle">
+            <button type="button" class="btn wallet-btn-p2p" data-bs-toggle="modal" data-bs-target="#p2pTransferModal" @(canWithdraw ? "" : "disabled")>
+                <i class="bi bi-arrow-left-right me-2"></i>Peer-to-peer transfer
+            </button>
+        </div>
+    </div>
+
+    <div class="col-lg-7 col-12">
+        <div class="glass-card admin-table-card member-panel-card h-100" data-admin-table data-page-size="10" data-search-placeholder="Search withdrawals..." data-count-label="requests">
+            <div class="admin-table-header flex-wrap gap-2">
+                <h5 class="member-panel-title mb-0"><i class="bi bi-clock-history text-info me-2"></i>Withdrawal requests</h5>
+                <span class="admin-record-badge" data-admin-table-count>@withdrawals.Count requests</span>
+                <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:200px;max-width:280px;">
+                    <i class="bi bi-search admin-search-icon"></i>
+                    <input type="search" data-admin-table-search class="form-control admin-search-input" placeholder="Search..." autocomplete="off" />
+                </div>
+            </div>
+            @if (withdrawals.Any())
+            {
+                <div class="admin-table-scroll">
+                    <table class="table admin-table">
                         <thead>
-                            <tr class="text-secondary small border-bottom border-light">
+                            <tr>
+                                <th>Request</th>
                                 <th>Amount</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var w in Model.Withdrawals)
+                            @foreach (var w in withdrawals)
                             {
-                                <tr class="border-bottom border-light">
+                                var searchText = $"{w.Amount} {w.Status} {w.CreatedDate}".ToLowerInvariant();
+                                <tr data-search="@searchText">
                                     <td>
-                                        <strong class="text-slate-800">₹@w.Amount.ToString("N2")</strong><br/>
-                                        <span class="small text-muted" style="font-size: 0.75rem;">@w.CreatedDate.ToString("dd MMM yyyy")</span>
+                                        <div class="fw-semibold text-dark small">@w.CreatedDate.ToString("dd MMM yyyy")</div>
+                                        <div class="admin-subtext">@w.CreatedDate.ToString("hh:mm tt")</div>
                                     </td>
+                                    <td class="fw-bold text-dark">₹@w.Amount.ToString("N2")</td>
                                     <td>
-                                        <span class="badge bg-opacity-10 @(w.Status == "Approved" ? "bg-success text-success" : w.Status == "Pending" ? "bg-warning text-warning" : "bg-danger text-danger") px-3 py-1 rounded-pill small">@w.Status</span>
+                                        @if (w.Status == "Approved")
+                                        {
+                                            <span class="admin-badge-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
+                                        }
+                                        else if (w.Status == "Pending")
+                                        {
+                                            <span class="admin-badge-pending"><i class="bi bi-hourglass-split me-1"></i>Pending</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="admin-badge-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+                                        }
                                     </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
-                }
-                else
-                {
-                    <div class="text-center py-4 text-secondary small">
-                        No withdrawal requests recorded.
-                    </div>
-                }
-            </div>
+                </div>
+            }
+            else
+            {
+                <div class="wallet-empty-inline p-4 text-center">
+                    <i class="bi bi-inbox text-muted d-block mb-2" style="font-size:1.75rem;"></i>
+                    <p class="text-muted small mb-0">No withdrawal requests yet.</p>
+                </div>
+            }
         </div>
     </div>
 </div>
 
-<!-- P2P Transfer Modal -->
-<div class="modal fade" id="p2pTransferModal" tabindex="-1" aria-labelledby="p2pTransferModalLabel" aria-hidden="true">
+<div class="modal fade" id="p2pTransferModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+        <div class="modal-content border-0 shadow-lg wallet-modal">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-slate-800" id="p2pTransferModalLabel"><i class="bi bi-arrow-left-right text-primary me-2"></i>Peer-to-Peer Fund Transfer</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-arrow-left-right text-primary me-2"></i>P2P transfer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="P2PTransfer" method="post">
                 @Html.AntiForgeryToken()
                 <div class="modal-body py-4">
-                    <p class="text-secondary small mb-3">
-                        Transfer funds instantly from your e-wallet to another member's wallet inside the network. This transaction is audited and permanent.
-                    </p>
+                    <p class="text-muted small mb-3">Send funds instantly to another member inside the network. Transfers are permanent and audited.</p>
                     <div class="mb-3">
-                        <label class="form-label text-secondary small fw-semibold">Receiver Username</label>
-                        <input type="text" name="receiverUsername" class="form-control rounded-3" placeholder="e.g. rahul_active" required />
+                        <label class="wallet-field-label">Receiver username</label>
+                        <input type="text" name="receiverUsername" class="form-control rounded-3" placeholder="e.g. member01" required />
                     </div>
                     <div class="mb-0">
-                        <label class="form-label text-secondary small fw-semibold">Transfer Amount (₹)</label>
-                        <input type="number" name="amount" class="form-control rounded-3" placeholder="e.g. 250" min="1" max="@Model.WalletBalance" required />
-                        <div class="form-text text-muted small mt-1">Available for transfer: ₹@Model.WalletBalance.ToString("N2")</div>
+                        <label class="wallet-field-label">Amount (₹)</label>
+                        <div class="wallet-amount-input-wrap">
+                            <span class="wallet-amount-prefix">₹</span>
+                            <input type="number" name="amount" class="wallet-amount-input" placeholder="250" min="1" max="@Model.WalletBalance" required />
+                        </div>
+                        <p class="wallet-field-hint mb-0">Available: ₹@Model.WalletBalance.ToString("N2")</p>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-0 justify-content-end">
+                <div class="modal-footer border-0 pt-0 gap-2">
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4">Transfer Instantly</button>
+                    <button type="submit" class="btn wallet-btn-withdraw rounded-pill px-4">Transfer now</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<style>
-    @@media print {
-        body * {
-            visibility: hidden;
-        }
-        #printArea, #printArea * {
-            visibility: visible;
-        }
-        #printArea {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 20px;
-            background: white !important;
-            color: #000 !important;
-            box-shadow: none !important;
-            border: none !important;
-        }
-        .text-print-dark {
-            color: #000 !important;
-        }
-        .table {
-            border-collapse: collapse !important;
-            width: 100% !important;
-        }
-        .table th, .table td {
-            background-color: #fff !important;
-            border: 1px solid #ddd !important;
-            padding: 8px !important;
-            color: #000 !important;
-        }
-    }
-</style>
+@section Scripts {
+    <script>
+        (function () {
+            var input = document.getElementById('withdrawAmount');
+            var hint = document.getElementById('withdrawHint');
+            var feePct = @settings.WithdrawalFeePercent.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (!input || !hint) return;
+            input.addEventListener('input', function () {
+                var amt = parseFloat(this.value);
+                if (!amt || amt <= 0) {
+                    hint.textContent = 'Enter between ₹@settings.MinWithdrawalLimit.ToString("N0") and ₹@Model.WalletBalance.ToString("N2")';
+                    return;
+                }
+                var net = amt - (amt * feePct / 100);
+                hint.innerHTML = 'Estimated bank credit: <strong class="text-success">₹' + net.toFixed(2) + '</strong> after ' + feePct + '% fee';
+            });
+        })();
+    </script>
+}

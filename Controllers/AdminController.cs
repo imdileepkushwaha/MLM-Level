@@ -237,6 +237,19 @@ namespace MLM_Level.Controllers
             return View(viewModel);
         }
 
+        // GET: Admin/PendingActivations
+        [HttpGet]
+        public async Task<IActionResult> PendingActivations()
+        {
+            var activations = await _context.ActivationRequests
+                .Include(r => r.User)
+                .Where(r => r.Status == "Pending")
+                .OrderBy(r => r.CreatedDate)
+                .ToListAsync();
+
+            return View(activations);
+        }
+
         // POST: Admin/ApproveActivation/5
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -298,6 +311,23 @@ namespace MLM_Level.Controllers
                 TempData["ErrorMessage"] = "Commissions distribution failed: " + ex.Message;
             }
 
+            // Fire and forget Activation Email
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    string emailBody = $@"
+                        <h2>Congratulations {user.FullName}!</h2>
+                        <p>Your Elite MLM account (<strong>{user.Username}</strong>) has been successfully activated.</p>
+                        <p>Your package <strong>{request.Package?.Name}</strong> is now active, and you are eligible to earn commissions from your downline.</p>
+                        <br/>
+                        <p>Login to your dashboard to view your network and earnings!</p>
+                    ";
+                    await _emailService.SendEmailAsync(user.Email, "Account Activated - Elite MLM", emailBody);
+                }
+                catch { /* ignore SMTP errors */ }
+            });
+
             TempData["SuccessMessage"] = $"Account '{user.Username}' activated, and commissions have been distributed up to 5 levels!";
             return RedirectToAction("PendingRequests");
         }
@@ -343,6 +373,28 @@ namespace MLM_Level.Controllers
 
             _context.Entry(request).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+
+            // Fetch user for email
+            var user = await _context.Users.FindAsync(request.UserId);
+            if (user != null)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        string emailBody = $@"
+                            <h2>Withdrawal Request Approved!</h2>
+                            <p>Hi {user.FullName},</p>
+                            <p>Your withdrawal request of <strong>₹{request.Amount:N2}</strong> has been approved and processed.</p>
+                            <p>The amount (after applicable deductions) should reflect in your bank account shortly.</p>
+                            <br/>
+                            <p>Thank you for being a part of Elite MLM!</p>
+                        ";
+                        await _emailService.SendEmailAsync(user.Email, "Withdrawal Approved - Elite MLM", emailBody);
+                    }
+                    catch { /* ignore SMTP errors */ }
+                });
+            }
 
             TempData["SuccessMessage"] = "Withdrawal request approved and processed.";
             return RedirectToAction("PendingRequests");
@@ -946,6 +998,69 @@ namespace MLM_Level.Controllers
             }
 
             return RedirectToAction("RoiManagement");
+        }
+        // KYC Actions
+        [HttpGet]
+        public async Task<IActionResult> KycApprovals()
+        {
+            var kycList = await _context.KycDetails
+                .Include(k => k.User)
+                .OrderByDescending(k => k.CreatedDate)
+                .ToListAsync();
+            return View(kycList);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateKycStatus(int id, string status, string rejectionReason)
+        {
+            var kyc = await _context.KycDetails.FindAsync(id);
+            if (kyc == null) return NotFound();
+
+            kyc.Status = status;
+            if (status == "Rejected")
+            {
+                kyc.RejectionReason = rejectionReason;
+            }
+            kyc.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"KYC status updated to {status} successfully.";
+            return RedirectToAction("KycApprovals");
+        }
+        [HttpGet]
+        public async Task<IActionResult> ExportPendingWithdrawalsCsv()
+        {
+            var pendingWithdrawals = await _context.WithdrawalRequests
+                .Include(w => w.User)
+                .Where(w => w.Status == "Pending")
+                .OrderBy(w => w.CreatedDate)
+                .ToListAsync();
+
+            var settings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
+            
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("Id,User Name,Username,Requested Amount,Processing Fee (%),Net Amount,Bank Account Details,Request Date");
+
+            foreach (var req in pendingWithdrawals)
+            {
+                var feeAmount = req.Amount * (settings.WithdrawalFeePercent / 100);
+                var netAmount = req.Amount - feeAmount;
+                
+                // Fetch bank details string (which we don't have distinct cols for, but they should be in KycDetails or Profile). 
+                // Let's pull from KYC if available
+                var kyc = await _context.KycDetails.FirstOrDefaultAsync(k => k.UserId == req.UserId && k.Status == "Approved");
+                string bankInfo = kyc != null ? $"Passbook: {kyc.BankPassbookUrl}" : "No Verified Bank Info";
+
+                // Escape commas in strings
+                string userName = req.User.FullName.Replace(",", " ");
+                string username = req.User.Username.Replace(",", " ");
+                
+                csv.AppendLine($"{req.Id},{userName},{username},{req.Amount:F2},{settings.WithdrawalFeePercent:F2},{netAmount:F2},{bankInfo},{req.CreatedDate:yyyy-MM-dd HH:mm:ss}");
+            }
+
+            return File(System.Text.Encoding.UTF8.GetBytes(csv.ToString()), "text/csv", $"PendingWithdrawals_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
         }
     }
 }

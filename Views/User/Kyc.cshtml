@@ -1,0 +1,95 @@
+@model MLM_Level.Models.KycDetail
+@{
+    ViewData["Title"] = "KYC Verification";
+}
+
+@await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
+{
+    Title = "KYC Verification",
+    Subtitle = "Upload documents to verify identity and enable withdrawals",
+    Icon = "bi-shield-check",
+    ThemeClass = "member-theme-cyan",
+    Badge = Model.Status
+})
+
+<div class="row g-4 justify-content-center">
+    <div class="col-lg-8">
+        <div class="glass-card member-panel-card p-4">
+            
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="mb-4">
+                <div class="d-flex align-items-center justify-content-between p-3 rounded-3" style="background: @(Model.Status == "Approved" ? "rgba(16,185,129,0.1)" : Model.Status == "Rejected" ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)"); border: 1px solid @(Model.Status == "Approved" ? "rgba(16,185,129,0.3)" : Model.Status == "Rejected" ? "rgba(239,68,68,0.3)" : "rgba(245,158,11,0.3)");">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi @(Model.Status == "Approved" ? "bi-check-circle-fill text-success" : Model.Status == "Rejected" ? "bi-x-circle-fill text-danger" : "bi-clock-fill text-warning")" style="font-size: 1.5rem;"></i>
+                        <div>
+                            <h6 class="mb-0 fw-bold @(Model.Status == "Approved" ? "text-success" : Model.Status == "Rejected" ? "text-danger" : "text-warning")">Status: @Model.Status</h6>
+                            <p class="mb-0 small text-secondary">
+                                @(Model.Status == "Approved" ? "Your KYC documents have been verified successfully. You can now request withdrawals." : Model.Status == "Rejected" ? "Your KYC was rejected. Please re-upload valid documents." : "Your documents are currently under review by the admin team.")
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Status == "Rejected" && !string.IsNullOrEmpty(Model.RejectionReason))
+            {
+                <div class="alert alert-danger">
+                    <strong>Rejection Reason:</strong> @Model.RejectionReason
+                </div>
+            }
+
+            @if (Model.Status != "Approved")
+            {
+                <form asp-action="UploadKyc" method="post" enctype="multipart/form-data">
+                    <div class="mb-4 form-group">
+                        <label class="form-label text-secondary small fw-semibold">Upload PAN Card (Image)</label>
+                        <input type="file" name="panCard" class="form-control" accept="image/jpeg,image/png,image/jpg" @(Model.Id == 0 ? "required" : "") />
+                        <small class="text-muted">Upload a clear photo of your PAN card. Max size: 2MB.</small>
+                    </div>
+
+                    <div class="mb-4 form-group">
+                        <label class="form-label text-secondary small fw-semibold">Upload Bank Passbook / Cancelled Cheque (Image)</label>
+                        <input type="file" name="bankPassbook" class="form-control" accept="image/jpeg,image/png,image/jpg" @(Model.Id == 0 ? "required" : "") />
+                        <small class="text-muted">Ensure your Name, Account Number, and IFSC are clearly visible.</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary px-4 py-2 rounded-pill fw-bold">
+                        <i class="bi bi-cloud-arrow-up me-2"></i>Submit Documents
+                    </button>
+                </form>
+            }
+            else
+            {
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-2 text-center bg-light">
+                            <span class="d-block small text-muted mb-2 fw-bold">PAN Card</span>
+                            <img src="@Model.PanCardUrl" class="img-fluid rounded" style="max-height: 150px; object-fit: contain;" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-2 text-center bg-light">
+                            <span class="d-block small text-muted mb-2 fw-bold">Bank Document</span>
+                            <img src="@Model.BankPassbookUrl" class="img-fluid rounded" style="max-height: 150px; object-fit: contain;" />
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

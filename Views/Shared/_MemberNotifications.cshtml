@@ -1,0 +1,65 @@
+@inject MLM_Level.Services.IMemberNotificationService MemberNotificationService
+@using System.Security.Claims
+@{
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    var model = int.TryParse(userIdClaim, out var uid)
+        ? await MemberNotificationService.GetNotificationsAsync(uid)
+        : new MLM_Level.Models.MemberNotificationsViewModel();
+
+    string TimeAgo(DateTime utc)
+    {
+        var span = DateTime.UtcNow - utc;
+        if (span.TotalMinutes < 1) return "Just now";
+        if (span.TotalHours < 1) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalDays < 1) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+        return utc.ToLocalTime().ToString("dd MMM");
+    }
+}
+<div class="dropdown topbar-notifications-dropdown">
+    <button class="topbar-icon-btn position-relative" type="button" id="memberNotificationsBtn"
+            data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+            aria-label="@($"Notifications{(model.TotalCount > 0 ? $" ({model.TotalCount})" : "")}")">
+        <i class="bi bi-bell"></i>
+        @if (model.TotalCount > 0)
+        {
+            <span class="topbar-notification-badge">@(model.TotalCount > 9 ? "9+" : model.TotalCount.ToString())</span>
+        }
+    </button>
+    <div class="dropdown-menu dropdown-menu-end topbar-notifications-menu shadow border-0"
+         aria-labelledby="memberNotificationsBtn">
+        <div class="topbar-notifications-header">
+            <span class="fw-bold text-dark">Notifications</span>
+            @if (model.TotalCount > 0)
+            {
+                <span class="topbar-notifications-count">@(model.TotalCount) new</span>
+            }
+        </div>
+        <div class="topbar-notifications-body">
+            @if (model.Items.Any())
+            {
+                @foreach (var item in model.Items)
+                {
+                    <a class="topbar-notification-item" asp-controller="@item.Controller" asp-action="@item.Action">
+                        <span class="topbar-notif-icon @item.IconClass" aria-hidden="true">
+                            <i class="bi @item.Icon"></i>
+                        </span>
+                        <span class="topbar-notif-content">
+                            <span class="topbar-notif-title">@item.Title</span>
+                            <span class="topbar-notif-desc">@item.Description</span>
+                        </span>
+                        <span class="topbar-notif-time">@TimeAgo(item.CreatedAt)</span>
+                    </a>
+                }
+            }
+            else
+            {
+                <div class="topbar-notifications-empty">
+                    <i class="bi bi-bell-slash"></i>
+                    <p class="mb-0 fw-semibold text-dark small">All caught up</p>
+                    <p class="mb-0 text-muted" style="font-size:0.78rem;">No new updates right now.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

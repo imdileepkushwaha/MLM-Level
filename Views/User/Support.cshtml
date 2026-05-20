@@ -1,135 +1,149 @@
 @model IEnumerable<MLM_Level.Models.SupportTicket>
 @{
-    ViewData["Title"] = "Customer Helpdesk";
+    ViewData["Title"] = "Support Helpdesk";
+    var tickets = Model?.ToList() ?? new List<MLM_Level.Models.SupportTicket>();
+    var pending = tickets.Count(t => t.Status == "Pending");
 }
 
-<div class="container py-4">
-    <!-- Header Page and Title -->
-    <div class="row align-items-center mb-4">
-        <div class="col-md-6 col-12 text-md-start text-center mb-3 mb-md-0">
-            <h1 class="h2 text-slate-800 fw-bold mb-1"><i class="bi bi-headset text-primary me-2"></i>Support Helpdesk</h1>
-            <p class="text-secondary small mb-0">Submit tickets and get quick support from Elite MLM administration.</p>
-        </div>
-        <div class="col-md-6 col-12 text-md-end text-center">
-            <button class="btn btn-primary px-4 py-2 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#newTicketModal">
-                <i class="bi bi-plus-circle me-1"></i>New Support Ticket
-            </button>
-        </div>
-    </div>
+@await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
+{
+    Title = "Support Helpdesk",
+    Subtitle = "Submit tickets and get help from the admin team",
+    Icon = "bi-headset",
+    ThemeClass = "member-theme-violet",
+    Badge = pending > 0 ? $"{pending} open" : $"{tickets.Count} tickets"
+})
 
-
-
-    <!-- Tickets List -->
-    <div class="glass-card p-4">
-        <h5 class="text-slate-800 fw-bold mb-4"><i class="bi bi-chat-left-text text-primary me-2"></i>My Tickets Log</h5>
-
-        @if (!Model.Any())
-        {
-            <div class="text-center py-5">
-                <div class="display-1 text-muted mb-3"><i class="bi bi-envelope-open text-secondary opacity-50"></i></div>
-                <h5 class="text-slate-700 fw-semibold">No tickets found</h5>
-                <p class="text-secondary small">Need help? Click on the "New Support Ticket" button above to get in touch with support.</p>
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Open tickets</p>
+                    <p class="member-stat-value text-warning">@pending</p>
+                    <span class="text-muted small">@tickets.Count total</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-violet"><i class="bi bi-chat-left-text"></i></div>
             </div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                        <tr class="text-secondary small border-bottom border-light">
-                            <th>TICKET ID</th>
-                            <th>SUBJECT</th>
-                            <th>CREATED DATE</th>
-                            <th>STATUS</th>
-                            <th class="text-end">ACTION</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var ticket in Model)
-                        {
-                            <tr class="border-bottom border-light">
-                                <td class="fw-bold text-slate-800">#@ticket.Id</td>
-                                <td>
-                                    <div class="fw-semibold text-slate-800 text-truncate" style="max-width: 250px;">@ticket.Subject</div>
-                                    <div class="small text-muted text-truncate" style="max-width: 300px;">@ticket.Message</div>
-                                </td>
-                                <td class="small text-secondary">@ticket.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</td>
-                                <td>
-                                    @if (ticket.Status == "Pending")
-                                    {
-                                        <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-1 rounded-pill small"><i class="bi bi-clock-history me-1"></i>Pending</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill small"><i class="bi bi-check-all me-1"></i>Resolved</span>
-                                    }
-                                </td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-light border rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#ticketDetails-@ticket.Id">
-                                        <i class="bi bi-eye me-1"></i>View Thread
-                                    </button>
-                                </td>
-                            </tr>
-                            <!-- Details Thread Collapse -->
-                            <tr class="collapse" id="ticketDetails-@ticket.Id">
-                                <td colspan="5" class="bg-light bg-opacity-30 p-4 border-bottom border-light">
-                                    <div class="p-3 bg-white rounded shadow-sm border mb-3">
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span class="fw-bold text-slate-800"><i class="bi bi-person text-secondary me-1"></i>My Query:</span>
-                                            <span class="small text-muted">@ticket.CreatedAt.ToString("g")</span>
-                                        </div>
-                                        <p class="text-secondary mb-0 text-break" style="white-space: pre-wrap;">@ticket.Message</p>
-                                    </div>
-
-                                    @if (!string.IsNullOrEmpty(ticket.AdminResponse))
-                                    {
-                                        <div class="p-3 bg-primary bg-opacity-5 rounded shadow-sm border border-primary border-opacity-10 ms-md-5">
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span class="fw-bold text-primary"><i class="bi bi-shield-check me-1"></i>Admin Response:</span>
-                                                <span class="small text-muted">Resolved</span>
-                                            </div>
-                                            <p class="text-slate-700 mb-0 text-break" style="white-space: pre-wrap;">@ticket.AdminResponse</p>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="p-3 bg-warning bg-opacity-5 rounded shadow-sm border border-warning border-opacity-10 ms-md-5 text-warning small">
-                                            <i class="bi bi-info-circle me-1"></i>This query is currently under review by our administration. Please check back shortly for updates.
-                                        </div>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
+        </div>
     </div>
 </div>
 
-<!-- New Ticket Modal -->
-<div class="modal fade" id="newTicketModal" tabindex="-1" aria-labelledby="newTicketModalLabel" aria-hidden="true">
+<div class="glass-card admin-table-card" data-admin-table data-page-size="10" data-search-placeholder="Search subject or message..." data-count-label="tickets">
+    <div class="admin-table-header flex-wrap gap-2">
+        <h5 class="member-panel-title mb-0"><i class="bi bi-chat-left-text text-primary me-2"></i>My tickets</h5>
+        <span class="admin-record-badge" data-admin-table-count>@tickets.Count tickets</span>
+        <button type="button" class="btn btn-sm admin-btn-primary rounded-pill ms-lg-auto" data-bs-toggle="modal" data-bs-target="#newTicketModal">
+            <i class="bi bi-plus-lg me-1"></i>New ticket
+        </button>
+        <div class="admin-search-wrap admin-table-search-wrap" style="min-width:220px;max-width:320px;">
+            <i class="bi bi-search admin-search-icon"></i>
+            <input type="search" data-admin-table-search class="form-control admin-search-input" placeholder="Search tickets..." autocomplete="off" />
+        </div>
+    </div>
+    @if (tickets.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Subject</th>
+                        <th>Created</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ticket in tickets)
+                    {
+                        var searchText = $"{ticket.Subject} {ticket.Message} {ticket.Status}".ToLowerInvariant();
+                        <tr data-search="@searchText" data-ticket-id="@ticket.Id">
+                            <td class="fw-bold text-dark small">#@ticket.Id</td>
+                            <td>
+                                <div class="fw-semibold text-dark small text-truncate" style="max-width:220px;">@ticket.Subject</div>
+                                <div class="admin-subtext text-truncate" style="max-width:260px;">@ticket.Message</div>
+                            </td>
+                            <td class="admin-subtext">@ticket.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (ticket.Status == "Pending")
+                                {
+                                    <span class="admin-badge-pending">Pending</span>
+                                }
+                                else
+                                {
+                                    <span class="admin-badge-success">Resolved</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3"
+                                        data-bs-toggle="collapse" data-bs-target="#ticketDetails-@ticket.Id">
+                                    <i class="bi bi-eye me-1"></i>View
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="collapse admin-table-detail-row tickets-detail-row" id="ticketDetails-@ticket.Id" data-detail-for="@ticket.Id">
+                            <td colspan="5" class="p-0 border-0">
+                                <div class="p-4 member-ticket-thread mx-3 mb-3 mt-1">
+                                    <div class="p-3 bg-white rounded border mb-3">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="fw-bold text-dark small"><i class="bi bi-person me-1"></i>Your message</span>
+                                            <span class="admin-subtext">@ticket.CreatedAt.ToString("g")</span>
+                                        </div>
+                                        <p class="text-secondary small mb-0" style="white-space:pre-wrap;">@ticket.Message</p>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(ticket.AdminResponse))
+                                    {
+                                        <div class="p-3 rounded border" style="background:rgba(99,102,241,0.06);border-color:rgba(99,102,241,0.15)!important;">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span class="fw-bold text-primary small"><i class="bi bi-shield-check me-1"></i>Admin response</span>
+                                                <span class="admin-subtext">Resolved</span>
+                                            </div>
+                                            <p class="text-dark small mb-0" style="white-space:pre-wrap;">@ticket.AdminResponse</p>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="p-3 rounded border small text-warning" style="background:rgba(245,158,11,0.08);">
+                                            <i class="bi bi-hourglass-split me-1"></i>Under review — check back soon for admin reply.
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        @await Html.PartialAsync("_AdminNoResults")
+    }
+</div>
+
+<div class="modal fade" id="newTicketModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:20px;">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-slate-800" id="newTicketModalLabel"><i class="bi bi-chat-right-text text-primary me-2"></i>Create Support Ticket</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-chat-right-text text-primary me-2"></i>Create support ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="CreateTicket" method="post">
                 @Html.AntiForgeryToken()
                 <div class="modal-body py-4">
                     <div class="mb-3">
-                        <label class="form-label text-secondary small fw-semibold">Subject / Issue Topic</label>
-                        <input type="text" name="subject" class="form-control rounded-3" placeholder="e.g. UPI Deposit verification pending" required maxlength="150" />
+                        <label class="form-label small fw-semibold">Subject</label>
+                        <input type="text" name="subject" class="form-control rounded-3" placeholder="Brief issue title" required maxlength="150" />
                     </div>
                     <div class="mb-0">
-                        <label class="form-label text-secondary small fw-semibold">Describe Your Query</label>
-                        <textarea name="message" class="form-control rounded-3" rows="5" placeholder="Please provide your transaction Reference/UTR code or describe your concern in detail..." required></textarea>
+                        <label class="form-label small fw-semibold">Message</label>
+                        <textarea name="message" class="form-control rounded-3" rows="5" placeholder="Describe your issue in detail..." required></textarea>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-0 justify-content-end">
+                <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4">Submit Query</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Submit</button>
                 </div>
             </form>
         </div>

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MLM_Level.Data;
 using MLM_Level.Models;
+using MLM_Level.Services;
 
 namespace MLM_Level.Controllers
 {
@@ -16,11 +17,13 @@ namespace MLM_Level.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IPasswordHasher<User> _passwordHasher;
+        private readonly IEmailService _emailService;
 
-        public AccountController(ApplicationDbContext context)
+        public AccountController(ApplicationDbContext context, IEmailService emailService)
         {
             _context = context;
             _passwordHasher = new PasswordHasher<User>();
+            _emailService = emailService;
         }
 
         // GET: Account/Login
@@ -192,7 +195,25 @@ namespace MLM_Level.Controllers
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Registration successful! Please login and activate your package.";
+            // Fire and forget welcome email (wrap in try-catch so registration doesn't fail if SMTP is not set)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    string emailBody = $@"
+                        <h2>Welcome to Elite MLM, {newUser.FullName}!</h2>
+                        <p>Your account has been created successfully.</p>
+                        <p><strong>Username:</strong> {newUser.Username}</p>
+                        <p><strong>Sponsor ID:</strong> {(sponsor != null ? sponsor.Username : "None")}</p>
+                        <br/>
+                        <p>Login to your dashboard to activate your account and start earning!</p>
+                    ";
+                    await _emailService.SendEmailAsync(newUser.Email, "Welcome to Elite MLM!", emailBody);
+                }
+                catch { /* Ignore SMTP errors to prevent blocking registration */ }
+            });
+
+            TempData["SuccessMessage"] = "Registration successful! Please login.";
             return RedirectToAction("Login");
         }
 

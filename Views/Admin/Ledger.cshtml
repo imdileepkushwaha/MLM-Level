@@ -1,141 +1,208 @@
 @model List<MLM_Level.Models.CommissionTran>
 @{
-    ViewData["Title"] = "Global Transaction Ledger & Wallet Adjustments";
+    ViewData["Title"] = "Global Transaction Ledger";
+    var totalIn = Model.Where(t => t.Amount > 0).Sum(t => t.Amount);
+    var totalOut = Model.Where(t => t.Amount < 0).Sum(t => Math.Abs(t.Amount));
 }
 
-<div class="row g-4 mb-4">
-    <!-- Page Header -->
-    <div class="col-lg-8">
-        <div class="glass-card p-4 h-100">
-            <h4 class="text-white fw-bold mb-2">Global Ledger Audit & History</h4>
-            <p class="text-secondary mb-0">System-wide transaction trail of all member commissions, manual wallet additions/deductions, and transfer audits.</p>
+<div class="admin-page-header admin-theme-blue mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-journal-text"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Global Ledger</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Commissions, P2P transfers and wallet adjustments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <button type="button" class="btn admin-btn-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#walletAdjustModal">
+                <i class="bi bi-wallet2 me-2"></i>Quick wallet adjustment
+            </button>
         </div>
     </div>
-    
-    <!-- Quick wallet adjustment form -->
-    <div class="col-lg-4">
-        <div class="glass-card p-4">
-            <h5 class="text-white fw-bold mb-3"><i class="bi bi-wallet-fill text-pink me-2"></i>Adjust Member Wallet</h5>
+</div>
+
+<div class="modal fade" id="walletAdjustModal" tabindex="-1" aria-labelledby="walletAdjustModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
             <form asp-controller="Admin" asp-action="AdjustWallet" method="post">
                 @Html.AntiForgeryToken()
-                <div class="mb-2 form-group">
-                    <input type="text" name="username" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Username" required />
+                <div class="modal-header border-0 px-4 pt-4 pb-0">
+                    <h5 class="modal-title fw-bold text-dark" id="walletAdjustModalLabel">
+                        <i class="bi bi-wallet2 text-primary me-2"></i>Quick wallet adjustment
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="mb-2 form-group">
-                    <input type="number" step="0.01" name="amount" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Amount (positive to add, negative to subtract)" required />
+                <div class="modal-body p-4 pt-3">
+                    <p class="text-muted small mb-3">Credit or debit a member wallet. Use a negative amount to deduct balance.</p>
+                    <div class="mb-3">
+                        <label class="settings-label"><i class="bi bi-person me-1"></i>Username</label>
+                        <input type="text" name="username" class="form-control settings-input" placeholder="Member username" required autofocus />
+                    </div>
+                    <div class="mb-3">
+                        <label class="settings-label"><i class="bi bi-currency-rupee me-1"></i>Amount</label>
+                        <input type="number" step="0.01" name="amount" class="form-control settings-input" placeholder="e.g. 500 or -200" required />
+                        <div class="form-text text-muted small">Positive = credit, negative = debit</div>
+                    </div>
+                    <div>
+                        <label class="settings-label"><i class="bi bi-card-text me-1"></i>Description</label>
+                        <input type="text" name="description" class="form-control settings-input" placeholder="Reason for adjustment" required />
+                    </div>
                 </div>
-                <div class="mb-2 form-group">
-                    <input type="text" name="description" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Description/Reason" required />
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn admin-btn-primary rounded-pill px-4">
+                        <i class="bi bi-lightning-charge-fill me-1"></i>Apply adjustment
+                    </button>
                 </div>
-                <button type="submit" class="btn btn-cyber-pink btn-sm w-100 py-2">
-                    <i class="bi bi-patch-plus me-1"></i>Execute Adjustment
-                </button>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Ledger filter panel -->
-<div class="glass-card p-3 mb-4">
-    <form method="get" class="row g-3 align-items-center">
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Records</p>
+            <p class="admin-stat-value text-primary mb-0">@Model.Count</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Credits</p>
+            <p class="admin-stat-value text-success mb-0" style="font-size:1.1rem;">&#8377;@totalIn.ToString("N0")</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Debits</p>
+            <p class="admin-stat-value text-danger mb-0" style="font-size:1.1rem;">&#8377;@totalOut.ToString("N0")</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Net flow</p>
+            <p class="admin-stat-value text-info mb-0" style="font-size:1.1rem;">&#8377;@((totalIn - totalOut).ToString("N0"))</p>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card p-4 mb-4">
+    <form method="get" class="row g-3 align-items-end">
         <div class="col-md-4">
-            <div class="input-group">
-                <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-search"></i></span>
-                <input type="text" name="searchUsername" value="@ViewBag.SearchUsername" class="form-control auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Filter by username..." />
-            </div>
+            <label class="settings-label"><i class="bi bi-search me-1"></i>Search user</label>
+            <input type="text" name="searchUsername" value="@ViewBag.SearchUsername" class="form-control settings-input" placeholder="Username..." />
         </div>
         <div class="col-md-4">
-            <select name="filterType" class="form-select auth-glow-input bg-transparent border-secondary border-opacity-25 text-white">
-                <option value="" class="bg-dark text-white">All Transactions</option>
-                <option value="Commission" selected="@(ViewBag.FilterType == "Commission")" class="bg-dark text-white">Commissions Payout Only</option>
-                <option value="P2P" selected="@(ViewBag.FilterType == "P2P")" class="bg-dark text-white">P2P Transfers Only</option>
-                <option value="Manual" selected="@(ViewBag.FilterType == "Manual")" class="bg-dark text-white">Manual Adjustments Only</option>
+            <label class="settings-label"><i class="bi bi-funnel me-1"></i>Transaction type</label>
+            <select name="filterType" class="form-select settings-input">
+                <option value="">All transactions</option>
+                <option value="Commission" selected="@(ViewBag.FilterType == "Commission")">Commissions only</option>
+                <option value="P2P" selected="@(ViewBag.FilterType == "P2P")">P2P transfers only</option>
+                <option value="Manual" selected="@(ViewBag.FilterType == "Manual")">Manual adjustments</option>
             </select>
         </div>
         <div class="col-md-4 d-flex gap-2">
-            <button type="submit" class="btn btn-cyber-cyan w-100">
-                <i class="bi bi-funnel me-1"></i>Filter Ledger
-            </button>
-            <a asp-action="Ledger" class="btn btn-cyber-outline w-100 text-center">
-                Clear
-            </a>
+            <button type="submit" class="btn admin-btn-primary flex-grow-1">Apply filter</button>
+            <a asp-action="Ledger" class="btn admin-btn-outline"><i class="bi bi-x-lg"></i></a>
         </div>
     </form>
 </div>
 
-<!-- Ledger Audit Table -->
-<div class="glass-card p-4">
-    <h5 class="text-white fw-bold mb-4"><i class="bi bi-receipt text-cyan me-2"></i>Audit Trail Log</h5>
-    <div class="glass-table-container">
-        @if (Model.Any())
-        {
-            <table class="table glass-table align-middle">
+<div class="glass-card admin-table-card" data-admin-table data-page-size="15" data-search-placeholder="Search ledger..." data-count-label="records">
+    <div class="admin-table-header">
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-receipt text-primary me-2"></i>Audit trail</h5>
+        <span class="admin-record-badge" data-admin-table-count>@Model.Count records</span>
+    </div>
+    @if (Model.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
                 <thead>
                     <tr>
-                        <th>Date & Time</th>
-                        <th>User Wallet</th>
-                        <th>From User / Admin</th>
-                        <th>Type / Level</th>
+                        <th>Date</th>
+                        <th>Member</th>
+                        <th>Source</th>
+                        <th>Type</th>
                         <th>Amount</th>
-                        <th>Transaction Info</th>
+                        <th>Description</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var tx in Model)
                     {
-                        <tr>
-                            <td>@tx.Timestamp.ToString("dd MMM yyyy hh:mm:ss tt")</td>
+                        var user = tx.User;
+                        var from = tx.FromUser;
+                        var initial = user?.Username != null && user.Username.Length > 0 ? user.Username[0].ToString().ToUpper() : "?";
+                        var searchText = $"{user?.Username} {user?.FullName} {from?.Username} {from?.FullName} {tx.Description} L{tx.Level}".ToLowerInvariant();
+                        <tr data-search="@searchText">
                             <td>
-                                <strong class="text-white">@@@tx.User.Username</strong><br/>
-                                <span class="small text-muted" style="font-size: 0.75rem;">@tx.User.FullName</span>
+                                <div class="fw-semibold text-dark small">@tx.Timestamp.ToString("dd MMM yyyy")</div>
+                                <div class="admin-subtext">@tx.Timestamp.ToString("hh:mm tt")</div>
                             </td>
                             <td>
-                                @if (tx.FromUser != null)
+                                @if (user != null)
                                 {
-                                    <strong class="text-secondary">@@@tx.FromUser.Username</strong><br/>
-                                    <span class="small text-muted" style="font-size: 0.75rem;">@tx.FromUser.FullName</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="admin-avatar">@initial</div>
+                                        <div>
+                                            <div class="fw-bold text-dark small">@("@" + user.Username)</div>
+                                            <div class="admin-subtext">@user.FullName</div>
+                                        </div>
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                @if (from != null)
+                                {
+                                    <div class="fw-semibold text-dark small">@("@" + from.Username)</div>
+                                    <div class="admin-subtext">@from.FullName</div>
                                 }
                                 else
                                 {
-                                    <span class="text-muted small">System / Root</span>
+                                    <span class="admin-subtext"><i class="bi bi-gear me-1"></i>System</span>
                                 }
                             </td>
                             <td>
                                 @if (tx.Level == 99)
                                 {
-                                    <span class="badge bg-opacity-10 bg-danger text-danger border border-danger border-opacity-25 px-2 py-1">Manual Adjust</span>
+                                    <span class="admin-badge-type admin-type-manual"><i class="bi bi-tools me-1"></i>Manual</span>
                                 }
                                 else if (tx.Level > 0 && tx.Level <= 5)
                                 {
-                                    <span class="badge bg-opacity-10 bg-info text-info border border-info border-opacity-25 px-2 py-1">Level @tx.Level</span>
+                                    <span class="admin-badge-type admin-type-commission"><i class="bi bi-diagram-3 me-1"></i>L@tx.Level</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-opacity-10 bg-warning text-warning border border-warning border-opacity-25 px-2 py-1">P2P Transfer</span>
+                                    <span class="admin-badge-type admin-type-p2p"><i class="bi bi-arrow-left-right me-1"></i>P2P</span>
                                 }
                             </td>
                             <td>
                                 @if (tx.Amount >= 0)
                                 {
-                                    <strong class="text-success">+₹@tx.Amount.ToString("N2")</strong>
+                                    <span class="fw-bold text-success">+&#8377;@tx.Amount.ToString("N2")</span>
                                 }
                                 else
                                 {
-                                    <strong class="text-danger">-₹@Math.Abs(tx.Amount).ToString("N2")</strong>
+                                    <span class="fw-bold text-danger">-&#8377;@Math.Abs(tx.Amount).ToString("N2")</span>
                                 }
                             </td>
-                            <td class="text-secondary small">@tx.Description</td>
+                            <td class="text-muted small">@tx.Description</td>
                         </tr>
                     }
                 </tbody>
             </table>
-        }
-        else
-        {
-            <div class="text-center py-5 text-secondary">
-                <i class="bi bi-file-earmark-spreadsheet fs-2 mb-2 d-block text-muted"></i>
-                No matching transactions found in database ledger.
-            </div>
-        }
-    </div>
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <div class="admin-empty-icon mb-4"><i class="bi bi-journal-x"></i></div>
+            <h5 class="fw-bold text-dark">No records found</h5>
+            <p class="text-muted small mb-0">No matching transactions in the ledger.</p>
+        </div>
+    }
 </div>
