@@ -26,11 +26,11 @@ namespace MLM_Level.Services
         {
             _logger.LogInformation("Daily Closing Service started.");
 
-            // Run closing every 1 hour to check for uncleared IncomeWallet balances.
-            // Normally this would run exactly at midnight, but for safety and robust retry, we just sweep balances.
+            // Let startup DB initialization finish before the first sweep.
+            await Task.Delay(TimeSpan.FromSeconds(8), stoppingToken);
+
             using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
 
-            // Run immediately on startup once
             await ProcessClosing();
 
             while (await timer.WaitForNextTickAsync(stoppingToken))

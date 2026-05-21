@@ -55,8 +55,8 @@
                     <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Members" ? "active" : "")" asp-controller="Admin" asp-action="Members">
                         <i class="bi bi-people"></i> All Members
                     </a>
-                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "PendingRequests" ? "active" : "")" asp-controller="Admin" asp-action="PendingRequests">
-                        <i class="bi bi-hourglass-split"></i> Pending Withdrawals
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Withdrawals" ? "active" : "")" asp-controller="Admin" asp-action="Withdrawals">
+                        <i class="bi bi-wallet2"></i> Withdrawals
                     </a>
                     <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "PendingActivations" ? "active" : "")" asp-controller="Admin" asp-action="PendingActivations">
                         <i class="bi bi-shield-lock"></i> Activation Requests
@@ -85,6 +85,9 @@
                     </a>
                     <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Announcements" ? "active" : "")" asp-controller="Admin" asp-action="Announcements">
                         <i class="bi bi-megaphone"></i> Notice Board
+                    </a>
+                    <a class="sidebar-link @(Context.Request.RouteValues["action"]?.ToString() == "Rewards" ? "active" : "")" asp-controller="Admin" asp-action="Rewards">
+                        <i class="bi bi-trophy"></i> Member Rewards
                     </a>
                 </nav>
 

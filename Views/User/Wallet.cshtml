@@ -128,12 +128,13 @@
                                 <th>Request</th>
                                 <th>Amount</th>
                                 <th>Status</th>
+                                <th>Remarks</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var w in withdrawals)
                             {
-                                var searchText = $"{w.Amount} {w.Status} {w.CreatedDate}".ToLowerInvariant();
+                                var searchText = $"{w.Amount} {w.Status} {w.CreatedDate} {w.RejectionReason}".ToLowerInvariant();
                                 <tr data-search="@searchText">
                                     <td>
                                         <div class="fw-semibold text-dark small">@w.CreatedDate.ToString("dd MMM yyyy")</div>
@@ -152,6 +153,24 @@
                                         else
                                         {
                                             <span class="admin-badge-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+                                        }
+                                    </td>
+                                    <td class="admin-subtext">
+                                        @if (w.Status == "Rejected" && !string.IsNullOrWhiteSpace(w.RejectionReason))
+                                        {
+                                            <span class="text-danger">@w.RejectionReason</span>
+                                        }
+                                        else if (w.Status == "Rejected")
+                                        {
+                                            <span>Declined · amount refunded</span>
+                                        }
+                                        else if (w.Status == "Approved" && w.ProcessedDate.HasValue)
+                                        {
+                                            <span>Paid @w.ProcessedDate.Value.ToLocalTime().ToString("dd MMM yyyy")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>—</span>
                                         }
                                     </td>
                                 </tr>

@@ -1,0 +1,213 @@
+@model MLM_Level.Models.AdminApprovalsViewModel
+@{
+    ViewData["Title"] = "Withdrawals";
+    var withdrawals = Model.WithdrawalRequests;
+    var pending = withdrawals.Count(w => w.Status == "Pending");
+    var approved = withdrawals.Count(w => w.Status == "Approved");
+    var rejected = withdrawals.Count(w => w.Status == "Rejected");
+    var pendingTotal = withdrawals.Where(w => w.Status == "Pending").Sum(w => w.Amount);
+    var pageSize = Math.Max(withdrawals.Count, 10);
+}
+
+<div class="admin-page-header admin-theme-amber mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-wallet2"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Withdrawals</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Review pending payouts and browse approved or rejected history</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end d-flex flex-wrap gap-2 justify-content-lg-end">
+            <a asp-action="PendingActivations" class="admin-header-btn">
+                <i class="bi bi-shield-lock me-1"></i>Activation queue
+            </a>
+            @if (pending > 0)
+            {
+                <span class="admin-header-badge">
+                    <i class="bi bi-hourglass-split me-1"></i>@pending pending
+                </span>
+            }
+            else
+            {
+                <span class="admin-header-badge">
+                    <i class="bi bi-check-circle me-1"></i>Queue clear
+                </span>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Pending</p>
+            <p class="admin-stat-value text-warning mb-0">@pending</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Approved</p>
+            <p class="admin-stat-value text-success mb-0">@approved</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Rejected</p>
+            <p class="admin-stat-value text-danger mb-0">@rejected</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Pending amount</p>
+            <p class="admin-stat-value text-danger mb-0" style="font-size:1rem;">&#8377;@pendingTotal.ToString("N0")</p>
+        </div>
+    </div>
+</div>
+
+<div data-admin-table data-page-size="@pageSize" data-search-placeholder="Search member, amount or status..." data-count-label="requests">
+    <div class="glass-card p-3 mb-4">
+        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+            <span class="text-muted small fw-semibold mb-0"><i class="bi bi-funnel me-1"></i>Filter by status</span>
+            <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                <button type="button" class="admin-filter-btn active" data-admin-filter="wd" data-admin-filter-value="all">All (@withdrawals.Count)</button>
+                <button type="button" class="admin-filter-btn" data-admin-filter="wd" data-admin-filter-value="pending">Pending (@pending)</button>
+                <button type="button" class="admin-filter-btn" data-admin-filter="wd" data-admin-filter-value="approved">Approved (@approved)</button>
+                <button type="button" class="admin-filter-btn" data-admin-filter="wd" data-admin-filter-value="rejected">Rejected (@rejected)</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card admin-table-card">
+        <div class="admin-table-header flex-wrap gap-2">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="bi bi-wallet2 text-warning me-2"></i>Withdrawal requests
+            </h5>
+            <span class="admin-record-badge" data-admin-table-count>@withdrawals.Count requests</span>
+            @if (pending > 0)
+            {
+                <a asp-action="ExportPendingWithdrawalsCsv" class="btn btn-sm admin-btn-outline">
+                    <i class="bi bi-download me-1"></i>Export pending CSV
+                </a>
+            }
+            <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:220px;max-width:320px;">
+                <i class="bi bi-search admin-search-icon"></i>
+                <input type="search" data-admin-table-search class="form-control admin-search-input"
+                       placeholder="Search member or amount..." autocomplete="off" />
+            </div>
+        </div>
+        @if (withdrawals.Any())
+        {
+            <div class="admin-table-scroll">
+                <table class="table admin-table">
+                    <thead>
+                        <tr>
+                            <th>Requested</th>
+                            <th>Member</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Processed</th>
+                            <th>Remarks</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var w in withdrawals)
+                        {
+                            var statusKey = w.Status.ToLowerInvariant();
+                            var searchText = $"{w.User?.Username} {w.User?.FullName} {w.Amount} {w.Status} {w.RejectionReason}".ToLowerInvariant();
+                            <tr data-wd="@statusKey" data-search="@searchText">
+                                <td>
+                                    <div class="fw-semibold text-dark small">@w.CreatedDate.ToString("dd MMM yyyy")</div>
+                                    <div class="admin-subtext">@w.CreatedDate.ToString("hh:mm tt")</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark small">@(w.User?.Username ?? "-")</div>
+                                    <div class="admin-subtext">@(w.User?.FullName ?? "-") · Bal &#8377;@(w.User?.WalletBalance.ToString("N0") ?? "0")</div>
+                                </td>
+                                <td class="fw-bold text-warning">&#8377;@w.Amount.ToString("N2")</td>
+                                <td>
+                                    @if (w.Status == "Approved")
+                                    {
+                                        <span class="admin-badge-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
+                                    }
+                                    else if (w.Status == "Pending")
+                                    {
+                                        <span class="admin-badge-pending"><i class="bi bi-hourglass-split me-1"></i>Pending</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="admin-badge-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+                                    }
+                                </td>
+                                <td class="admin-subtext">
+                                    @if (w.ProcessedDate.HasValue)
+                                    {
+                                        @w.ProcessedDate.Value.ToLocalTime().ToString("dd MMM yyyy")
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                                <td class="admin-subtext">
+                                    @if (w.Status == "Rejected" && !string.IsNullOrWhiteSpace(w.RejectionReason))
+                                    {
+                                        <span class="text-danger">@w.RejectionReason</span>
+                                    }
+                                    else if (w.Status == "Rejected")
+                                    {
+                                        <span>Declined · refunded to wallet</span>
+                                    }
+                                    else if (w.Status == "Approved")
+                                    {
+                                        <span>Payout processed</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Awaiting review</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (w.Status == "Pending")
+                                    {
+                                        <form asp-action="ApproveWithdrawal" asp-route-id="@w.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-2 me-1" title="Approve"><i class="bi bi-check-lg"></i></button>
+                                        </form>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Reject"
+                                                data-bs-toggle="modal" data-bs-target="#rejectWd-@w.Id">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @foreach (var w in withdrawals.Where(w => w.Status == "Pending"))
+            {
+                @await Html.PartialAsync("_AdminRejectModal", new MLM_Level.Models.AdminRejectModalViewModel
+                {
+                    ModalId = $"rejectWd-{w.Id}",
+                    FormAction = "RejectWithdrawal",
+                    RequestId = w.Id,
+                    Title = "Reject withdrawal request",
+                    Subtitle = $"{w.User?.FullName} (@{w.User?.Username}) · ₹{w.Amount:N2}"
+                })
+            }
+        }
+        else
+        {
+            @await Html.PartialAsync("_AdminNoResults")
+        }
+    </div>
+</div>

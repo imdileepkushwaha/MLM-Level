@@ -1,0 +1,390 @@
+@model List<MLM_Level.Models.MemberReward>
+@{
+    ViewData["Title"] = "Member Rewards";
+    var liveCount = Model.Count(r => r.IsActive);
+    var hiddenCount = Model.Count(r => !r.IsActive);
+    var totalValue = Model.Where(r => r.IsActive).Sum(r => r.Amount);
+}
+
+<div class="admin-page-header admin-theme-teal mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-trophy-fill"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Member Rewards</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Publish bonuses and recognitions — members see them under My Income → Rewards</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <button type="button" class="btn admin-btn-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#createRewardModal">
+                <i class="bi bi-plus-lg me-2"></i>Add Reward
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Total rewards</p>
+            <p class="admin-stat-value text-primary mb-0">@Model.Count</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Live</p>
+            <p class="admin-stat-value text-success mb-0">@liveCount</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Live reward value</p>
+            <p class="admin-stat-value text-warning mb-0" style="font-size:1rem;">&#8377;@totalValue.ToString("N0")</p>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createRewardModal" tabindex="-1" aria-labelledby="createRewardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg reward-compose-modal">
+            <form asp-action="CreateReward" method="post" id="rewardCreateForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-header px-4 pt-4 pb-0 reward-compose-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="reward-compose-icon">
+                            <i class="bi bi-trophy-fill"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-dark mb-0" id="createRewardModalLabel">Add member reward</h5>
+                            <p class="text-muted small mb-0">Members see it under My Income → Rewards</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 pt-3">
+                    <div class="row g-4">
+                        <div class="col-lg-7">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary mb-2" for="rewardTitle">
+                                    Title <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="title" id="rewardTitle" maxlength="200"
+                                       class="form-control reward-input" placeholder="e.g. Top performer bonus" required autofocus />
+                                <div class="d-flex justify-content-between mt-1">
+                                    <span class="text-muted" style="font-size:0.75rem;">Short headline members will notice</span>
+                                    <span class="text-muted" style="font-size:0.75rem;"><span id="rewardTitleCount">0</span>/200</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary mb-2">Reward type</label>
+                                <div class="reward-type-picker" id="rewardTypePicker">
+                                    <label class="reward-type-option">
+                                        <input type="radio" name="rewardType" value="Bonus" checked />
+                                        <span class="reward-type-chip reward-type-bonus"><i class="bi bi-award-fill"></i> Bonus</span>
+                                    </label>
+                                    <label class="reward-type-option">
+                                        <input type="radio" name="rewardType" value="Trophy" />
+                                        <span class="reward-type-chip reward-type-trophy"><i class="bi bi-trophy-fill"></i> Trophy</span>
+                                    </label>
+                                    <label class="reward-type-option">
+                                        <input type="radio" name="rewardType" value="Cash Reward" />
+                                        <span class="reward-type-chip reward-type-cash"><i class="bi bi-cash-coin"></i> Cash</span>
+                                    </label>
+                                    <label class="reward-type-option">
+                                        <input type="radio" name="rewardType" value="Gift" />
+                                        <span class="reward-type-chip reward-type-gift"><i class="bi bi-gift-fill"></i> Gift</span>
+                                    </label>
+                                    <label class="reward-type-option">
+                                        <input type="radio" name="rewardType" value="Recognition" />
+                                        <span class="reward-type-chip reward-type-recognition"><i class="bi bi-star-fill"></i> Recognition</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small text-secondary mb-2" for="rewardAmount">Amount (&#8377;)</label>
+                                    <div class="reward-amount-wrap">
+                                        <span class="reward-amount-prefix">&#8377;</span>
+                                        <input type="number" step="0.01" min="0" name="amount" id="rewardAmount"
+                                               class="form-control reward-input reward-amount-input" placeholder="0.00" value="0" />
+                                    </div>
+                                    <span class="text-muted" style="font-size:0.75rem;">Use 0 for recognition-only rewards</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small text-secondary mb-2">Audience</label>
+                                    <div class="reward-audience-toggle" role="group" aria-label="Reward audience">
+                                        <button type="button" class="reward-audience-btn active" data-audience="all">
+                                            <i class="bi bi-people-fill"></i> All members
+                                        </button>
+                                        <button type="button" class="reward-audience-btn" data-audience="one">
+                                            <i class="bi bi-person-fill"></i> One member
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3 d-none" id="rewardUsernameWrap">
+                                <label class="form-label fw-semibold small text-secondary mb-2" for="rewardUsername">Member username</label>
+                                <div class="reward-username-wrap">
+                                    <span class="reward-username-prefix">@@</span>
+                                    <input type="text" name="username" id="rewardUsername" class="form-control reward-input reward-username-input"
+                                           placeholder="e.g. root" autocomplete="off" />
+                                </div>
+                                <span class="text-muted" style="font-size:0.75rem;">Only this member will see the reward</span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary mb-2" for="rewardDescription">
+                                    Description <span class="text-danger">*</span>
+                                </label>
+                                <textarea name="description" id="rewardDescription" rows="2"
+                                          class="form-control reward-input" style="resize:vertical; min-height:60px;"
+                                          placeholder="Explain why this reward was given and what the member achieved..." required></textarea>
+                            </div>
+
+                            <div class="reward-tip-box">
+                                <i class="bi bi-lightbulb-fill text-warning"></i>
+                                <span>Published rewards go live immediately. You can hide or delete them anytime from the table below.</span>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-5">
+                            <p class="small fw-semibold text-secondary text-uppercase mb-2" style="letter-spacing:0.06em;">Live preview</p>
+                            <div class="reward-preview-panel">
+                                <div class="reward-preview-badge"><i class="bi bi-eye me-1"></i> Member card preview</div>
+                                <article class="reward-preview-card reward-preview-gold" id="rewardPreviewCard">
+                                    <div class="reward-preview-accent"></div>
+                                    <div class="reward-preview-head">
+                                        <div class="reward-preview-icon" id="rewardPreviewIcon"><i class="bi bi-award-fill"></i></div>
+                                        <div class="reward-preview-badges">
+                                            <span class="reward-preview-type" id="rewardPreviewType">Bonus</span>
+                                            <span class="reward-preview-scope" id="rewardPreviewScope"><i class="bi bi-people-fill"></i> All members</span>
+                                        </div>
+                                    </div>
+                                    <h6 class="reward-preview-title" id="rewardPreviewTitle">Your reward title</h6>
+                                    <p class="reward-preview-desc" id="rewardPreviewDesc">Description will appear here as you type.</p>
+                                    <div class="reward-preview-footer">
+                                        <span class="reward-preview-amount" id="rewardPreviewAmount">&#8377;0.00</span>
+                                        <span class="reward-preview-date"><i class="bi bi-clock me-1"></i>Today</span>
+                                    </div>
+                                </article>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0 gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="reward-btn-primary px-4 py-2">
+                        <i class="bi bi-send-fill me-2"></i>Publish reward
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card admin-table-card" data-admin-table data-page-size="15" data-search-placeholder="Search rewards..." data-count-label="rewards">
+    <div class="admin-table-header flex-wrap gap-2">
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-trophy text-warning me-2"></i>Published rewards</h5>
+        <span class="admin-record-badge" data-admin-table-count>@Model.Count rewards</span>
+        <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:220px;max-width:320px;">
+            <i class="bi bi-search admin-search-icon"></i>
+            <input type="search" data-admin-table-search class="form-control admin-search-input" placeholder="Search title or member..." autocomplete="off" />
+        </div>
+    </div>
+    @if (Model.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Title</th>
+                        <th>Member</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var reward in Model)
+                    {
+                        var searchText = $"{reward.Title} {reward.Description} {reward.RewardType} {reward.User?.Username}".ToLowerInvariant();
+                        <tr data-search="@searchText">
+                            <td class="admin-subtext">@reward.CreatedDate.ToLocalTime().ToString("dd MMM yyyy")</td>
+                            <td>
+                                <div class="fw-bold text-dark small">@reward.Title</div>
+                                <div class="admin-subtext text-truncate" style="max-width:260px;">@reward.Description</div>
+                            </td>
+                            <td>
+                                @if (reward.User != null)
+                                {
+                                    <span class="admin-badge-type admin-type-commission">@("@" + reward.User.Username)</span>
+                                }
+                                else
+                                {
+                                    <span class="admin-badge-success">All members</span>
+                                }
+                            </td>
+                            <td><span class="admin-badge-pending">@reward.RewardType</span></td>
+                            <td class="fw-bold text-warning">&#8377;@reward.Amount.ToString("N2")</td>
+                            <td>
+                                @if (reward.IsActive)
+                                {
+                                    <span class="admin-badge-success">Live</span>
+                                }
+                                else
+                                {
+                                    <span class="admin-badge-danger">Hidden</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <form asp-action="ToggleReward" asp-route-id="@reward.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-2 me-1" title="Toggle visibility">
+                                        <i class="bi bi-eye@(reward.IsActive ? "" : "-slash")"></i>
+                                    </button>
+                                </form>
+                                <form asp-action="DeleteReward" asp-route-id="@reward.Id" method="post" class="d-inline" onsubmit="return confirm('Delete this reward?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        @await Html.PartialAsync("_AdminNoResults")
+    }
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    var form = document.getElementById('rewardCreateForm');
+    var modal = document.getElementById('createRewardModal');
+    var titleInput = document.getElementById('rewardTitle');
+    var descInput = document.getElementById('rewardDescription');
+    var amountInput = document.getElementById('rewardAmount');
+    var usernameInput = document.getElementById('rewardUsername');
+    var usernameWrap = document.getElementById('rewardUsernameWrap');
+    var titleCount = document.getElementById('rewardTitleCount');
+    var previewCard = document.getElementById('rewardPreviewCard');
+    var previewIcon = document.getElementById('rewardPreviewIcon');
+    var previewType = document.getElementById('rewardPreviewType');
+    var previewScope = document.getElementById('rewardPreviewScope');
+    var previewTitle = document.getElementById('rewardPreviewTitle');
+    var previewDesc = document.getElementById('rewardPreviewDesc');
+    var previewAmount = document.getElementById('rewardPreviewAmount');
+    var typePicker = document.getElementById('rewardTypePicker');
+    var audienceBtns = document.querySelectorAll('.reward-audience-btn');
+
+    var typeMeta = {
+        'Bonus': { icon: 'bi-award-fill', theme: 'reward-preview-gold' },
+        'Trophy': { icon: 'bi-trophy-fill', theme: 'reward-preview-gold' },
+        'Cash Reward': { icon: 'bi-cash-coin', theme: 'reward-preview-green' },
+        'Gift': { icon: 'bi-gift-fill', theme: 'reward-preview-pink' },
+        'Recognition': { icon: 'bi-star-fill', theme: 'reward-preview-blue' }
+    };
+
+    function selectedType() {
+        var checked = typePicker ? typePicker.querySelector('input[name="rewardType"]:checked') : null;
+        return checked ? checked.value : 'Bonus';
+    }
+
+    function formatAmount(val) {
+        var num = parseFloat(val);
+        if (isNaN(num) || num <= 0) {
+            return '<i class="bi bi-star-fill me-1"></i>Recognition';
+        }
+        return '&#8377;' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function updatePreview() {
+        if (!previewTitle) return;
+        var type = selectedType();
+        var meta = typeMeta[type] || typeMeta['Bonus'];
+        var audience = document.querySelector('.reward-audience-btn.active');
+        var isOne = audience && audience.getAttribute('data-audience') === 'one';
+        var user = usernameInput ? usernameInput.value.trim() : '';
+
+        previewTitle.textContent = titleInput && titleInput.value.trim()
+            ? titleInput.value.trim()
+            : 'Your reward title';
+        previewDesc.textContent = descInput && descInput.value.trim()
+            ? descInput.value.trim()
+            : 'Description will appear here as you type.';
+        previewType.textContent = type;
+        previewIcon.innerHTML = '<i class="bi ' + meta.icon + '"></i>';
+
+        if (previewCard) {
+            previewCard.className = 'reward-preview-card ' + meta.theme;
+        }
+
+        if (isOne) {
+            previewScope.innerHTML = user
+                ? '<i class="bi bi-person-fill"></i> @@' + user
+                : '<i class="bi bi-person-fill"></i> One member';
+        } else {
+            previewScope.innerHTML = '<i class="bi bi-people-fill"></i> All members';
+        }
+
+        if (previewAmount) {
+            previewAmount.innerHTML = formatAmount(amountInput ? amountInput.value : 0);
+            previewAmount.classList.toggle('is-recognition', !amountInput || parseFloat(amountInput.value) <= 0);
+        }
+
+        if (titleCount && titleInput) {
+            titleCount.textContent = titleInput.value.length;
+        }
+    }
+
+    if (typePicker) {
+        typePicker.addEventListener('change', updatePreview);
+    }
+    [titleInput, descInput, amountInput, usernameInput].forEach(function (el) {
+        if (el) el.addEventListener('input', updatePreview);
+    });
+
+    audienceBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            audienceBtns.forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            var isOne = btn.getAttribute('data-audience') === 'one';
+            if (usernameWrap) usernameWrap.classList.toggle('d-none', !isOne);
+            if (usernameInput) {
+                usernameInput.required = isOne;
+                if (!isOne) usernameInput.value = '';
+            }
+            updatePreview();
+        });
+    });
+
+    if (modal) {
+        modal.addEventListener('hidden.bs.modal', function () {
+            if (form) form.reset();
+            audienceBtns.forEach(function (b, i) {
+                b.classList.toggle('active', i === 0);
+            });
+            if (usernameWrap) usernameWrap.classList.add('d-none');
+            if (usernameInput) usernameInput.required = false;
+            updatePreview();
+        });
+    }
+
+    updatePreview();
+})();
+</script>
+}

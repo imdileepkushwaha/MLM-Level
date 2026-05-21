@@ -31,6 +31,14 @@ function copyReferralLink() {
 
 // Fade out alert messages automatically
 document.addEventListener("DOMContentLoaded", function() {
+    // Modals nested in glass cards sit in a lower stacking context than the
+    // body-appended backdrop; attach them to body so they render on top.
+    document.querySelectorAll(".modal").forEach(function(modal) {
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+
     var alerts = document.querySelectorAll(".alert-dismissible");
     alerts.forEach(function(alert) {
         setTimeout(function() {

@@ -17,8 +17,8 @@
             </div>
         </div>
         <div class="col-lg-4 text-lg-end">
-            <a asp-action="PendingRequests" class="admin-header-btn">
-                <i class="bi bi-wallet2 me-1"></i>Withdrawals queue
+            <a asp-action="Withdrawals" class="admin-header-btn">
+                <i class="bi bi-wallet2 me-1"></i>Withdrawals
             </a>
         </div>
     </div>
@@ -78,18 +78,27 @@
                                         <i class="bi bi-check-lg me-1"></i>Approve
                                     </button>
                                 </form>
-                                <form asp-action="RejectActivation" asp-route-id="@req.Id" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                        data-bs-toggle="modal" data-bs-target="#rejectAct-@req.Id">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
+        @foreach (var req in list)
+        {
+            @await Html.PartialAsync("_AdminRejectModal", new MLM_Level.Models.AdminRejectModalViewModel
+            {
+                ModalId = $"rejectAct-{req.Id}",
+                FormAction = "RejectActivation",
+                RequestId = req.Id,
+                Title = "Reject activation request",
+                Subtitle = $"{req.User?.FullName} (@{req.User?.Username}) · UTR {req.TransactionReference}"
+            })
+        }
     }
     else
     {

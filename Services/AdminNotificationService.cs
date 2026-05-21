@@ -57,7 +57,7 @@ namespace MLM_Level.Services
                     Description = $"{w.User?.Username ?? "Member"} · ₹{w.Amount:N0}",
                     Icon = "bi-wallet2",
                     IconClass = "topbar-notif-icon-warning",
-                    Action = "PendingRequests",
+                    Action = "Withdrawals",
                     CreatedAt = w.CreatedDate
                 });
             }

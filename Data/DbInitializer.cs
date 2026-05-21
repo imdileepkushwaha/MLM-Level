@@ -393,6 +393,66 @@ namespace MLM_Level.Data
                     ADD PaymentSlipUrl NVARCHAR(255) NULL;
                 END
             ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF COL_LENGTH('ActivationRequests', 'RejectionReason') IS NULL
+                BEGIN
+                    ALTER TABLE ActivationRequests
+                    ADD RejectionReason NVARCHAR(500) NULL;
+                END
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF COL_LENGTH('WithdrawalRequests', 'RejectionReason') IS NULL
+                BEGIN
+                    ALTER TABLE WithdrawalRequests
+                    ADD RejectionReason NVARCHAR(500) NULL;
+                END
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='PasswordResetTokens' AND xtype='U')
+                BEGIN
+                    CREATE TABLE PasswordResetTokens (
+                        Id INT IDENTITY(1,1) PRIMARY KEY,
+                        UserId INT NOT NULL,
+                        Token NVARCHAR(128) NOT NULL,
+                        ExpiresAt DATETIME2 NOT NULL,
+                        IsUsed BIT NOT NULL DEFAULT 0,
+                        CreatedDate DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                        CONSTRAINT FK_PasswordResetTokens_Users_UserId
+                            FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+                    );
+                    CREATE UNIQUE INDEX IX_PasswordResetTokens_Token ON PasswordResetTokens(Token);
+                END
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'UX_ActivationRequests_TransactionReference_Active' AND object_id = OBJECT_ID('ActivationRequests'))
+                BEGIN
+                    CREATE UNIQUE NONCLUSTERED INDEX UX_ActivationRequests_TransactionReference_Active
+                    ON ActivationRequests (TransactionReference)
+                    WHERE Status IN ('Pending', 'Approved');
+                END
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='MemberRewards' AND xtype='U')
+                BEGIN
+                    CREATE TABLE MemberRewards (
+                        Id INT IDENTITY(1,1) PRIMARY KEY,
+                        UserId INT NULL,
+                        Title NVARCHAR(200) NOT NULL,
+                        Description NVARCHAR(MAX) NOT NULL,
+                        Amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        RewardType NVARCHAR(50) NOT NULL DEFAULT 'Bonus',
+                        IsActive BIT NOT NULL DEFAULT 1,
+                        CreatedDate DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                        CONSTRAINT FK_MemberRewards_Users_UserId
+                            FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE SET NULL
+                    );
+                END
+            ");
         }
 
         private static void SeedNewSystemData(ApplicationDbContext context)

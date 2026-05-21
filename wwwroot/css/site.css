@@ -683,10 +683,10 @@ p {
 
 /* Specific elements inside active states */
 .sidebar-link.active i {
-    color: var(--accent-blue) !important;
+    color: #c4b5fd !important;
 }
 .sidebar-link.active {
-    color: var(--accent-blue) !important;
+    color:#c4b5fd !important;
 }
 
 /* Ensure accordion items don't hide dark text */
@@ -705,7 +705,7 @@ p {
     gap: 0.75rem;
     padding: 1rem 1.25rem;
     margin-bottom: 0rem;
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid #212e4e;
     flex-shrink: 0;
 }
 .dashboard-brand-logo {
@@ -1306,6 +1306,32 @@ p {
     flex: 0 1 280px;
     margin-left: auto;
 }
+.admin-search-wrap {
+    position: relative;
+}
+.admin-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+    z-index: 1;
+    font-size: 0.95rem;
+    line-height: 1;
+}
+.admin-search-input {
+    padding-left: 2.5rem;
+    border-radius: 50px;
+    border: 1px solid var(--glass-border);
+    background: #f8fafc;
+    font-size: 0.9rem;
+}
+.admin-search-input:focus {
+    background: #fff;
+    border-color: var(--admin-accent, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
 .admin-table-toolbar-row .admin-search-wrap {
     max-width: 100%;
 }
@@ -1509,6 +1535,115 @@ p {
     .admin-page-header { padding: 1.25rem; }
 }
 
+/* Bootstrap modals must sit above dashboard chrome (sidebar z-index: 1040) */
+.modal-backdrop {
+    z-index: 1050;
+}
+.modal {
+    z-index: 1055;
+}
+
 .modal-header{
     justify-content: space-between;
+}
+
+/* ── Maintenance mode overlay ── */
+.maintenance-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+}
+.maintenance-overlay-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.maintenance-overlay-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+    padding: 2rem 1.75rem 1.5rem;
+    border-radius: 20px;
+    text-align: center;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%);
+}
+.maintenance-overlay-icon {
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #d97706;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+.maintenance-overlay-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.75rem;
+}
+.maintenance-overlay-text {
+    color: #64748b;
+    font-size: 0.92rem;
+    margin-bottom: 1.15rem;
+    line-height: 1.55;
+}
+.maintenance-overlay-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.25rem;
+    text-align: left;
+}
+.maintenance-overlay-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.55rem 0.75rem;
+    margin-bottom: 0.45rem;
+    border-radius: 10px;
+    background: rgba(248, 250, 252, 0.9);
+    color: #475569;
+    font-size: 0.85rem;
+}
+.maintenance-overlay-list li i {
+    color: #d97706;
+    margin-top: 0.1rem;
+}
+.maintenance-overlay-list a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+}
+.maintenance-overlay-footer {
+    display: flex;
+    justify-content: center;
+}
+.maintenance-status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+.auth-page-maintenance .auth-card-disabled {
+    filter: blur(1px);
+    opacity: 0.45;
+    pointer-events: none;
+    user-select: none;
 }

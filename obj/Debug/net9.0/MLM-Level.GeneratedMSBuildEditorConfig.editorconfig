@@ -32,12 +32,20 @@ build_property.EnableCodeStyleSeverity =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxBY2Nlc3NEZW5pZWQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Data/Work/MLM-Level/Views/Account/ForgotPassword.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxGb3Jnb3RQYXNzd29yZC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Data/Work/MLM-Level/Views/Account/Login.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxMb2dpbi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Data/Work/MLM-Level/Views/Account/Register.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxSZWdpc3Rlci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/Account/ResetPassword.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxSZXNldFBhc3N3b3JkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Data/Work/MLM-Level/Views/Admin/Announcements.cshtml]
@@ -80,8 +88,8 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUGVuZGluZ0FjdGl2YXRpb25zLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Data/Work/MLM-Level/Views/Admin/PendingRequests.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUGVuZGluZ1JlcXVlc3RzLmNzaHRtbA==
+[C:/Data/Work/MLM-Level/Views/Admin/Rewards.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUmV3YXJkcy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Data/Work/MLM-Level/Views/Admin/RoiManagement.cshtml]
@@ -98,6 +106,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Data/Work/MLM-Level/Views/Admin/TreeExplorer.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cVHJlZUV4cGxvcmVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/Admin/Withdrawals.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cV2l0aGRyYXdhbHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Data/Work/MLM-Level/Views/Admin/_AdminLayout.cshtml]
@@ -126,6 +138,14 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Data/Work/MLM-Level/Views/Shared/_AdminNoResults.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9BZG1pbk5vUmVzdWx0cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/Shared/_AdminRejectModal.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9BZG1pblJlamVjdE1vZGFsLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/Shared/_MaintenanceOverlay.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9NYWludGVuYW5jZU92ZXJsYXkuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Data/Work/MLM-Level/Views/Shared/_MemberNotifications.cshtml]
@@ -180,8 +200,16 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxNeURvd25saW5lLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Data/Work/MLM-Level/Views/User/Packages.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxQYWNrYWdlcy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Data/Work/MLM-Level/Views/User/Profile.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxQcm9maWxlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/User/Rewards.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxSZXdhcmRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Data/Work/MLM-Level/Views/User/Support.cshtml]
@@ -194,6 +222,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Data/Work/MLM-Level/Views/User/Wallet.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxXYWxsZXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Data/Work/MLM-Level/Views/User/_PackagePurchaseForm.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclxfUGFja2FnZVB1cmNoYXNlRm9ybS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Data/Work/MLM-Level/Views/User/_ViewImports.cshtml]

@@ -5,7 +5,11 @@ using MLM_Level.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var mvc = builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
+var mvc = builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<MLM_Level.Filters.MaintenanceModeFilter>();
+});
 if (builder.Environment.IsDevelopment())
 {
     mvc.AddRazorRuntimeCompilation();
@@ -13,10 +17,20 @@ if (builder.Environment.IsDevelopment())
 
 // Register DbContext with MS SQL Server Connection String
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorNumbersToAdd: null);
+            sqlOptions.CommandTimeout(60);
+        }));
 
 // Register custom services
 builder.Services.AddScoped<MLM_Level.Services.IEmailService, MLM_Level.Services.EmailService>();
+builder.Services.AddScoped<MLM_Level.Services.IMaintenanceModeService, MLM_Level.Services.MaintenanceModeService>();
 builder.Services.AddScoped<MLM_Level.Services.IAdminNotificationService, MLM_Level.Services.AdminNotificationService>();
 builder.Services.AddScoped<MLM_Level.Services.IMemberNotificationService, MLM_Level.Services.MemberNotificationService>();
 builder.Services.AddHostedService<MLM_Level.Services.RoiDistributionService>();
@@ -46,6 +60,13 @@ builder.Services.AddAuthentication(options =>
         options.SlidingExpiration = true;
     });
 
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
+    options.Preload = false;
+});
+
 var app = builder.Build();
 
 // Auto-migrate & seed database on startup
@@ -68,9 +89,9 @@ using (var scope = app.Services.CreateScope())
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
 }
 
+app.UseHsts();
 app.UseHttpsRedirection();
 
 // Ensure static files can be served

@@ -12,8 +12,8 @@
     Icon = "bi-grid-fill",
     ThemeClass = "member-theme-violet",
     Badge = Model.UserInfo.IsActive ? "Active Member" : "Activation Required",
-    ActionText = Model.UserInfo.IsActive ? "Withdraw" : "Activate Now",
-    ActionUrl = Model.UserInfo.IsActive ? "Wallet" : "Activate",
+    ActionText = Model.UserInfo.IsActive ? "Withdraw" : "Buy Package",
+    ActionUrl = Model.UserInfo.IsActive ? "Wallet" : "Packages",
     ActionIcon = Model.UserInfo.IsActive ? "bi-wallet2" : "bi-shield-check"
 })
 
@@ -24,7 +24,7 @@
     <a asp-action="Support" class="member-quick-btn"><i class="bi bi-headset text-warning"></i> Support</a>
     @if (!Model.UserInfo.IsActive)
     {
-        <a asp-action="Activate" class="member-quick-btn" style="border-color:rgba(236,72,153,0.35);color:#db2777!important;"><i class="bi bi-lightning-charge"></i> Activate</a>
+        <a asp-action="Packages" class="member-quick-btn" style="border-color:rgba(236,72,153,0.35);color:#db2777!important;"><i class="bi bi-box-seam"></i> Packages</a>
     }
 </div>
 

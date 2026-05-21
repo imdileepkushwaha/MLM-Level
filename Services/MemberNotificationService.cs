@@ -93,14 +93,62 @@ namespace MLM_Level.Services
             }
             else if (kyc != null && kyc.Status == "Rejected")
             {
+                var kycReason = string.IsNullOrWhiteSpace(kyc.RejectionReason)
+                    ? "Please re-upload your documents"
+                    : kyc.RejectionReason.Length > 60 ? kyc.RejectionReason[..60] + "…" : kyc.RejectionReason;
                 items.Add(new MemberNotificationItem
                 {
                     Title = "KYC rejected",
-                    Description = "Please re-upload your documents",
+                    Description = kycReason,
                     Icon = "bi-shield-x",
                     IconClass = "topbar-notif-icon-warning",
                     Action = "Kyc",
                     CreatedAt = kyc.UpdatedDate ?? kyc.CreatedDate
+                });
+            }
+
+            var cutoff = DateTime.UtcNow.AddDays(-30);
+            var rejectedActivation = await _context.ActivationRequests
+                .AsNoTracking()
+                .Where(r => r.UserId == userId && r.Status == "Rejected" && r.ApprovedDate >= cutoff)
+                .OrderByDescending(r => r.ApprovedDate)
+                .FirstOrDefaultAsync();
+
+            if (rejectedActivation != null)
+            {
+                var reason = string.IsNullOrWhiteSpace(rejectedActivation.RejectionReason)
+                    ? "Please review and submit again"
+                    : rejectedActivation.RejectionReason.Length > 60 ? rejectedActivation.RejectionReason[..60] + "…" : rejectedActivation.RejectionReason;
+                items.Add(new MemberNotificationItem
+                {
+                    Title = "Activation declined",
+                    Description = reason,
+                    Icon = "bi-shield-x",
+                    IconClass = "topbar-notif-icon-warning",
+                    Action = "ActivationReport",
+                    CreatedAt = rejectedActivation.ApprovedDate ?? rejectedActivation.CreatedDate
+                });
+            }
+
+            var rejectedWithdrawal = await _context.WithdrawalRequests
+                .AsNoTracking()
+                .Where(w => w.UserId == userId && w.Status == "Rejected" && w.ProcessedDate >= cutoff)
+                .OrderByDescending(w => w.ProcessedDate)
+                .FirstOrDefaultAsync();
+
+            if (rejectedWithdrawal != null)
+            {
+                var reason = string.IsNullOrWhiteSpace(rejectedWithdrawal.RejectionReason)
+                    ? "Amount refunded to your wallet"
+                    : rejectedWithdrawal.RejectionReason.Length > 60 ? rejectedWithdrawal.RejectionReason[..60] + "…" : rejectedWithdrawal.RejectionReason;
+                items.Add(new MemberNotificationItem
+                {
+                    Title = "Withdrawal declined",
+                    Description = reason,
+                    Icon = "bi-wallet2",
+                    IconClass = "topbar-notif-icon-warning",
+                    Action = "Wallet",
+                    CreatedAt = rejectedWithdrawal.ProcessedDate ?? rejectedWithdrawal.CreatedDate
                 });
             }
 

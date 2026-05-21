@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -217,6 +218,127 @@ namespace MLM_Level.Controllers
             return RedirectToAction("Login");
         }
 
+        // GET: Account/ForgotPassword
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View(new ForgotPasswordViewModel());
+        }
+
+        // POST: Account/ForgotPassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u =>
+                u.Username == model.UsernameOrEmail || u.Email == model.UsernameOrEmail);
+
+            if (user != null)
+            {
+                var existingTokens = await _context.PasswordResetTokens
+                    .Where(t => t.UserId == user.Id && !t.IsUsed)
+                    .ToListAsync();
+                foreach (var old in existingTokens)
+                {
+                    old.IsUsed = true;
+                }
+
+                var token = GenerateResetToken();
+                _context.PasswordResetTokens.Add(new PasswordResetToken
+                {
+                    UserId = user.Id,
+                    Token = token,
+                    ExpiresAt = DateTime.UtcNow.AddHours(1),
+                    IsUsed = false,
+                    CreatedDate = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
+
+                var resetUrl = Url.Action("ResetPassword", "Account", new { token }, Request.Scheme);
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        string emailBody = $@"
+                            <h2>Password Reset Request</h2>
+                            <p>Hi {user.FullName},</p>
+                            <p>We received a request to reset your Elite MLM account password.</p>
+                            <p><a href=""{resetUrl}"">Click here to reset your password</a></p>
+                            <p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>
+                            <p style=""word-break:break-all;color:#666;"">{resetUrl}</p>
+                        ";
+                        await _emailService.SendEmailAsync(user.Email, "Reset Your Password - Elite MLM", emailBody);
+                    }
+                    catch { /* ignore SMTP errors */ }
+                });
+            }
+
+            TempData["SuccessMessage"] = "If an account exists with that username or email, a password reset link has been sent.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        // GET: Account/ResetPassword
+        [HttpGet]
+        public async Task<IActionResult> ResetPassword(string? token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                TempData["ErrorMessage"] = "Invalid password reset link.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var resetToken = await GetValidResetTokenAsync(token);
+            if (resetToken == null)
+            {
+                TempData["ErrorMessage"] = "This password reset link is invalid or has expired.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            return View(new ResetPasswordViewModel { Token = token });
+        }
+
+        // POST: Account/ResetPassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var resetToken = await GetValidResetTokenAsync(model.Token);
+            if (resetToken == null)
+            {
+                TempData["ErrorMessage"] = "This password reset link is invalid or has expired.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = resetToken.User;
+            user.PasswordHash = _passwordHasher.HashPassword(user, model.NewPassword);
+            resetToken.IsUsed = true;
+
+            var otherTokens = await _context.PasswordResetTokens
+                .Where(t => t.UserId == user.Id && !t.IsUsed && t.Id != resetToken.Id)
+                .ToListAsync();
+            foreach (var old in otherTokens)
+            {
+                old.IsUsed = true;
+            }
+
+            _context.Entry(user).State = EntityState.Modified;
+            _context.Entry(resetToken).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Your password has been reset. Please sign in with your new password.";
+            return RedirectToAction(nameof(Login));
+        }
+
         // GET: Account/Logout
         [HttpGet]
         public async Task<IActionResult> Logout()
@@ -251,6 +373,25 @@ namespace MLM_Level.Controllers
             while (_context.Users.Any(u => u.ReferralCode == code));
 
             return code;
+        }
+
+        private static string GenerateResetToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(32);
+            return Convert.ToBase64String(bytes)
+                .Replace("+", "-", StringComparison.Ordinal)
+                .Replace("/", "_", StringComparison.Ordinal)
+                .TrimEnd('=');
+        }
+
+        private async Task<PasswordResetToken?> GetValidResetTokenAsync(string token)
+        {
+            return await _context.PasswordResetTokens
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t =>
+                    t.Token == token &&
+                    !t.IsUsed &&
+                    t.ExpiresAt > DateTime.UtcNow);
         }
     }
 }

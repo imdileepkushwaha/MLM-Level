@@ -26,10 +26,11 @@ namespace MLM_Level.Services
         {
             _logger.LogInformation("Auto ROI Distribution Service started.");
 
-            // We will run this loop every 1 hour to check if there are unpaid ROIs for the current day
+            // Let startup DB initialization finish before the first sweep.
+            await Task.Delay(TimeSpan.FromSeconds(8), stoppingToken);
+
             using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
 
-            // Run immediately on startup once
             await ProcessRoiPayouts();
 
             while (await timer.WaitForNextTickAsync(stoppingToken))

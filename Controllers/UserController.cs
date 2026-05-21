@@ -200,66 +200,57 @@ namespace MLM_Level.Controllers
             return View(viewModel);
         }
 
-        // GET: User/Activate (Submit Activation Request)
+        // GET: User/Packages
         [HttpGet]
-        public async Task<IActionResult> Activate()
+        public async Task<IActionResult> Packages()
         {
             int userId = GetCurrentUserId();
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null) return NotFound();
-
-            if (user.IsActive)
-            {
-                TempData["InfoMessage"] = "Your account is already active!";
-                return RedirectToAction("Index");
-            }
-
-            // Check if there is a pending activation request
-            var hasPending = await _context.ActivationRequests.AnyAsync(r => r.UserId == userId && r.Status == "Pending");
-            ViewBag.HasPendingRequest = hasPending;
-
-            // Fetch dynamic settings & packages
-            var settings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
-            var activePackages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync();
-
-            ViewBag.MlmSettings = settings;
-            ViewBag.Packages = activePackages;
-
-            return View();
+            var model = await BuildPackagesViewModelAsync(userId);
+            if (model == null) return NotFound();
+            return View(model);
         }
 
-        // POST: User/Activate
+        // GET: User/Activate (legacy route)
+        [HttpGet]
+        public IActionResult Activate() => RedirectToAction(nameof(Packages));
+
+        // POST: User/RequestPackage
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Activate(string transactionReference, int packageId, IFormFile? paymentSlip)
+        public async Task<IActionResult> RequestPackage(string transactionReference, int packageId, IFormFile? paymentSlip)
         {
             int userId = GetCurrentUserId();
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
 
-            if (user.IsActive)
+            var hasPending = await _context.ActivationRequests.AnyAsync(r => r.UserId == userId && r.Status == "Pending");
+            if (hasPending)
             {
-                TempData["InfoMessage"] = "Your account is already active!";
-                return RedirectToAction("Index");
+                TempData["ErrorMessage"] = "You already have a pending package request. Please wait for admin approval.";
+                return RedirectToAction(nameof(Packages));
             }
 
             if (string.IsNullOrWhiteSpace(transactionReference))
             {
-                ModelState.AddModelError(string.Empty, "Transaction Reference / UTR is required.");
-                ViewBag.HasPendingRequest = false;
-                ViewBag.MlmSettings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
-                ViewBag.Packages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync();
-                return View();
+                TempData["ErrorMessage"] = "Transaction reference / UTR is required.";
+                return RedirectToAction(nameof(Packages));
+            }
+
+            var normalizedUtr = transactionReference.Trim();
+            var duplicateUtr = await _context.ActivationRequests.AnyAsync(r =>
+                r.Status != "Rejected" &&
+                r.TransactionReference.ToUpper() == normalizedUtr.ToUpper());
+            if (duplicateUtr)
+            {
+                TempData["ErrorMessage"] = "This UTR / transaction reference has already been used. Please enter a different reference.";
+                return RedirectToAction(nameof(Packages));
             }
 
             var package = await _context.Packages.FindAsync(packageId);
             if (package == null || !package.IsActive)
             {
-                ModelState.AddModelError(string.Empty, "Invalid package selection.");
-                ViewBag.HasPendingRequest = false;
-                ViewBag.MlmSettings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
-                ViewBag.Packages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync();
-                return View();
+                TempData["ErrorMessage"] = "Invalid package selection.";
+                return RedirectToAction(nameof(Packages));
             }
 
             string? slipUrl = null;
@@ -281,7 +272,7 @@ namespace MLM_Level.Controllers
                 UserId = userId,
                 Amount = package.Price,
                 PackageId = packageId,
-                TransactionReference = transactionReference.Trim(),
+                TransactionReference = normalizedUtr,
                 PaymentSlipUrl = slipUrl,
                 Status = "Pending",
                 CreatedDate = DateTime.UtcNow
@@ -290,8 +281,46 @@ namespace MLM_Level.Controllers
             _context.ActivationRequests.Add(request);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Activation request for '{package.Name}' submitted! Admin will verify and activate your account shortly.";
-            return RedirectToAction("Index");
+            TempData["SuccessMessage"] = user.IsActive
+                ? $"Package request for '{package.Name}' submitted! Admin will verify your payment shortly."
+                : $"Activation request for '{package.Name}' submitted! Admin will verify and activate your account shortly.";
+            return RedirectToAction(nameof(Packages));
+        }
+
+        // POST: User/Activate (legacy route)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public Task<IActionResult> Activate(string transactionReference, int packageId, IFormFile? paymentSlip)
+            => RequestPackage(transactionReference, packageId, paymentSlip);
+
+        private async Task<UserPackagesViewModel?> BuildPackagesViewModelAsync(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return null;
+
+            var pending = await _context.ActivationRequests
+                .Include(r => r.Package)
+                .FirstOrDefaultAsync(r => r.UserId == userId && r.Status == "Pending");
+
+            return new UserPackagesViewModel
+            {
+                UserInfo = user,
+                Settings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting(),
+                AvailablePackages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync(),
+                ActivePackages = await _context.UserPackages
+                    .Include(up => up.Package)
+                    .Where(up => up.UserId == userId)
+                    .OrderByDescending(up => up.ActivationDate)
+                    .ToListAsync(),
+                RecentRequests = await _context.ActivationRequests
+                    .Include(r => r.Package)
+                    .Where(r => r.UserId == userId)
+                    .OrderByDescending(r => r.CreatedDate)
+                    .Take(10)
+                    .ToListAsync(),
+                HasPendingRequest = pending != null,
+                PendingRequest = pending
+            };
         }
 
         // GET: User/ActivationReport
@@ -300,6 +329,7 @@ namespace MLM_Level.Controllers
         {
             int userId = GetCurrentUserId();
             var requests = await _context.ActivationRequests
+                .Include(r => r.Package)
                 .Where(r => r.UserId == userId)
                 .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
@@ -768,6 +798,21 @@ namespace MLM_Level.Controllers
 
             ViewBag.TotalIncome = incomes.Sum(i => i.Amount);
             return View(incomes);
+        }
+
+        // GET: User/Rewards
+        [HttpGet]
+        public async Task<IActionResult> Rewards()
+        {
+            int userId = GetCurrentUserId();
+            var rewards = await _context.MemberRewards
+                .AsNoTracking()
+                .Where(r => r.IsActive && (r.UserId == null || r.UserId == userId))
+                .OrderByDescending(r => r.CreatedDate)
+                .ToListAsync();
+
+            ViewBag.TotalRewardValue = rewards.Sum(r => r.Amount);
+            return View(rewards);
         }
 
         // GET: User/GetEarningsChartData

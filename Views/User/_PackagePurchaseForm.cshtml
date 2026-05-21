@@ -1,0 +1,112 @@
+@model MLM_Level.Models.UserPackagesViewModel
+@{
+    var packages = Model.AvailablePackages;
+    var settings = Model.Settings;
+    var isInactive = !Model.UserInfo.IsActive;
+    var submitLabel = isInactive ? "Submit activation request" : "Submit purchase request";
+}
+
+<form asp-action="RequestPackage" method="post" enctype="multipart/form-data" id="packagePurchaseForm">
+    @Html.AntiForgeryToken()
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="glass-card member-panel-card p-4">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <span class="step-badge">1</span>
+                    <h5 class="step-title mb-0">@(isInactive ? "Select activation plan" : "Choose a package")</h5>
+                </div>
+                <div class="package-row-list d-flex flex-column gap-3">
+                    @for (int i = 0; i < packages.Count; i++)
+                    {
+                        var pkg = packages[i];
+                        var themeClass = i == 0 ? "theme-blue" : i == 1 ? "theme-cyan" : "theme-purple";
+                        var planIcon = i == 0 ? "bi-star-fill" : i == 1 ? "bi-award-fill" : "bi-gem";
+                        var isSelected = i == 0;
+                        <div class="card custom-plan-card custom-plan-card-row w-100 @themeClass @(isSelected ? "active-selected" : "")"
+                             onclick="selectPackage('@pkg.Id', '@pkg.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)', this)"
+                             data-pkg-id="@pkg.Id">
+                            <div class="plan-row-main">
+                                <div class="plan-icon-box"><i class="bi @planIcon"></i></div>
+                                <div class="plan-row-info">
+                                    <h5 class="plan-title text-dark fw-bold mb-1">@pkg.Name</h5>
+                                    <span class="plan-subtitle text-muted small d-block mb-2">@(pkg.RoiDurationDays > 0 ? $"{pkg.RoiPercentage}% daily ROI" : "Network access")</span>
+                                    <div class="plan-row-meta">
+                                        @if (!string.IsNullOrWhiteSpace(pkg.Description))
+                                        {
+                                            <span class="plan-row-tag">@pkg.Description</span>
+                                        }
+                                        @if (pkg.RoiDurationDays > 0)
+                                        {
+                                            <span class="plan-row-tag"><i class="bi bi-graph-up-arrow me-1"></i>@pkg.RoiDurationDays days ROI</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="plan-row-side">
+                                <div class="plan-row-price text-end">
+                                    <span class="price-val">₹@pkg.Price.ToString("N0")</span>
+                                    <span class="price-suffix d-block">@(isInactive ? "Activation fee" : "Package price")</span>
+                                </div>
+                                <button type="button" class="plan-select-btn plan-row-select-btn">@(isSelected ? "Selected" : "Choose plan")</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <input type="hidden" id="packageId" name="packageId" value="@packages.First().Id" />
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="glass-card member-panel-card p-4 h-100 d-flex flex-column">
+                <div class="package-proof-section">
+                    <div class="d-flex align-items-center gap-2 mb-4">
+                        <span class="step-badge">2</span>
+                        <h5 class="step-title mb-0">Submit payment proof</h5>
+                    </div>
+                    <div class="border rounded-3 p-3 mb-4 bg-light bg-opacity-50">
+                        <span class="text-muted small d-block">Selected amount</span>
+                        <span class="fs-3 fw-bold text-primary" id="displayTransferAmount">₹@packages.First().Price.ToString("N0")</span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="wallet-field-label" for="transactionReference">Transaction UTR / reference</label>
+                        <input type="text" id="transactionReference" name="transactionReference" class="form-control rounded-3" placeholder="12-digit UTR number" required />
+                    </div>
+                    <div class="mb-4">
+                        <label class="wallet-field-label" for="paymentSlip">Payment slip <span class="text-muted fw-normal">(optional)</span></label>
+                        <input type="file" id="paymentSlip" name="paymentSlip" class="form-control rounded-3" accept="image/*,.pdf" />
+                    </div>
+                    <button type="submit" class="btn wallet-btn-withdraw w-100 py-3">
+                        <i class="bi bi-send-fill me-2"></i>@submitLabel
+                    </button>
+                </div>
+
+                <div class="package-pay-section mt-auto pt-4 border-top">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="step-badge">3</span>
+                        <h5 class="step-title mb-0">Pay to company account</h5>
+                    </div>
+                    <p class="text-muted small mb-3">
+                        Transfer exactly <strong class="text-primary" id="instructionPriceText">₹@packages.First().Price.ToString("N0")</strong> using the details below.
+                    </p>
+                    @if (!string.IsNullOrEmpty(settings.CompanyQrCodeUrl))
+                    {
+                        <div class="border rounded-3 p-3 bg-white mb-3" style="border-color:var(--glass-border)!important;">
+                            <div class="small text-muted fw-bold mb-2"><i class="bi bi-qr-code me-1"></i>UPI address</div>
+                            <div class="bg-light rounded-3 p-2 d-flex align-items-center justify-content-between gap-2">
+                                <span class="text-dark fw-bold small text-break" id="upiAddressVal">@settings.CompanyQrCodeUrl</span>
+                                <button type="button" class="btn btn-link p-0 flex-shrink-0" onclick="copyValue('upiAddressVal')"><i class="bi bi-clipboard"></i></button>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(settings.BankDetails))
+                    {
+                        <div class="border rounded-3 p-3 bg-white" style="border-color:var(--glass-border)!important;">
+                            <div class="small text-muted fw-bold mb-2"><i class="bi bi-bank me-1"></i>Bank details</div>
+                            <pre class="text-dark small mb-0" style="white-space:pre-wrap;font-family:inherit;">@settings.BankDetails</pre>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

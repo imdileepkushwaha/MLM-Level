@@ -20,7 +20,7 @@
         <div class="col-lg-4 text-lg-end">
             <span class="admin-header-badge">
                 <i class="bi @(isOnline ? "bi-check-circle" : "bi-tools") me-1"></i>
-                @(isOnline ? "Store online" : "Maintenance mode")
+                @(isOnline ? "Website Online" : "Maintenance mode")
             </span>
         </div>
     </div>
@@ -121,9 +121,10 @@
                         <div class="mb-4">
                             <label class="settings-label">Maintenance Mode</label>
                             <select asp-for="Settings.MaintenanceMode" class="form-select settings-input">
-                                <option value="Online">Online — store open</option>
-                                <option value="Offline">Offline — maintenance in progress</option>
+                                <option value="Online">Website Online — members can access the portal</option>
+                                <option value="Offline">Maintenance Mode — member access paused</option>
                             </select>
+                            <small class="text-muted d-block mt-2">When maintenance mode is on, members see a maintenance popup and cannot sign in. Admin portal stays available.</small>
                         </div>
                         <button type="submit" class="btn settings-save-btn">Save general settings</button>
                     </div>

@@ -37,6 +37,9 @@ namespace MLM_Level.Models
 
         public DateTime? ApprovedDate { get; set; }
 
+        [MaxLength(500)]
+        public string? RejectionReason { get; set; }
+
         [MaxLength(255)]
         public string? PaymentSlipUrl { get; set; }
     }

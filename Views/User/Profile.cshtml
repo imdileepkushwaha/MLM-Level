@@ -26,6 +26,8 @@
     var activeTeamParam = new Microsoft.Data.SqlClient.SqlParameter("@ActiveTeam", System.Data.SqlDbType.Int) { Direction = System.Data.ParameterDirection.Output };
     DbContext.Database.ExecuteSqlRaw("EXEC sp_GetTeamStats @UserId, @TotalTeam OUTPUT, @ActiveTeam OUTPUT", teamIdParam, totalTeamParam, activeTeamParam);
     int totalTeamSize = (int)(totalTeamParam.Value != DBNull.Value ? totalTeamParam.Value : 0);
+    var kyc = DbContext.KycDetails.AsNoTracking().FirstOrDefault(k => k.UserId == Model.Id);
+    var kycApproved = kyc?.Status == "Approved";
 }
 
 <!-- Page Header & Breadcrumb -->
@@ -326,54 +328,66 @@
             </div>
         </div>
 
-        <!-- Achievements & Recent Activity -->
+        <!-- Quick Links & Recent Activity -->
         <div class="row g-4">
-            <!-- Achievements -->
+            <!-- Quick Links -->
             <div class="col-md-6">
                 <div class="glass-card p-4 h-100">
-                    <h5 class="text-dark fw-bold mb-4">Achievements</h5>
+                    <h5 class="text-dark fw-bold mb-4">Quick Links</h5>
                     
                     <div class="row g-3">
                         <div class="col-6">
-                            <div class="achievement-grid-item achievement-yellow">
-                                <i class="bi bi-trophy fs-5"></i>
-                                <span>Top Performer</span>
-                            </div>
+                            <a asp-controller="User" asp-action="Packages" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-yellow">
+                                    <i class="bi bi-box-seam fs-5"></i>
+                                    <span>@(Model.IsActive ? "Active Member" : "Activate Account")</span>
+                                </div>
+                            </a>
                         </div>
 
                         <div class="col-6">
-                            <div class="achievement-grid-item achievement-purple">
-                                <i class="bi bi-people fs-5"></i>
-                                <span>Mentor of Year</span>
-                            </div>
+                            <a asp-controller="User" asp-action="Kyc" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-purple">
+                                    <i class="bi bi-shield-check fs-5"></i>
+                                    <span>@(kycApproved ? "KYC Verified" : "Complete KYC")</span>
+                                </div>
+                            </a>
                         </div>
 
                         <div class="col-6">
-                            <div class="achievement-grid-item achievement-green">
-                                <i class="bi bi-lightning-charge fs-5"></i>
-                                <span>100% On-Time</span>
-                            </div>
+                            <a asp-controller="User" asp-action="MyDirect" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-green">
+                                    <i class="bi bi-person-check fs-5"></i>
+                                    <span>@directReferralsCount Direct</span>
+                                </div>
+                            </a>
                         </div>
 
                         <div class="col-6">
-                            <div class="achievement-grid-item achievement-pink">
-                                <i class="bi bi-award fs-5"></i>
-                                <span>Innovator</span>
-                            </div>
+                            <a asp-controller="User" asp-action="MyDownline" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-pink">
+                                    <i class="bi bi-diagram-3 fs-5"></i>
+                                    <span>@totalTeamSize Team</span>
+                                </div>
+                            </a>
                         </div>
 
                         <div class="col-6">
-                            <div class="achievement-grid-item achievement-blue">
-                                <i class="bi bi-heart fs-5"></i>
-                                <span>Team Player</span>
-                            </div>
+                            <a asp-controller="User" asp-action="Wallet" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-blue">
+                                    <i class="bi bi-wallet2 fs-5"></i>
+                                    <span>₹@Model.WalletBalance.ToString("N0") Wallet</span>
+                                </div>
+                            </a>
                         </div>
 
                         <div class="col-6">
-                            <div class="achievement-grid-item achievement-lavender">
-                                <i class="bi bi-shield-check fs-5"></i>
-                                <span>5-Year Club</span>
-                            </div>
+                            <a asp-controller="User" asp-action="IncomeTransactions" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-lavender">
+                                    <i class="bi bi-receipt-cutoff fs-5"></i>
+                                    <span>Income Ledger</span>
+                                </div>
+                            </a>
                         </div>
                     </div>
                 </div>

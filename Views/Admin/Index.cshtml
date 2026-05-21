@@ -99,7 +99,7 @@
         </a>
     </div>
     <div class="col-6 col-md-4 col-lg-2">
-        <a asp-action="PendingRequests" class="glass-card p-3 text-decoration-none d-block text-center h-100 admin-dash-link">
+        <a asp-action="Withdrawals" class="glass-card p-3 text-decoration-none d-block text-center h-100 admin-dash-link">
             <i class="bi bi-wallet2 fs-4 text-danger d-block mb-1"></i>
             <span class="small fw-semibold text-dark">Withdrawals</span>
             @if (Model.PendingWithdrawalsCount > 0)
@@ -172,16 +172,27 @@
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-sm btn-success rounded-pill px-2" title="Approve"><i class="bi bi-check-lg"></i></button>
                                         </form>
-                                        <form asp-action="RejectActivation" asp-route-id="@req.Id" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Reject"><i class="bi bi-x-lg"></i></button>
-                                        </form>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Reject"
+                                                data-bs-toggle="modal" data-bs-target="#rejectActDash-@req.Id">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
                 </div>
+                @foreach (var req in Model.PendingActivations)
+                {
+                    @await Html.PartialAsync("_AdminRejectModal", new MLM_Level.Models.AdminRejectModalViewModel
+                    {
+                        ModalId = $"rejectActDash-{req.Id}",
+                        FormAction = "RejectActivation",
+                        RequestId = req.Id,
+                        Title = "Reject activation request",
+                        Subtitle = $"{req.User.FullName} (@{req.User.Username}) · UTR {req.TransactionReference}"
+                    })
+                }
             }
             else
             {
@@ -202,7 +213,7 @@
                     Pending withdrawals
                     <span class="admin-badge-pending ms-1">@Model.PendingWithdrawalsCount</span>
                 </h5>
-                <a asp-action="PendingRequests" class="small fw-semibold text-primary text-decoration-none">View all</a>
+                <a asp-action="Withdrawals" class="small fw-semibold text-primary text-decoration-none">View all</a>
             </div>
             @if (Model.PendingWithdrawals.Any())
             {
@@ -230,16 +241,27 @@
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-sm btn-success rounded-pill px-2" title="Approve"><i class="bi bi-check-lg"></i></button>
                                         </form>
-                                        <form asp-action="RejectWithdrawal" asp-route-id="@w.Id" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Reject"><i class="bi bi-arrow-counterclockwise"></i></button>
-                                        </form>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Reject"
+                                                data-bs-toggle="modal" data-bs-target="#rejectWdDash-@w.Id">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
                 </div>
+                @foreach (var w in Model.PendingWithdrawals)
+                {
+                    @await Html.PartialAsync("_AdminRejectModal", new MLM_Level.Models.AdminRejectModalViewModel
+                    {
+                        ModalId = $"rejectWdDash-{w.Id}",
+                        FormAction = "RejectWithdrawal",
+                        RequestId = w.Id,
+                        Title = "Reject withdrawal request",
+                        Subtitle = $"{w.User.FullName} (@{w.User.Username}) · ₹{w.Amount:N2}"
+                    })
+                }
             }
             else
             {

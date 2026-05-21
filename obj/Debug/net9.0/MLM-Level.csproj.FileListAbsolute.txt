@@ -225,7 +225,6 @@ C:\Data\Work\MLM-Level\obj\Debug\net9.0\MLM-Level.pdb
 C:\Data\Work\MLM-Level\obj\Debug\net9.0\MLM-Level.genruntimeconfig.cache
 C:\Data\Work\MLM-Level\obj\Debug\net9.0\ref\MLM-Level.dll
 C:\Data\Work\MLM-Level\obj\Debug\net9.0\MLM-Level.sourcelink.json
-C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\gnefdotgy3-l5x0673h3x.gz
 C:\Data\Work\MLM-Level\bin\Debug\net9.0\refs\Microsoft.AspNetCore.Antiforgery.dll
 C:\Data\Work\MLM-Level\bin\Debug\net9.0\refs\Microsoft.AspNetCore.Authentication.Abstractions.dll
 C:\Data\Work\MLM-Level\bin\Debug\net9.0\refs\Microsoft.AspNetCore.Authentication.BearerToken.dll
@@ -534,6 +533,11 @@ C:\Data\Work\MLM-Level\bin\Debug\net9.0\Microsoft.AspNetCore.Razor.Language.dll
 C:\Data\Work\MLM-Level\bin\Debug\net9.0\Microsoft.CodeAnalysis.Razor.dll
 C:\Data\Work\MLM-Level\obj\Debug\net9.0\MLM-Level.MvcApplicationPartsAssemblyInfo.cs
 C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\d8cn3fepi7-m0sq6grxod.gz
-C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\aqb63f5zc6-862zb40k04.gz
-C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\vmxnb370qn-5q8bm46prm.gz
-C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\9y24om8bjv-vjcl3fkcg0.gz
+C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\aqb63f5zc6-s1790fpb95.gz
+C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\gnefdotgy3-mvw7jqf6tb.gz
+c:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\vmxnb370qn-8otf6fhhg2.gz
+C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\9y24om8bjv-u99xee3ans.gz
+C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\9y24om8bjv-5g8ojmrzwz.gz
+C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\aqb63f5zc6-fqyy87j7wm.gz
+C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\aqb63f5zc6-4oj0e6yztc.gz
+C:\Data\Work\MLM-Level\obj\Debug\net9.0\compressed\9y24om8bjv-jcuugk12lh.gz

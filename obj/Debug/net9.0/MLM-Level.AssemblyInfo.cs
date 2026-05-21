@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MLM-Level")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+46559e5a0e11b86b6888ae4122a8811b2e2360eb")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+35fd227c4978e483acd51c92e56afa1468c9081e")]
 [assembly: System.Reflection.AssemblyProductAttribute("MLM-Level")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MLM-Level")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

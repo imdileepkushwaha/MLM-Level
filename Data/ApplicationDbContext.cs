@@ -20,6 +20,8 @@ namespace MLM_Level.Data
         public DbSet<Package> Packages { get; set; } = null!;
         public DbSet<UserPackage> UserPackages { get; set; } = null!;
         public DbSet<MlmSetting> MlmSettings { get; set; } = null!;
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
+        public DbSet<MemberReward> MemberRewards { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -92,6 +94,22 @@ namespace MLM_Level.Data
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.ReferralCode)
                 .IsUnique();
+
+            modelBuilder.Entity<PasswordResetToken>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PasswordResetToken>()
+                .HasIndex(p => p.Token)
+                .IsUnique();
+
+            modelBuilder.Entity<MemberReward>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

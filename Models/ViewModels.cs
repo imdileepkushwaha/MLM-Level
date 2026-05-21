@@ -17,6 +17,31 @@ namespace MLM_Level.Models
         public bool RememberMe { get; set; }
     }
 
+    public class ForgotPasswordViewModel
+    {
+        [Required(ErrorMessage = "Username or email is required")]
+        [Display(Name = "Username or Email")]
+        public string UsernameOrEmail { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordViewModel
+    {
+        [Required]
+        public string Token { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "New password is required")]
+        [DataType(DataType.Password)]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long")]
+        [Display(Name = "New password")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please confirm your password")]
+        [DataType(DataType.Password)]
+        [Compare("NewPassword", ErrorMessage = "Passwords do not match")]
+        [Display(Name = "Confirm password")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
     public class RegisterViewModel
     {
         [Required(ErrorMessage = "Username is required")]
@@ -102,6 +127,17 @@ namespace MLM_Level.Models
         public decimal TotalIncome { get; set; }
         public int LedgerEntryCount { get; set; }
         public List<WithdrawalRequest> Withdrawals { get; set; } = new();
+    }
+
+    public class UserPackagesViewModel
+    {
+        public User UserInfo { get; set; } = null!;
+        public MlmSetting Settings { get; set; } = new();
+        public List<Package> AvailablePackages { get; set; } = new();
+        public List<UserPackage> ActivePackages { get; set; } = new();
+        public List<ActivationRequest> RecentRequests { get; set; } = new();
+        public bool HasPendingRequest { get; set; }
+        public ActivationRequest? PendingRequest { get; set; }
     }
 
     // --- ADMIN DASHBOARD VIEW MODELS ---
@@ -201,5 +237,14 @@ namespace MLM_Level.Models
     {
         public int TotalCount { get; set; }
         public List<MemberNotificationItem> Items { get; set; } = new();
+    }
+
+    public class AdminRejectModalViewModel
+    {
+        public string ModalId { get; set; } = string.Empty;
+        public string FormAction { get; set; } = string.Empty;
+        public int RequestId { get; set; }
+        public string Title { get; set; } = "Reject request";
+        public string? Subtitle { get; set; }
     }
 }

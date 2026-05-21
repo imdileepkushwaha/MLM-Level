@@ -13,7 +13,7 @@
     ThemeClass = "member-theme-amber",
     Badge = pending > 0 ? $"{pending} pending" : $"{list.Count} total",
     ActionText = "New request",
-    ActionUrl = "Activate",
+    ActionUrl = "Packages",
     ActionIcon = "bi-plus-circle"
 })
 
@@ -42,7 +42,7 @@
                 <tbody>
                     @foreach (var req in list)
                     {
-                        var searchText = $"{req.TransactionReference} {req.Amount} {req.Status}".ToLowerInvariant();
+                        var searchText = $"{req.TransactionReference} {req.Amount} {req.Status} {req.RejectionReason}".ToLowerInvariant();
                         <tr data-search="@searchText">
                             <td>
                                 <div class="fw-semibold text-dark small">@req.CreatedDate.ToString("dd MMM yyyy")</div>
@@ -79,9 +79,13 @@
                                 {
                                     <span>Awaiting admin review</span>
                                 }
+                                else if (!string.IsNullOrWhiteSpace(req.RejectionReason))
+                                {
+                                    <span class="text-danger">@req.RejectionReason</span>
+                                }
                                 else
                                 {
-                                    <span>Declined</span>
+                                    <span>Declined by admin</span>
                                 }
                             </td>
                         </tr>

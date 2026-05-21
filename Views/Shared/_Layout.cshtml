@@ -87,7 +87,7 @@
                         <a class="sidebar-link" data-bs-toggle="collapse" href="#myIncomeCollapse" role="button" aria-expanded="false" aria-controls="myIncomeCollapse">
                             <i class="bi bi-cash-stack"></i> My Income <i class="bi bi-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
                         </a>
-                        <div class="collapse @(new[]{"DailyIncome","DirectIncome","LevelIncome"}.Contains(Context.Request.RouteValues["action"]?.ToString()) ? "show" : "")" id="myIncomeCollapse">
+                        <div class="collapse @(new[]{"DailyIncome","DirectIncome","LevelIncome","Rewards"}.Contains(Context.Request.RouteValues["action"]?.ToString()) ? "show" : "")" id="myIncomeCollapse">
                             <nav class="nav flex-column ms-3 mt-1 mb-2" style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 0.5rem;">
                                 <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "DailyIncome" ? "active" : "")" asp-controller="User" asp-action="DailyIncome" style="font-size: 0.9rem;">
                                     <i class="bi bi-calendar-check" style="font-size: 1rem;"></i> Daily Income
@@ -97,6 +97,9 @@
                                 </a>
                                 <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "LevelIncome" ? "active" : "")" asp-controller="User" asp-action="LevelIncome" style="font-size: 0.9rem;">
                                     <i class="bi bi-layers" style="font-size: 1rem;"></i> Level Income
+                                </a>
+                                <a class="sidebar-link py-1 @(Context.Request.RouteValues["action"]?.ToString() == "Rewards" ? "active" : "")" asp-controller="User" asp-action="Rewards" style="font-size: 0.9rem;">
+                                    <i class="bi bi-trophy" style="font-size: 1rem;"></i> Rewards
                                 </a>
                             </nav>
                         </div>
@@ -248,5 +251,10 @@
         <script src="~/js/admin-tables.js" asp-append-version="true"></script>
     }
     @await RenderSectionAsync("Scripts", required: false)
+
+    @if (ViewBag.MaintenanceMode == true)
+    {
+        @await Html.PartialAsync("_MaintenanceOverlay")
+    }
 </body>
 </html>
