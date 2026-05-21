@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @if (ViewData["LandingPage"] as bool? == true)
+    {
+        <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+    }
+    @if (ViewData["AuthPage"] as bool? == true)
+    {
+        <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    }
     @if (User.Identity != null && User.Identity.IsAuthenticated && Context.Request.RouteValues["controller"]?.ToString() == "User")
     {
         <link rel="stylesheet" href="~/css/user.css" asp-append-version="true" />
@@ -194,27 +202,47 @@
     }
     else
     {
+        var isLanding = ViewData["LandingPage"] as bool? == true;
+        var isFullWidth = ViewData["FullWidth"] as bool? == true;
+        var isAuthPage = ViewData["AuthPage"] as bool? == true;
+        @if (!isAuthPage)
+        {
         <!-- Public Landing Page / Access Mode -->
-        <header class="main-nav">
-            <nav class="navbar navbar-expand-lg navbar-dark py-3">
+        <header class="main-nav @(isLanding ? "landing-nav" : "")">
+            <nav class="navbar navbar-expand-lg @(isLanding ? "navbar-dark" : "") py-3">
                 <div class="container">
-                    <a class="navbar-brand nav-brand d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
-                        <i class="bi bi-diagram-3-fill text-info"></i>
+                    <a class="navbar-brand nav-brand d-flex align-items-center gap-2 @(isLanding ? "landing-brand" : "")" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-diagram-3-fill @(isLanding ? "text-warning" : "text-info")"></i>
                         <span>ELITE MLM</span>
                     </a>
                     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav ms-auto align-items-center gap-3">
+                        <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-3">
+                            @if (isLanding)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link landing-nav-link" href="#how-it-works">How It Works</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link landing-nav-link" href="#commission-plan">Income Plan</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link landing-nav-link" href="#features">Features</a>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-secondary" asp-controller="Home" asp-action="Index">Home</a>
+                                </li>
+                            }
                             <li class="nav-item">
-                                <a class="nav-link text-secondary" asp-controller="Home" asp-action="Index">Home</a>
+                                <a class="btn @(isLanding ? "btn-landing-outline" : "btn-cyber-outline") btn-sm px-4" asp-controller="Account" asp-action="Login">Sign In</a>
                             </li>
                             <li class="nav-item">
-                                <a class="btn btn-cyber-outline btn-sm px-4" asp-controller="Account" asp-action="Login">Sign In</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="btn btn-cyber-cyan btn-sm px-4" asp-controller="Account" asp-action="Register">Join Now</a>
+                                <a class="btn @(isLanding ? "btn-landing-gold" : "btn-cyber-cyan") btn-sm px-4" asp-controller="Account" asp-action="Register">Join Now</a>
                             </li>
                         </ul>
                     </div>
@@ -222,25 +250,42 @@
             </nav>
         </header>
 
-        <main role="main" class="py-5">
-            <div class="container">
-                @if (TempData["SuccessMessage"] != null)
-                {
-                    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm py-3 mb-4" role="alert" style="border-radius: 12px; background-color: rgba(16, 185, 129, 0.1); color: #047857;">
-                        <i class="bi bi-check-circle-fill me-2"></i> @Html.Raw(TempData["SuccessMessage"])
-                        <button type="button" class="btn-close text-success" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
-                @if (TempData["ErrorMessage"] != null)
-                {
-                    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm py-3 mb-4" role="alert" style="border-radius: 12px; background-color: rgba(239, 68, 68, 0.1); color: #b91c1c;">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i> @Html.Raw(TempData["ErrorMessage"])
-                        <button type="button" class="btn-close text-danger" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
+        <main role="main" class="@(isFullWidth ? "" : "py-5")">
+            @if (!isAuthPage && (TempData["SuccessMessage"] != null || TempData["ErrorMessage"] != null))
+            {
+                <div class="container @(isFullWidth ? "pt-4" : "")">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm py-3 mb-4" role="alert" style="border-radius: 12px; background-color: rgba(16, 185, 129, 0.1); color: #047857;">
+                            <i class="bi bi-check-circle-fill me-2"></i> @Html.Raw(TempData["SuccessMessage"])
+                            <button type="button" class="btn-close text-success" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm py-3 mb-4" role="alert" style="border-radius: 12px; background-color: rgba(239, 68, 68, 0.1); color: #b91c1c;">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> @Html.Raw(TempData["ErrorMessage"])
+                            <button type="button" class="btn-close text-danger" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                </div>
+            }
+            @if (isFullWidth)
+            {
                 @RenderBody()
-            </div>
+            }
+            else
+            {
+                <div class="container">
+                    @RenderBody()
+                </div>
+            }
         </main>
+        }
+        else
+        {
+            @RenderBody()
+        }
     }
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

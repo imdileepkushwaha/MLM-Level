@@ -453,6 +453,17 @@ namespace MLM_Level.Data
                     );
                 END
             ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF COL_LENGTH('KycDetails', 'AadharNumber') IS NULL ALTER TABLE KycDetails ADD AadharNumber NVARCHAR(12) NOT NULL DEFAULT '';
+                IF COL_LENGTH('KycDetails', 'AadharFrontUrl') IS NULL ALTER TABLE KycDetails ADD AadharFrontUrl NVARCHAR(255) NOT NULL DEFAULT '';
+                IF COL_LENGTH('KycDetails', 'AadharBackUrl') IS NULL ALTER TABLE KycDetails ADD AadharBackUrl NVARCHAR(255) NOT NULL DEFAULT '';
+                IF COL_LENGTH('KycDetails', 'PanNumber') IS NULL ALTER TABLE KycDetails ADD PanNumber NVARCHAR(10) NOT NULL DEFAULT '';
+                IF COL_LENGTH('KycDetails', 'BankAccountHolderName') IS NULL ALTER TABLE KycDetails ADD BankAccountHolderName NVARCHAR(100) NOT NULL DEFAULT '';
+                IF COL_LENGTH('KycDetails', 'BankAccountNumber') IS NULL ALTER TABLE KycDetails ADD BankAccountNumber NVARCHAR(30) NOT NULL DEFAULT '';
+                IF COL_LENGTH('KycDetails', 'BankIfsc') IS NULL ALTER TABLE KycDetails ADD BankIfsc NVARCHAR(11) NOT NULL DEFAULT '';
+                IF COL_LENGTH('KycDetails', 'BankName') IS NULL ALTER TABLE KycDetails ADD BankName NVARCHAR(100) NOT NULL DEFAULT '';
+            ");
         }
 
         private static void SeedNewSystemData(ApplicationDbContext context)

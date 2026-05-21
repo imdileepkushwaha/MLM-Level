@@ -1,95 +1,403 @@
 @model MLM_Level.Models.KycDetail
 @{
     ViewData["Title"] = "KYC Verification";
+    var canEdit = Model.Status != "Approved";
+    var maskAadhar = !string.IsNullOrEmpty(Model.AadharNumber) && Model.AadharNumber.Length == 12
+        ? $"XXXX XXXX {Model.AadharNumber[^4..]}"
+        : Model.AadharNumber;
 }
 
 @await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
 {
     Title = "KYC Verification",
-    Subtitle = "Upload documents to verify identity and enable withdrawals",
+    Subtitle = "Complete identity and bank verification to enable wallet withdrawals",
     Icon = "bi-shield-check",
     ThemeClass = "member-theme-cyan",
     Badge = Model.Status
 })
 
 <div class="row g-4 justify-content-center">
-    <div class="col-lg-8">
-        <div class="glass-card member-panel-card p-4">
-            
-            @if (TempData["Success"] != null)
-            {
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
+    <div class="col-xl-12">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show member-kyc-alert" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show member-kyc-alert" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
 
-            @if (TempData["Error"] != null)
-            {
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="glass-card member-panel-card member-kyc-status-card mb-4" id="kycStatusBanner">
+            <div class="member-kyc-status-inner @($"is-{Model.Status.ToLowerInvariant()}")">
+                <div class="member-kyc-status-icon">
+                    <i class="bi @(Model.Status == "Approved" ? "bi-check-circle-fill" : Model.Status == "Rejected" ? "bi-x-circle-fill" : "bi-hourglass-split")"></i>
                 </div>
-            }
+                <div class="member-kyc-status-body">
+                    <h6 class="member-kyc-status-title mb-1">Status: @Model.Status</h6>
+                    <p class="member-kyc-status-text mb-0">
+                        @(Model.Status == "Approved"
+                            ? "Verified — you can request withdrawals from your E-Wallet."
+                            : Model.Status == "Rejected"
+                                ? "Rejected — update details below and submit again."
+                                : Model.Status == "Pending" && Model.Id > 0
+                                    ? "Under admin review. You will be notified once verified."
+                                    : "Fill all sections below and submit for admin verification.")
+                    </p>
+                </div>
+                @if (Model.Status == "Approved")
+                {
+                    <button type="button" class="member-kyc-status-close" aria-label="Dismiss status">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                }
+            </div>
+        </div>
 
-            <div class="mb-4">
-                <div class="d-flex align-items-center justify-content-between p-3 rounded-3" style="background: @(Model.Status == "Approved" ? "rgba(16,185,129,0.1)" : Model.Status == "Rejected" ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)"); border: 1px solid @(Model.Status == "Approved" ? "rgba(16,185,129,0.3)" : Model.Status == "Rejected" ? "rgba(239,68,68,0.3)" : "rgba(245,158,11,0.3)");">
-                    <div class="d-flex align-items-center gap-3">
-                        <i class="bi @(Model.Status == "Approved" ? "bi-check-circle-fill text-success" : Model.Status == "Rejected" ? "bi-x-circle-fill text-danger" : "bi-clock-fill text-warning")" style="font-size: 1.5rem;"></i>
+        @if (Model.Status == "Rejected" && !string.IsNullOrEmpty(Model.RejectionReason))
+        {
+            <div class="alert alert-danger member-kyc-alert">
+                <strong>Rejection reason:</strong> @Model.RejectionReason
+            </div>
+        }
+
+        @if (canEdit)
+        {
+            <form asp-action="UploadKyc" method="post" enctype="multipart/form-data" id="kycForm" class="member-kyc-form">
+                @Html.AntiForgeryToken()
+
+                <div class="glass-card member-panel-card member-kyc-section mb-4">
+                    <div class="member-kyc-section-head">
+                        <span class="member-kyc-step">1</span>
                         <div>
-                            <h6 class="mb-0 fw-bold @(Model.Status == "Approved" ? "text-success" : Model.Status == "Rejected" ? "text-danger" : "text-warning")">Status: @Model.Status</h6>
-                            <p class="mb-0 small text-secondary">
-                                @(Model.Status == "Approved" ? "Your KYC documents have been verified successfully. You can now request withdrawals." : Model.Status == "Rejected" ? "Your KYC was rejected. Please re-upload valid documents." : "Your documents are currently under review by the admin team.")
-                            </p>
+                            <h5 class="member-kyc-section-title mb-0">Aadhar details</h5>
+                            <p class="member-kyc-section-sub mb-0">Enter number and upload front & back images</p>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="member-kyc-label" for="aadharNumber">Aadhar number <span class="text-danger">*</span></label>
+                            <input type="text" name="aadharNumber" id="aadharNumber" class="form-control member-kyc-input"
+                                   maxlength="12" inputmode="numeric" placeholder="12-digit Aadhar number"
+                                   value="@Model.AadharNumber" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="member-kyc-label">Aadhar front <span class="text-danger">*</span></label>
+                            <label class="member-kyc-upload">
+                                <i class="bi bi-card-image"></i>
+                                <span>@(string.IsNullOrEmpty(Model.AadharFrontUrl) ? "Choose file" : "Replace file")</span>
+                                <input type="file" name="aadharFront" accept="image/jpeg,image/png,image/jpg,image/webp,.pdf"
+                                       @(string.IsNullOrEmpty(Model.AadharFrontUrl) ? "required" : "") />
+                            </label>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="member-kyc-label">Aadhar back <span class="text-danger">*</span></label>
+                            <label class="member-kyc-upload">
+                                <i class="bi bi-card-image"></i>
+                                <span>@(string.IsNullOrEmpty(Model.AadharBackUrl) ? "Choose file" : "Replace file")</span>
+                                <input type="file" name="aadharBack" accept="image/jpeg,image/png,image/jpg,image/webp,.pdf"
+                                       @(string.IsNullOrEmpty(Model.AadharBackUrl) ? "required" : "") />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card member-panel-card member-kyc-section mb-4">
+                    <div class="member-kyc-section-head">
+                        <span class="member-kyc-step">2</span>
+                        <div>
+                            <h5 class="member-kyc-section-title mb-0">PAN details</h5>
+                            <p class="member-kyc-section-sub mb-0">Enter PAN number and upload card photo</p>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="member-kyc-label" for="panNumber">PAN number <span class="text-danger">*</span></label>
+                            <input type="text" name="panNumber" id="panNumber" class="form-control member-kyc-input text-uppercase"
+                                   maxlength="10" placeholder="ABCDE1234F" value="@Model.PanNumber" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="member-kyc-label">PAN card image <span class="text-danger">*</span></label>
+                            <label class="member-kyc-upload">
+                                <i class="bi bi-file-earmark-person"></i>
+                                <span>@(string.IsNullOrEmpty(Model.PanCardUrl) ? "Choose file" : "Replace file")</span>
+                                <input type="file" name="panCard" accept="image/jpeg,image/png,image/jpg,image/webp,.pdf"
+                                       @(string.IsNullOrEmpty(Model.PanCardUrl) ? "required" : "") />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card member-panel-card member-kyc-section mb-4">
+                    <div class="member-kyc-section-head">
+                        <span class="member-kyc-step">3</span>
+                        <div>
+                            <h5 class="member-kyc-section-title mb-0">Bank details</h5>
+                            <p class="member-kyc-section-sub mb-0">Payout account for withdrawal requests</p>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="member-kyc-label" for="bankAccountHolderName">Account holder name <span class="text-danger">*</span></label>
+                            <input type="text" name="bankAccountHolderName" id="bankAccountHolderName" class="form-control member-kyc-input"
+                                   placeholder="As per bank records" value="@Model.BankAccountHolderName" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="member-kyc-label" for="bankName">Bank name <span class="text-danger">*</span></label>
+                            <input type="text" name="bankName" id="bankName" class="form-control member-kyc-input"
+                                   placeholder="e.g. State Bank of India" value="@Model.BankName" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="member-kyc-label" for="bankAccountNumber">Account number <span class="text-danger">*</span></label>
+                            <input type="text" name="bankAccountNumber" id="bankAccountNumber" class="form-control member-kyc-input"
+                                   placeholder="Bank account number" value="@Model.BankAccountNumber" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="member-kyc-label" for="bankIfsc">IFSC code <span class="text-danger">*</span></label>
+                            <input type="text" name="bankIfsc" id="bankIfsc" class="form-control member-kyc-input text-uppercase"
+                                   maxlength="11" placeholder="SBIN0001234" value="@Model.BankIfsc" required />
+                        </div>
+                        <div class="col-12">
+                            <label class="member-kyc-label">Passbook / cancelled cheque <span class="text-danger">*</span></label>
+                            <label class="member-kyc-upload member-kyc-upload-wide">
+                                <i class="bi bi-bank2"></i>
+                                <span>@(string.IsNullOrEmpty(Model.BankPassbookUrl) ? "Upload passbook or cheque image" : "Replace passbook / cheque")</span>
+                                <input type="file" name="bankPassbook" accept="image/jpeg,image/png,image/jpg,image/webp,.pdf"
+                                       @(string.IsNullOrEmpty(Model.BankPassbookUrl) ? "required" : "") />
+                            </label>
+                            <small class="text-muted d-block mt-2">Name, account number and IFSC must be clearly visible. Max 2MB per file.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="member-kyc-tip glass-card member-panel-card p-3 mb-4">
+                    <i class="bi bi-shield-lock text-info"></i>
+                    <span>Your documents are reviewed only by admin for withdrawal verification. Ensure all details match your uploaded proofs.</span>
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn member-kyc-submit px-5 py-3">
+                        <i class="bi bi-cloud-arrow-up-fill me-2"></i>Submit KYC for verification
+                    </button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <div class="member-kyc-verified-wrap">
+                <div class="member-kyc-verified-banner mb-4">
+                    <div class="member-kyc-verified-banner-icon"><i class="bi bi-patch-check-fill"></i></div>
+                    <div>
+                        <h5 class="member-kyc-verified-banner-title mb-1">KYC verified successfully</h5>
+                        <p class="member-kyc-verified-banner-text mb-0">Your identity and bank details are on file. You can request withdrawals from your E-Wallet.</p>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="glass-card member-panel-card member-kyc-verified-panel p-0 h-100 overflow-hidden">
+                            <div class="member-kyc-verified-panel-head">
+                                <i class="bi bi-person-vcard-fill"></i>
+                                <span>Verified details</span>
+                            </div>
+                            <div class="p-3 p-md-4 d-flex flex-column gap-3">
+                                <div class="member-kyc-id-card">
+                                    <div class="member-kyc-id-card-head">
+                                        <span class="member-kyc-id-card-icon"><i class="bi bi-fingerprint"></i></span>
+                                        <div>
+                                            <h6 class="member-kyc-id-card-title mb-0">Identity</h6>
+                                            <p class="member-kyc-id-card-sub mb-0">Government ID on file</p>
+                                        </div>
+                                        <span class="member-kyc-id-badge"><i class="bi bi-shield-fill"></i> Verified</span>
+                                    </div>
+                                    <div class="member-kyc-id-fields">
+                                        <div class="member-kyc-id-field">
+                                            <span class="member-kyc-id-field-icon member-kyc-id-field-aadhar"><i class="bi bi-person-vcard"></i></span>
+                                            <div class="member-kyc-id-field-body">
+                                                <span class="member-kyc-id-field-label">Aadhar number</span>
+                                                <span class="member-kyc-id-field-value member-kyc-id-field-masked">@maskAadhar</span>
+                                            </div>
+                                        </div>
+                                        <div class="member-kyc-id-field">
+                                            <span class="member-kyc-id-field-icon member-kyc-id-field-pan"><i class="bi bi-credit-card-2-front"></i></span>
+                                            <div class="member-kyc-id-field-body">
+                                                <span class="member-kyc-id-field-label">PAN number</span>
+                                                <span class="member-kyc-id-field-value text-uppercase">@Model.PanNumber</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="member-kyc-payout-wrap">
+                                    <div class="member-kyc-payout-head">
+                                        <span class="member-kyc-payout-head-icon"><i class="bi bi-bank2"></i></span>
+                                        <div>
+                                            <h6 class="member-kyc-payout-head-title mb-0">Payout account</h6>
+                                            <p class="member-kyc-payout-head-sub mb-0">Withdrawals sent to this account</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="member-kyc-bank-card">
+                                        <div class="member-kyc-bank-card-inner">
+                                            <div class="member-kyc-bank-card-top">
+                                                <span class="member-kyc-bank-type"><i class="bi bi-shield-check me-1"></i>Verified</span>
+                                                <span class="member-kyc-bank-brand"><i class="bi bi-building me-1"></i>@Model.BankName</span>
+                                            </div>
+                                            <p class="member-kyc-bank-label">Account number</p>
+                                            <p class="member-kyc-bank-account">@Model.BankAccountNumber</p>
+                                            <div class="member-kyc-bank-mid">
+                                                <div class="member-kyc-bank-meta">
+                                                    <span class="member-kyc-bank-label">Holder</span>
+                                                    <span class="member-kyc-bank-holder">@Model.BankAccountHolderName</span>
+                                                </div>
+                                                <div class="member-kyc-bank-meta member-kyc-bank-meta-ifsc">
+                                                    <span class="member-kyc-bank-label">IFSC</span>
+                                                    <span class="member-kyc-bank-ifsc-value">@Model.BankIfsc</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @{
+                                        var bankCopy = $"{Model.BankAccountHolderName} | {Model.BankName} | A/c {Model.BankAccountNumber} | IFSC {Model.BankIfsc}";
+                                    }
+                                    <button type="button" class="member-kyc-payout-copy" data-copy-bank="@bankCopy">
+                                        <i class="bi bi-clipboard me-2"></i>Copy payout details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="glass-card member-panel-card member-kyc-verified-panel p-0 h-100 overflow-hidden">
+                            <div class="member-kyc-verified-panel-head member-kyc-verified-panel-head-docs">
+                                <i class="bi bi-images"></i>
+                                <span>Submitted documents</span>
+                            </div>
+                            <div class="p-3 p-md-4">
+                                <div class="row g-3">
+                                    @foreach (var doc in new[] {
+                                        new { Label = "Aadhar front", Icon = "bi-card-image", Url = Model.AadharFrontUrl },
+                                        new { Label = "Aadhar back", Icon = "bi-card-image", Url = Model.AadharBackUrl },
+                                        new { Label = "PAN card", Icon = "bi-file-earmark-person", Url = Model.PanCardUrl },
+                                        new { Label = "Bank passbook", Icon = "bi-bank", Url = Model.BankPassbookUrl }
+                                    })
+                                    {
+                                        if (!string.IsNullOrEmpty(doc.Url))
+                                        {
+                                            <div class="col-md-6">
+                                                <div class="member-kyc-doc-card">
+                                                    <div class="member-kyc-doc-card-head">
+                                                        <i class="bi @doc.Icon"></i>
+                                                        <span>@doc.Label</span>
+                                                        <a href="@doc.Url" target="_blank" rel="noopener" class="member-kyc-doc-open ms-auto">
+                                                            <i class="bi bi-box-arrow-up-right"></i> Open
+                                                        </a>
+                                                    </div>
+                                                    <div class="member-kyc-doc-card-body">
+                                                        @if (doc.Url.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                                                        {
+                                                            <a href="@doc.Url" target="_blank" rel="noopener" class="member-kyc-doc-pdf">
+                                                                <i class="bi bi-file-pdf-fill"></i>
+                                                                <span>PDF document</span>
+                                                            </a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="member-kyc-doc-preview-wrap">
+                                                                <a href="@doc.Url" target="_blank" rel="noopener" class="member-kyc-doc-preview-link">
+                                                                    <img src="@doc.Url" alt="@doc.Label" class="member-kyc-doc-img" />
+                                                                    <span class="member-kyc-doc-overlay">
+                                                                        <span class="member-kyc-doc-open member-kyc-doc-open-overlay">
+                                                                            <i class="bi bi-zoom-in"></i> View
+                                                                        </span>
+                                                                    </span>
+                                                                </a>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            @if (Model.Status == "Rejected" && !string.IsNullOrEmpty(Model.RejectionReason))
-            {
-                <div class="alert alert-danger">
-                    <strong>Rejection Reason:</strong> @Model.RejectionReason
-                </div>
-            }
-
-            @if (Model.Status != "Approved")
-            {
-                <form asp-action="UploadKyc" method="post" enctype="multipart/form-data">
-                    <div class="mb-4 form-group">
-                        <label class="form-label text-secondary small fw-semibold">Upload PAN Card (Image)</label>
-                        <input type="file" name="panCard" class="form-control" accept="image/jpeg,image/png,image/jpg" @(Model.Id == 0 ? "required" : "") />
-                        <small class="text-muted">Upload a clear photo of your PAN card. Max size: 2MB.</small>
-                    </div>
-
-                    <div class="mb-4 form-group">
-                        <label class="form-label text-secondary small fw-semibold">Upload Bank Passbook / Cancelled Cheque (Image)</label>
-                        <input type="file" name="bankPassbook" class="form-control" accept="image/jpeg,image/png,image/jpg" @(Model.Id == 0 ? "required" : "") />
-                        <small class="text-muted">Ensure your Name, Account Number, and IFSC are clearly visible.</small>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary px-4 py-2 rounded-pill fw-bold">
-                        <i class="bi bi-cloud-arrow-up me-2"></i>Submit Documents
-                    </button>
-                </form>
-            }
-            else
-            {
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="border rounded-3 p-2 text-center bg-light">
-                            <span class="d-block small text-muted mb-2 fw-bold">PAN Card</span>
-                            <img src="@Model.PanCardUrl" class="img-fluid rounded" style="max-height: 150px; object-fit: contain;" />
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="border rounded-3 p-2 text-center bg-light">
-                            <span class="d-block small text-muted mb-2 fw-bold">Bank Document</span>
-                            <img src="@Model.BankPassbookUrl" class="img-fluid rounded" style="max-height: 150px; object-fit: contain;" />
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
+        }
     </div>
 </div>
+
+@section Scripts {
+<script>
+(function () {
+    document.querySelectorAll('.member-kyc-upload input[type="file"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            var label = input.closest('.member-kyc-upload');
+            if (!label) return;
+            var span = label.querySelector('span');
+            if (span && input.files && input.files[0]) {
+                span.textContent = input.files[0].name;
+                label.classList.add('has-file');
+            }
+        });
+    });
+
+    var aadhar = document.getElementById('aadharNumber');
+    if (aadhar) {
+        aadhar.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 12);
+        });
+    }
+
+    document.querySelectorAll('[data-copy-bank]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var text = btn.getAttribute('data-copy-bank') || '';
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(function () {
+                var old = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check2 me-2"></i>Copied!';
+                btn.classList.add('is-copied');
+                setTimeout(function () {
+                    btn.innerHTML = old;
+                    btn.classList.remove('is-copied');
+                }, 2000);
+            });
+        });
+    });
+
+    var statusBanner = document.getElementById('kycStatusBanner');
+    var approvedInner = statusBanner && statusBanner.querySelector('.member-kyc-status-inner.is-approved');
+    if (approvedInner) {
+        var dismissKey = 'kyc-approved-status-dismissed';
+        var autoDismissMs = 5000;
+
+        function dismissStatusBanner() {
+            if (!statusBanner || statusBanner.classList.contains('is-dismissing')) return;
+            sessionStorage.setItem(dismissKey, '1');
+            statusBanner.classList.add('is-dismissing');
+            setTimeout(function () {
+                statusBanner.remove();
+            }, 320);
+        }
+
+        if (sessionStorage.getItem(dismissKey)) {
+            statusBanner.remove();
+        } else {
+            var closeBtn = approvedInner.querySelector('.member-kyc-status-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', dismissStatusBanner);
+            }
+            setTimeout(dismissStatusBanner, autoDismissMs);
+        }
+    }
+})();
+</script>
+}

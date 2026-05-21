@@ -850,10 +850,21 @@ namespace MLM_Level.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UploadKyc(IFormFile panCard, IFormFile bankPassbook)
+        public async Task<IActionResult> UploadKyc(
+            string aadharNumber,
+            string panNumber,
+            string bankAccountHolderName,
+            string bankAccountNumber,
+            string bankIfsc,
+            string bankName,
+            IFormFile? aadharFront,
+            IFormFile? aadharBack,
+            IFormFile? panCard,
+            IFormFile? bankPassbook)
         {
             var userId = GetCurrentUserId();
             var kyc = await _context.KycDetails.FirstOrDefaultAsync(k => k.UserId == userId);
+            var isNew = kyc == null;
 
             if (kyc != null && kyc.Status == "Approved")
             {
@@ -861,44 +872,122 @@ namespace MLM_Level.Controllers
                 return RedirectToAction("Kyc");
             }
 
-            if (kyc == null)
+            aadharNumber = (aadharNumber ?? "").Trim().Replace(" ", "");
+            panNumber = (panNumber ?? "").Trim().ToUpperInvariant();
+            bankAccountHolderName = (bankAccountHolderName ?? "").Trim();
+            bankAccountNumber = (bankAccountNumber ?? "").Trim();
+            bankIfsc = (bankIfsc ?? "").Trim().ToUpperInvariant();
+            bankName = (bankName ?? "").Trim();
+
+            if (aadharNumber.Length != 12 || !aadharNumber.All(char.IsDigit))
+            {
+                TempData["Error"] = "Enter a valid 12-digit Aadhar number.";
+                return RedirectToAction("Kyc");
+            }
+
+            if (panNumber.Length != 10 || !System.Text.RegularExpressions.Regex.IsMatch(panNumber, @"^[A-Z]{5}[0-9]{4}[A-Z]$"))
+            {
+                TempData["Error"] = "Enter a valid PAN number (e.g. ABCDE1234F).";
+                return RedirectToAction("Kyc");
+            }
+
+            if (string.IsNullOrWhiteSpace(bankAccountHolderName) ||
+                string.IsNullOrWhiteSpace(bankAccountNumber) ||
+                string.IsNullOrWhiteSpace(bankIfsc) ||
+                string.IsNullOrWhiteSpace(bankName))
+            {
+                TempData["Error"] = "All bank detail fields are required.";
+                return RedirectToAction("Kyc");
+            }
+
+            if (bankIfsc.Length != 11)
+            {
+                TempData["Error"] = "Enter a valid 11-character IFSC code.";
+                return RedirectToAction("Kyc");
+            }
+
+            if (isNew)
             {
                 kyc = new KycDetail { UserId = userId };
                 _context.KycDetails.Add(kyc);
             }
 
+            if (string.IsNullOrEmpty(kyc!.AadharFrontUrl) && (aadharFront == null || aadharFront.Length == 0))
+            {
+                TempData["Error"] = "Aadhar front image is required.";
+                return RedirectToAction("Kyc");
+            }
+            if (string.IsNullOrEmpty(kyc.AadharBackUrl) && (aadharBack == null || aadharBack.Length == 0))
+            {
+                TempData["Error"] = "Aadhar back image is required.";
+                return RedirectToAction("Kyc");
+            }
+            if (string.IsNullOrEmpty(kyc.PanCardUrl) && (panCard == null || panCard.Length == 0))
+            {
+                TempData["Error"] = "PAN card image is required.";
+                return RedirectToAction("Kyc");
+            }
+            if (string.IsNullOrEmpty(kyc.BankPassbookUrl) && (bankPassbook == null || bankPassbook.Length == 0))
+            {
+                TempData["Error"] = "Bank passbook / cancelled cheque image is required.";
+                return RedirectToAction("Kyc");
+            }
+
             var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "kyc");
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-            if (panCard != null && panCard.Length > 0)
+            try
             {
-                var uniqueFileName = Guid.NewGuid().ToString() + "_" + panCard.FileName;
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    await panCard.CopyToAsync(fileStream);
-                }
-                kyc.PanCardUrl = "/uploads/kyc/" + uniqueFileName;
+                if (aadharFront != null && aadharFront.Length > 0)
+                    kyc.AadharFrontUrl = await SaveKycFileAsync(aadharFront, uploadsFolder);
+                if (aadharBack != null && aadharBack.Length > 0)
+                    kyc.AadharBackUrl = await SaveKycFileAsync(aadharBack, uploadsFolder);
+                if (panCard != null && panCard.Length > 0)
+                    kyc.PanCardUrl = await SaveKycFileAsync(panCard, uploadsFolder);
+                if (bankPassbook != null && bankPassbook.Length > 0)
+                    kyc.BankPassbookUrl = await SaveKycFileAsync(bankPassbook, uploadsFolder);
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Kyc");
             }
 
-            if (bankPassbook != null && bankPassbook.Length > 0)
-            {
-                var uniqueFileName = Guid.NewGuid().ToString() + "_" + bankPassbook.FileName;
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    await bankPassbook.CopyToAsync(fileStream);
-                }
-                kyc.BankPassbookUrl = "/uploads/kyc/" + uniqueFileName;
-            }
-
+            kyc.AadharNumber = aadharNumber;
+            kyc.PanNumber = panNumber;
+            kyc.BankAccountHolderName = bankAccountHolderName;
+            kyc.BankAccountNumber = bankAccountNumber;
+            kyc.BankIfsc = bankIfsc;
+            kyc.BankName = bankName;
             kyc.Status = "Pending";
+            kyc.RejectionReason = string.Empty;
             kyc.UpdatedDate = DateTime.UtcNow;
-            
+            if (isNew) kyc.CreatedDate = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
-            
-            TempData["Success"] = "KYC Documents submitted successfully for review.";
+
+            TempData["Success"] = "KYC submitted successfully. Admin will review your documents shortly.";
             return RedirectToAction("Kyc");
+        }
+
+        private static async Task<string> SaveKycFileAsync(IFormFile file, string uploadsFolder)
+        {
+            const long maxBytes = 2 * 1024 * 1024;
+            if (file.Length > maxBytes)
+                throw new InvalidOperationException("Each document must be 2MB or smaller.");
+
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".pdf" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowed.Contains(ext))
+                throw new InvalidOperationException("Only JPG, PNG, WEBP, or PDF files are allowed.");
+
+            var uniqueFileName = Guid.NewGuid().ToString("N") + ext;
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+            return "/uploads/kyc/" + uniqueFileName;
         }
     }
 }

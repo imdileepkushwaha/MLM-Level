@@ -1197,7 +1197,9 @@ namespace MLM_Level.Controllers
                 // Fetch bank details string (which we don't have distinct cols for, but they should be in KycDetails or Profile). 
                 // Let's pull from KYC if available
                 var kyc = await _context.KycDetails.FirstOrDefaultAsync(k => k.UserId == req.UserId && k.Status == "Approved");
-                string bankInfo = kyc != null ? $"Passbook: {kyc.BankPassbookUrl}" : "No Verified Bank Info";
+                string bankInfo = kyc != null && !string.IsNullOrEmpty(kyc.BankAccountNumber)
+                    ? $"{kyc.BankAccountHolderName} | {kyc.BankName} | A/c {kyc.BankAccountNumber} | IFSC {kyc.BankIfsc}"
+                    : (kyc != null ? $"Passbook: {kyc.BankPassbookUrl}" : "No Verified Bank Info");
 
                 // Escape commas in strings
                 string userName = req.User.FullName.Replace(",", " ");
