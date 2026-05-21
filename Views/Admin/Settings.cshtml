@@ -1,128 +1,369 @@
-@model MLM_Level.Models.MlmSetting
+@model MLM_Level.Models.AdminSettingsViewModel
 @{
-    ViewData["Title"] = "MLM Configuration & General Settings";
+    ViewData["Title"] = "General Settings";
+    var isOnline = Model.Settings.MaintenanceMode == "Online";
 }
 
-<div class="row g-4 mb-4">
-    <div class="col-12">
-        <div class="glass-card p-4">
-            <h4 class="text-white fw-bold mb-2">MLM Configuration Portal</h4>
-            <p class="text-secondary mb-0">Manage level commission rates, withdrawal constraints, fee structures, and company collection accounts.</p>
+<!-- Page Header -->
+<div class="admin-page-header admin-theme-violet mb-4" style="--admin-btn:linear-gradient(45deg,#6366f1,#4f46e5);">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-sliders"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">System Settings</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Platform config, payouts, integrations, and admin account</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <span class="admin-header-badge">
+                <i class="bi @(isOnline ? "bi-check-circle" : "bi-tools") me-1"></i>
+                @(isOnline ? "Website Online" : "Maintenance mode")
+            </span>
         </div>
     </div>
 </div>
 
-<form asp-controller="Admin" asp-action="Settings" method="post">
+<!-- <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Site</p>
+            <p class="fw-bold text-dark mb-0 text-truncate small" title="@Model.Settings.SiteName">@(Model.Settings.SiteName ?? "—")</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Min withdrawal</p>
+            <p class="fw-bold text-success mb-0">&#8377;@Model.Settings.MinWithdrawalLimit.ToString("N0")</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Level 1 commission</p>
+            <p class="fw-bold text-primary mb-0">@Model.Settings.Level1Commission%</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Support email</p>
+            <p class="fw-bold text-dark mb-0 text-truncate small" title="@Model.Settings.SupportEmail">@(Model.Settings.SupportEmail ?? "—")</p>
+        </div>
+    </div>
+</div> -->
+
+<form asp-controller="Admin" asp-action="Settings" method="post" id="settingsForm">
     @Html.AntiForgeryToken()
-    <div asp-validation-summary="ModelOnly" class="text-danger small mb-4"></div>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 small mb-4" role="alert"></div>
+    <input type="hidden" asp-for="ActiveTab" id="ActiveTabInput" />
 
-    <div class="row g-4">
-        <!-- Commission Setup -->
-        <div class="col-md-6">
-            <div class="glass-card p-4 h-100">
-                <h5 class="text-white fw-bold mb-4">
-                    <i class="bi bi-percent text-info me-2"></i>Multi-Level Commission Structure
-                </h5>
-                <p class="text-secondary small mb-4">Set the percentage of package price paid to upline sponsors at each level of recruitment hierarchy.</p>
-                
-                <div class="mb-3 form-group">
-                    <label for="Level1Commission" class="text-secondary small fw-bold">Level 1 Commission (%)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">Level 1</span>
-                        <input asp-for="Level1Commission" type="number" step="0.01" class="form-control auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" required />
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">%</span>
-                    </div>
-                </div>
+    <div class="row align-items-start g-4">
+        <!-- Sidebar -->
+        <div class="col-md-4 col-lg-3">
+            <div class="glass-card p-3 settings-sidebar h-100">
+                <nav class="nav flex-column nav-pills settings-nav" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 
-                <div class="mb-3 form-group">
-                    <label for="Level2Commission" class="text-secondary small fw-bold">Level 2 Commission (%)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">Level 2</span>
-                        <input asp-for="Level2Commission" type="number" step="0.01" class="form-control auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" required />
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">%</span>
-                    </div>
-                </div>
+                    <span class="settings-nav-group">Platform</span>
+                    <button class="nav-link settings-nav-link @(Model.ActiveTab == "general" ? "active" : "")" id="tab-general" data-bs-toggle="pill" data-bs-target="#content-general" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'general'">
+                        <span class="settings-nav-icon settings-nav-icon-red"><i class="bi bi-sliders"></i></span>General
+                    </button>
+                    <button class="nav-link settings-nav-link @(Model.ActiveTab == "commission" ? "active" : "")" id="tab-commission" data-bs-toggle="pill" data-bs-target="#content-commission" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'commission'">
+                        <span class="settings-nav-icon settings-nav-icon-blue"><i class="bi bi-diagram-3"></i></span>Commission Setup
+                    </button>
+                    <button class="nav-link settings-nav-link @(Model.ActiveTab == "withdrawals" ? "active" : "")" id="tab-withdrawals" data-bs-toggle="pill" data-bs-target="#content-withdrawals" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'withdrawals'">
+                        <span class="settings-nav-icon settings-nav-icon-purple"><i class="bi bi-receipt"></i></span>Withdrawal Rules
+                    </button>
+                    <button class="nav-link settings-nav-link @(Model.ActiveTab == "paymentSetup" ? "active" : "")" id="tab-paymentSetup" data-bs-toggle="pill" data-bs-target="#content-paymentSetup" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'paymentSetup'">
+                        <span class="settings-nav-icon settings-nav-icon-red"><i class="bi bi-bank"></i></span>Payment Setup
+                    </button>
 
-                <div class="mb-3 form-group">
-                    <label for="Level3Commission" class="text-secondary small fw-bold">Level 3 Commission (%)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">Level 3</span>
-                        <input asp-for="Level3Commission" type="number" step="0.01" class="form-control auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" required />
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">%</span>
-                    </div>
-                </div>
+                    <span class="settings-nav-group">Integrations</span>
+                    <button class="nav-link settings-nav-link @(Model.ActiveTab == "smtp" ? "active" : "")" id="tab-smtp" data-bs-toggle="pill" data-bs-target="#content-smtp" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'smtp'">
+                        <span class="settings-nav-icon settings-nav-icon-cyan"><i class="bi bi-envelope"></i></span>SMTP Email
+                    </button>
+                    <button class="nav-link settings-nav-link @(Model.ActiveTab == "sms" ? "active" : "")" id="tab-sms" data-bs-toggle="pill" data-bs-target="#content-sms" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'sms'">
+                        <span class="settings-nav-icon settings-nav-icon-pink"><i class="bi bi-chat-text"></i></span>SMS Gateway
+                    </button>
+                    <button class="nav-link settings-nav-link @(Model.ActiveTab == "whatsapp" ? "active" : "")" id="tab-whatsapp" data-bs-toggle="pill" data-bs-target="#content-whatsapp" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'whatsapp'">
+                        <span class="settings-nav-icon settings-nav-icon-green"><i class="bi bi-whatsapp"></i></span>WhatsApp API
+                    </button>
 
-                <div class="mb-3 form-group">
-                    <label for="Level4Commission" class="text-secondary small fw-bold">Level 4 Commission (%)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">Level 4</span>
-                        <input asp-for="Level4Commission" type="number" step="0.01" class="form-control auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" required />
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">%</span>
-                    </div>
-                </div>
-
-                <div class="mb-3 form-group">
-                    <label for="Level5Commission" class="text-secondary small fw-bold">Level 5 Commission (%)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">Level 5</span>
-                        <input asp-for="Level5Commission" type="number" step="0.01" class="form-control auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" required />
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">%</span>
-                    </div>
-                </div>
+                    <span class="settings-nav-group">Account</span>
+                    <button class="nav-link settings-nav-link @(Model.ActiveTab == "adminProfile" ? "active" : "")" id="tab-adminProfile" data-bs-toggle="pill" data-bs-target="#content-adminProfile" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'adminProfile'">
+                        <span class="settings-nav-icon settings-nav-icon-indigo"><i class="bi bi-person-badge"></i></span>Admin Profile
+                    </button>
+                    <button class="nav-link settings-nav-link @(Model.ActiveTab == "password" ? "active" : "")" id="tab-password" data-bs-toggle="pill" data-bs-target="#content-password" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'password'">
+                        <span class="settings-nav-icon settings-nav-icon-green"><i class="bi bi-shield-lock"></i></span>Password
+                    </button>
+                </nav>
             </div>
         </div>
 
-        <!-- Withdrawals & Limits -->
-        <div class="col-md-6">
-            <div class="glass-card p-4 mb-4">
-                <h5 class="text-white fw-bold mb-4">
-                    <i class="bi bi-wallet2 text-pink me-2"></i>Withdrawal Rules & Limits
-                </h5>
-                
-                <div class="mb-3 form-group">
-                    <label for="MinWithdrawalLimit" class="text-secondary small fw-bold">Minimum Withdrawal Limit (₹)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">₹</span>
-                        <input asp-for="MinWithdrawalLimit" type="number" step="0.01" class="form-control auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" required />
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">INR</span>
+        <!-- Tab Content -->
+        <div class="col-md-8 col-lg-9">
+            <div class="tab-content" id="v-pills-tabContent">
+
+                <div class="tab-pane fade @(Model.ActiveTab == "general" ? "show active" : "")" id="content-general" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">General settings</h5>
+                            <p class="text-muted small mb-0">Site identity, support contact, and maintenance mode.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Site Name</label>
+                            <input asp-for="Settings.SiteName" type="text" class="form-control settings-input" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Support Email</label>
+                            <input asp-for="Settings.SupportEmail" type="email" class="form-control settings-input" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Maintenance Mode</label>
+                            <select asp-for="Settings.MaintenanceMode" class="form-select settings-input">
+                                <option value="Online">Website Online — members can access the portal</option>
+                                <option value="Offline">Maintenance Mode — member access paused</option>
+                            </select>
+                            <small class="text-muted d-block mt-2">When maintenance mode is on, members see a maintenance popup and cannot sign in. Admin portal stays available.</small>
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save general settings</button>
                     </div>
                 </div>
 
-                <div class="mb-3 form-group">
-                    <label for="WithdrawalFeePercent" class="text-secondary small fw-bold">Withdrawal Fee (%)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">Fee</span>
-                        <input asp-for="WithdrawalFeePercent" type="number" step="0.01" class="form-control auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" required />
-                        <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">%</span>
+                <div class="tab-pane fade @(Model.ActiveTab == "commission" ? "show active" : "")" id="content-commission" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">Commission setup</h5>
+                            <p class="text-muted small mb-0">Set commission percentages for multi-level hierarchy.</p>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="settings-label">Level 1 Commission (%)</label>
+                                <input asp-for="Settings.Level1Commission" type="number" step="0.01" class="form-control settings-input" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Level 2 Commission (%)</label>
+                                <input asp-for="Settings.Level2Commission" type="number" step="0.01" class="form-control settings-input" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Level 3 Commission (%)</label>
+                                <input asp-for="Settings.Level3Commission" type="number" step="0.01" class="form-control settings-input" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Level 4 Commission (%)</label>
+                                <input asp-for="Settings.Level4Commission" type="number" step="0.01" class="form-control settings-input" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Level 5 Commission (%)</label>
+                                <input asp-for="Settings.Level5Commission" type="number" step="0.01" class="form-control settings-input" required />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save commission setup</button>
                     </div>
-                    <small class="text-muted d-block mt-1">Deducted from the user wallet upon withdrawal request approval.</small>
                 </div>
+
+                <div class="tab-pane fade @(Model.ActiveTab == "withdrawals" ? "show active" : "")" id="content-withdrawals" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">Withdrawal rules</h5>
+                            <p class="text-muted small mb-0">Minimum thresholds and withdrawal fees.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Minimum Payout Threshold (&#8377;)</label>
+                            <input asp-for="Settings.MinWithdrawalLimit" type="number" step="0.01" class="form-control settings-input" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Withdrawal Processing Fee (%)</label>
+                            <input asp-for="Settings.WithdrawalFeePercent" type="number" step="0.01" class="form-control settings-input" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">TDS Tax Deduction (%)</label>
+                            <input asp-for="Settings.TdsPercent" type="number" step="0.01" class="form-control settings-input" required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Daily Closing Admin Charge (%)</label>
+                            <input asp-for="Settings.AdminChargePercent" type="number" step="0.01" class="form-control settings-input" required />
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save rules</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade @(Model.ActiveTab == "paymentSetup" ? "show active" : "")" id="content-paymentSetup" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">Payment setup</h5>
+                            <p class="text-muted small mb-0">Manual payment instructions for members.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">UPI ID / Address</label>
+                            <input asp-for="Settings.CompanyQrCodeUrl" type="text" class="form-control settings-input" placeholder="e.g. elitemlm@paytm" />
+                            <small class="text-muted d-block mt-1">Direct UPI ID shown to members on activation view.</small>
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Bank Deposit Information</label>
+                            <textarea asp-for="Settings.BankDetails" rows="4" class="form-control settings-input" placeholder="Enter bank transfer instructions..."></textarea>
+                            <small class="text-muted d-block mt-1">Bank Name, IFSC, Account Number, etc.</small>
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save payment setup</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade @(Model.ActiveTab == "smtp" ? "show active" : "")" id="content-smtp" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1">SMTP email</h5>
+                                <p class="text-muted small mb-0">Configure email server for sending alerts.</p>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#testEmailModal">
+                                <i class="bi bi-send me-1"></i>Test Email
+                            </button>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-8">
+                                <label class="settings-label">SMTP Host</label>
+                                <input asp-for="Settings.SmtpHost" type="text" class="form-control settings-input" placeholder="smtp.gmail.com" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="settings-label">Port</label>
+                                <input asp-for="Settings.SmtpPort" type="number" class="form-control settings-input" placeholder="587" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Username</label>
+                                <input asp-for="Settings.SmtpUsername" type="text" class="form-control settings-input" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Password</label>
+                                <input asp-for="Settings.SmtpPassword" type="password" class="form-control settings-input" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input asp-for="Settings.SmtpEnableSsl" class="form-check-input" type="checkbox" id="SmtpEnableSsl">
+                                    <label class="form-check-label settings-label mb-0" for="SmtpEnableSsl">Enable SSL</label>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save SMTP settings</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade @(Model.ActiveTab == "sms" ? "show active" : "")" id="content-sms" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">SMS gateway</h5>
+                            <p class="text-muted small mb-0">Connect a third-party SMS provider for OTPs and alerts.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">API URL</label>
+                            <input asp-for="Settings.SmsApiUrl" type="text" class="form-control settings-input" placeholder="https://api.smsprovider.com/send" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">API Key / Auth Token</label>
+                            <input asp-for="Settings.SmsApiKey" type="password" class="form-control settings-input" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Sender ID</label>
+                            <input asp-for="Settings.SmsSenderId" type="text" class="form-control settings-input" placeholder="ELITE" />
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save SMS gateway</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade @(Model.ActiveTab == "whatsapp" ? "show active" : "")" id="content-whatsapp" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">WhatsApp API</h5>
+                            <p class="text-muted small mb-0">Connect WhatsApp Business API for automated messaging.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Provider / Service</label>
+                            <select asp-for="Settings.WhatsAppProvider" class="form-select settings-input">
+                                <option value="">Select Provider...</option>
+                                <option value="Meta">Official Meta API</option>
+                                <option value="Twilio">Twilio</option>
+                                <option value="Wati">WATI</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Access Token</label>
+                            <input asp-for="Settings.WhatsAppAccessToken" type="password" class="form-control settings-input" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Instance ID / Phone Number ID</label>
+                            <input asp-for="Settings.WhatsAppInstanceId" type="text" class="form-control settings-input" />
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save WhatsApp settings</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade @(Model.ActiveTab == "adminProfile" ? "show active" : "")" id="content-adminProfile" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">Admin profile</h5>
+                            <p class="text-muted small mb-0">Update your administrator account details.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Username</label>
+                            <input asp-for="AdminUsername" type="text" class="form-control settings-input" readonly disabled />
+                            <small class="text-muted d-block mt-1">Username cannot be changed.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Full Name</label>
+                            <input asp-for="AdminFullName" type="text" class="form-control settings-input" required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Email Address</label>
+                            <input asp-for="AdminEmail" type="email" class="form-control settings-input" required />
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save profile details</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade @(Model.ActiveTab == "password" ? "show active" : "")" id="content-password" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">Security &amp; password</h5>
+                            <p class="text-muted small mb-0">Change your administrative access password securely.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">New Password</label>
+                            <input asp-for="NewPassword" type="password" class="form-control settings-input" placeholder="Leave blank to keep current" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Confirm New Password</label>
+                            <input asp-for="ConfirmPassword" type="password" class="form-control settings-input" placeholder="Confirm new password" />
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Update password</button>
+                    </div>
+                </div>
+
             </div>
-
-            <!-- Payment Accounts settings -->
-            <div class="glass-card p-4">
-                <h5 class="text-white fw-bold mb-4">
-                    <i class="bi bi-bank text-cyan me-2"></i>Company Gateway details
-                </h5>
-                
-                <div class="mb-3 form-group">
-                    <label for="CompanyQrCodeUrl" class="text-secondary small fw-bold">UPI ID / Address</label>
-                    <input asp-for="CompanyQrCodeUrl" type="text" class="form-control auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="e.g. elitemlm@paytm" />
-                    <small class="text-muted d-block mt-1">Direct UPI ID shown to members on activation view.</small>
-                </div>
-
-                <div class="mb-3 form-group">
-                    <label for="BankDetails" class="text-secondary small fw-bold">Bank Deposit Information</label>
-                    <textarea asp-for="BankDetails" rows="4" class="form-control auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Enter bank transfer instructions..."></textarea>
-                    <small class="text-muted d-block mt-1">Bank Name, IFSC, Account Number, etc. to copy-paste.</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 mt-4 text-end">
-            <button type="submit" class="btn btn-cyber-cyan px-5 py-3">
-                <i class="bi bi-save me-2"></i>Save Settings & Rules
-            </button>
         </div>
     </div>
 </form>
+
+<!-- Test Email Modal -->
+<div class="modal fade" id="testEmailModal" tabindex="-1" aria-labelledby="testEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="testEmailModalLabel">
+                    <i class="bi bi-envelope-check text-primary me-2"></i>Send Test Email
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="Admin" asp-action="TestEmail" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4 pt-3">
+                    <p class="text-muted small mb-3">Save SMTP settings before sending a test email.</p>
+                    <label class="settings-label">Recipient Email</label>
+                    <input type="email" name="testEmail" class="form-control settings-input" required placeholder="admin@example.com" />
+                </div>
+                <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">Send Email</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

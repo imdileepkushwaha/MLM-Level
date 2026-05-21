@@ -1,27 +1,27 @@
 @model MLM_Level.Models.UserDownlineViewModel
 @{
-    ViewData["Title"] = "My MLM Downline Network";
+    ViewData["Title"] = "Network Tree";
+    var totalDownline = Model.FullDownlineList?.Count ?? 0;
 }
 
-<div class="row g-4 mb-4">
-    <div class="col-12">
-        <div class="glass-card p-4">
-            <h4 class="text-white fw-bold mb-2">My Network Downline</h4>
-            <p class="text-secondary mb-0">Explore your team network dynamically. View visually in the family tree format or categorization lists.</p>
-        </div>
-    </div>
-</div>
+@await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
+{
+    Title = "Network Tree",
+    Subtitle = "Visual placement tree and level-wise downline breakdown",
+    Icon = "bi-diagram-3",
+    ThemeClass = "member-theme-cyan",
+    Badge = $"{totalDownline} in network"
+})
 
-<!-- Tabs Nav -->
-<ul class="nav nav-tabs glass-card p-2 border-0 mb-4 d-inline-flex gap-2" id="treeTab" role="tablist" style="border-radius: 12px;">
+<ul class="nav member-tab-nav mb-4" id="treeTab" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link active btn btn-cyber-outline border-0 py-2 px-4 text-white" id="visual-tab" data-bs-toggle="tab" data-bs-target="#visual" type="button" role="tab" aria-controls="visual" aria-selected="true">
-            <i class="bi bi-diagram-3 me-2 text-info"></i>Visual Upline Tree
+        <button class="nav-link active" id="visual-tab" data-bs-toggle="tab" data-bs-target="#visual" type="button" role="tab">
+            <i class="bi bi-diagram-3 me-1"></i>Visual tree
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link btn btn-cyber-outline border-0 py-2 px-4 text-white" id="list-tab" data-bs-toggle="tab" data-bs-target="#list" type="button" role="tab" aria-controls="list" aria-selected="false">
-            <i class="bi bi-list-stars me-2 text-info"></i>Tabular Downline List
+        <button class="nav-link" id="list-tab" data-bs-toggle="tab" data-bs-target="#list" type="button" role="tab">
+            <i class="bi bi-list-stars me-1"></i>Level breakdown
         </button>
     </li>
 </ul>
@@ -31,7 +31,7 @@
     
     <!-- Tab 1: Visual tree -->
     <div class="tab-pane fade show active" id="visual" role="tabpanel" aria-labelledby="visual-tab">
-        <div class="downline-tree-wrapper">
+        <div class="member-tree-panel downline-tree-wrapper">
             <div class="tree-root">
                 <!-- Logged in User (Anchor Root node) -->
                 <div class="tree-node-box @(Model.UserInfo.IsActive ? "active-node" : "inactive-node")">
@@ -87,17 +87,94 @@
                                                         @foreach (var lvl3 in lvl3Children)
                                                         {
                                                             <li class="tree-li">
-                                                                <div class="tree-node-box @(lvl3.IsActive ? "active-node" : "inactive-node")" style="padding: 0.5rem 0.75rem;">
-                                                                    <div class="node-name" style="font-size: 0.8rem;">@lvl3.Username</div>
-                                                                    <div class="node-meta" style="font-size: 0.7rem;">@lvl3.FullName</div>
-                                                                    <div class="node-meta text-success" style="font-size: 0.7rem;">Level 3</div>
+                                                                <div class="tree-node-box @(lvl3.IsActive ? "active-node" : "inactive-node")">
+                                                                    <div class="node-name">@lvl3.Username</div>
+                                                                    <div class="node-meta">@lvl3.FullName</div>
+                                                                    <div class="node-meta text-success">Level 3</div>
                                                                 </div>
+
+                                                                <!-- Level 4 nested children -->
+                                                                @{
+                                                                    var lvl4Children = Model.Level4.Where(n => n.ParentId == lvl3.Id).ToList();
+                                                                }
+                                                                @if (lvl4Children.Any())
+                                                                {
+                                                                    <ul class="tree-ul">
+                                                                        @foreach (var lvl4 in lvl4Children)
+                                                                        {
+                                                                            <li class="tree-li">
+                                                                                <div class="tree-node-box @(lvl4.IsActive ? "active-node" : "inactive-node")">
+                                                                                    <div class="node-name">@lvl4.Username</div>
+                                                                                    <div class="node-meta">@lvl4.FullName</div>
+                                                                                    <div class="node-meta text-warning">Level 4</div>
+                                                                                </div>
+                                                                            </li>
+                                                                        }
+                                                                    </ul>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <ul class="tree-ul">
+                                                                        <li class="tree-li">
+                                                                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                                                <div class="node-name text-muted">Blank</div>
+                                                                                <div class="node-meta text-muted">Level 4</div>
+                                                                            </div>
+                                                                        </li>
+                                                                    </ul>
+                                                                }
                                                             </li>
                                                         }
                                                     </ul>
                                                 }
+                                                else
+                                                {
+                                                    <ul class="tree-ul">
+                                                        <li class="tree-li">
+                                                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                                <div class="node-name text-muted">Blank</div>
+                                                                <div class="node-meta text-muted">Level 3</div>
+                                                            </div>
+                                                            <ul class="tree-ul">
+                                                                <li class="tree-li">
+                                                                    <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                                        <div class="node-name text-muted">Blank</div>
+                                                                        <div class="node-meta text-muted">Level 4</div>
+                                                                    </div>
+                                                                </li>
+                                                            </ul>
+                                                        </li>
+                                                    </ul>
+                                                }
                                             </li>
                                         }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <ul class="tree-ul">
+                                        <li class="tree-li">
+                                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                <div class="node-name text-muted">Blank</div>
+                                                <div class="node-meta text-muted">Level 2</div>
+                                            </div>
+                                            <ul class="tree-ul">
+                                                <li class="tree-li">
+                                                    <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                        <div class="node-name text-muted">Blank</div>
+                                                        <div class="node-meta text-muted">Level 3</div>
+                                                    </div>
+                                                    <ul class="tree-ul">
+                                                        <li class="tree-li">
+                                                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                                <div class="node-name text-muted">Blank</div>
+                                                                <div class="node-meta text-muted">Level 4</div>
+                                                            </div>
+                                                        </li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
                                     </ul>
                                 }
                             </li>
@@ -106,10 +183,38 @@
                 }
                 else
                 {
-                    <div class="text-muted small mt-4">
-                        <i class="bi bi-diagram-3-fill me-1 d-block fs-3 mb-2"></i>
-                        No downline members are placed under you yet.
-                    </div>
+                    <ul class="tree-ul">
+                        <li class="tree-li">
+                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                <div class="node-name text-muted">Blank</div>
+                                <div class="node-meta text-muted">Level 1</div>
+                            </div>
+                            <ul class="tree-ul">
+                                <li class="tree-li">
+                                    <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                        <div class="node-name text-muted">Blank</div>
+                                        <div class="node-meta text-muted">Level 2</div>
+                                    </div>
+                                    <ul class="tree-ul">
+                                        <li class="tree-li">
+                                            <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                <div class="node-name text-muted">Blank</div>
+                                                <div class="node-meta text-muted">Level 3</div>
+                                            </div>
+                                            <ul class="tree-ul">
+                                                <li class="tree-li">
+                                                    <div class="tree-node-box inactive-node" style="opacity: 0.6; border-style: dashed;">
+                                                        <div class="node-name text-muted">Blank</div>
+                                                        <div class="node-meta text-muted">Level 4</div>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
                 }
             </div>
         </div>
@@ -118,25 +223,25 @@
     <!-- Tab 2: Tabular categorizations -->
     <div class="tab-pane fade" id="list" role="tabpanel" aria-labelledby="list-tab">
         <!-- Level Category Tabs -->
-        <div class="glass-card p-4">
-            <h5 class="text-white fw-bold mb-4">Downline Category Breakdown</h5>
+        <div class="glass-card member-panel-card p-4">
+            <h5 class="member-panel-title mb-4"><i class="bi bi-layers text-primary me-2"></i>Downline by level</h5>
             
             @if (Model.FullDownlineList.Any())
             {
-                <div class="accordion glass-container border-0 overflow-hidden" id="levelAccordion">
+                <div class="accordion member-accordion" id="levelAccordion">
                     
                     <!-- Level 1 -->
-                    <div class="accordion-item bg-transparent border-bottom border-opacity-10 border-white">
+                    <div class="accordion-item">
                         <h2 class="accordion-header" id="headingOne">
-                            <button class="accordion-button bg-transparent text-white fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                                <i class="bi bi-star-fill text-info me-2"></i> Level 1 (Direct Referrals)
-                                <span class="badge bg-info bg-opacity-20 text-info ms-auto me-3">@Model.Level1.Count Members</span>
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                <i class="bi bi-star-fill text-primary me-2"></i> Level 1 — Direct referrals
+                                <span class="admin-record-badge ms-auto me-2">@Model.Level1.Count</span>
                             </button>
                         </h2>
-                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#levelAccordion">
+                        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#levelAccordion">
                             <div class="accordion-body p-0">
-                                <div class="glass-table-container">
-                                    <table class="table glass-table align-middle m-0">
+                                <div class="admin-table-scroll">
+                                    <table class="table admin-table align-middle m-0">
                                         <thead>
                                             <tr>
                                                 <th>Member Details</th>
@@ -151,7 +256,7 @@
                                                 <tr>
                                                     <td><strong>@m.Username</strong><br/><span class="small text-muted">@m.FullName</span></td>
                                                     <td>@m.SponsorName</td>
-                                                    <td><span class="@(m.IsActive ? "badge-active" : "badge-inactive")">@(m.IsActive ? "Active" : "Inactive")</span></td>
+                                                    <td>@(m.IsActive ? Html.Raw("<span class=\"admin-badge-success\">Active</span>") : Html.Raw("<span class=\"admin-badge-pending\">Inactive</span>"))</td>
                                                     <td>@m.JoinedDate.ToString("dd MMM yyyy")</td>
                                                 </tr>
                                             }
@@ -163,17 +268,17 @@
                     </div>
 
                     <!-- Level 2 -->
-                    <div class="accordion-item bg-transparent border-bottom border-opacity-10 border-white">
+                    <div class="accordion-item">
                         <h2 class="accordion-header" id="headingTwo">
-                            <button class="accordion-button bg-transparent text-white fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                                <i class="bi bi-star text-info me-2"></i> Level 2
-                                <span class="badge bg-info bg-opacity-20 text-info ms-auto me-3">@Model.Level2.Count Members</span>
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                <i class="bi bi-star text-primary me-2"></i> Level 2
+                                <span class="admin-record-badge ms-auto me-2">@Model.Level2.Count</span>
                             </button>
                         </h2>
-                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#levelAccordion">
+                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#levelAccordion">
                             <div class="accordion-body p-0">
-                                <div class="glass-table-container">
-                                    <table class="table glass-table align-middle m-0">
+                                <div class="admin-table-scroll">
+                                    <table class="table admin-table align-middle m-0">
                                         <thead>
                                             <tr>
                                                 <th>Member Details</th>
@@ -191,7 +296,7 @@
                                                         Sponsor: <strong>@m.SponsorName</strong><br/>
                                                         Parent: <strong>@m.ParentName</strong>
                                                     </td>
-                                                    <td><span class="@(m.IsActive ? "badge-active" : "badge-inactive")">@(m.IsActive ? "Active" : "Inactive")</span></td>
+                                                    <td>@(m.IsActive ? Html.Raw("<span class=\"admin-badge-success\">Active</span>") : Html.Raw("<span class=\"admin-badge-pending\">Inactive</span>"))</td>
                                                     <td>@m.JoinedDate.ToString("dd MMM yyyy")</td>
                                                 </tr>
                                             }
@@ -203,17 +308,17 @@
                     </div>
 
                     <!-- Level 3 -->
-                    <div class="accordion-item bg-transparent border-bottom border-opacity-10 border-white">
+                    <div class="accordion-item">
                         <h2 class="accordion-header" id="headingThree">
-                            <button class="accordion-button bg-transparent text-white fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                                <i class="bi bi-star text-info me-2"></i> Level 3
-                                <span class="badge bg-info bg-opacity-20 text-info ms-auto me-3">@Model.Level3.Count Members</span>
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                <i class="bi bi-star text-primary me-2"></i> Level 3
+                                <span class="admin-record-badge ms-auto me-2">@Model.Level3.Count</span>
                             </button>
                         </h2>
-                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#levelAccordion">
+                        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#levelAccordion">
                             <div class="accordion-body p-0">
-                                <div class="glass-table-container">
-                                    <table class="table glass-table align-middle m-0">
+                                <div class="admin-table-scroll">
+                                    <table class="table admin-table align-middle m-0">
                                         <thead>
                                             <tr>
                                                 <th>Member Details</th>
@@ -231,7 +336,7 @@
                                                         Sponsor: <strong>@m.SponsorName</strong><br/>
                                                         Parent: <strong>@m.ParentName</strong>
                                                     </td>
-                                                    <td><span class="@(m.IsActive ? "badge-active" : "badge-inactive")">@(m.IsActive ? "Active" : "Inactive")</span></td>
+                                                    <td>@(m.IsActive ? Html.Raw("<span class=\"admin-badge-success\">Active</span>") : Html.Raw("<span class=\"admin-badge-pending\">Inactive</span>"))</td>
                                                     <td>@m.JoinedDate.ToString("dd MMM yyyy")</td>
                                                 </tr>
                                             }
@@ -243,17 +348,17 @@
                     </div>
 
                     <!-- Level 4 -->
-                    <div class="accordion-item bg-transparent border-bottom border-opacity-10 border-white">
+                    <div class="accordion-item">
                         <h2 class="accordion-header" id="headingFour">
-                            <button class="accordion-button bg-transparent text-white fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                                <i class="bi bi-star text-info me-2"></i> Level 4
-                                <span class="badge bg-info bg-opacity-20 text-info ms-auto me-3">@Model.Level4.Count Members</span>
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+                                <i class="bi bi-star text-primary me-2"></i> Level 4
+                                <span class="admin-record-badge ms-auto me-2">@Model.Level4.Count</span>
                             </button>
                         </h2>
-                        <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#levelAccordion">
+                        <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#levelAccordion">
                             <div class="accordion-body p-0">
-                                <div class="glass-table-container">
-                                    <table class="table glass-table align-middle m-0">
+                                <div class="admin-table-scroll">
+                                    <table class="table admin-table align-middle m-0">
                                         <thead>
                                             <tr>
                                                 <th>Member Details</th>
@@ -271,7 +376,7 @@
                                                         Sponsor: <strong>@m.SponsorName</strong><br/>
                                                         Parent: <strong>@m.ParentName</strong>
                                                     </td>
-                                                    <td><span class="@(m.IsActive ? "badge-active" : "badge-inactive")">@(m.IsActive ? "Active" : "Inactive")</span></td>
+                                                    <td>@(m.IsActive ? Html.Raw("<span class=\"admin-badge-success\">Active</span>") : Html.Raw("<span class=\"admin-badge-pending\">Inactive</span>"))</td>
                                                     <td>@m.JoinedDate.ToString("dd MMM yyyy")</td>
                                                 </tr>
                                             }
@@ -283,17 +388,17 @@
                     </div>
 
                     <!-- Level 5 -->
-                    <div class="accordion-item bg-transparent">
+                    <div class="accordion-item">
                         <h2 class="accordion-header" id="headingFive">
-                            <button class="accordion-button bg-transparent text-white fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
-                                <i class="bi bi-star text-info me-2"></i> Level 5
-                                <span class="badge bg-info bg-opacity-20 text-info ms-auto me-3">@Model.Level5.Count Members</span>
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive">
+                                <i class="bi bi-star text-primary me-2"></i> Level 5
+                                <span class="admin-record-badge ms-auto me-2">@Model.Level5.Count</span>
                             </button>
                         </h2>
-                        <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#levelAccordion">
+                        <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#levelAccordion">
                             <div class="accordion-body p-0">
-                                <div class="glass-table-container">
-                                    <table class="table glass-table align-middle m-0">
+                                <div class="admin-table-scroll">
+                                    <table class="table admin-table align-middle m-0">
                                         <thead>
                                             <tr>
                                                 <th>Member Details</th>
@@ -311,7 +416,7 @@
                                                         Sponsor: <strong>@m.SponsorName</strong><br/>
                                                         Parent: <strong>@m.ParentName</strong>
                                                     </td>
-                                                    <td><span class="@(m.IsActive ? "badge-active" : "badge-inactive")">@(m.IsActive ? "Active" : "Inactive")</span></td>
+                                                    <td>@(m.IsActive ? Html.Raw("<span class=\"admin-badge-success\">Active</span>") : Html.Raw("<span class=\"admin-badge-pending\">Inactive</span>"))</td>
                                                     <td>@m.JoinedDate.ToString("dd MMM yyyy")</td>
                                                 </tr>
                                             }
@@ -326,10 +431,7 @@
             }
             else
             {
-                <div class="text-center py-5 text-secondary">
-                    <i class="bi bi-people-fill fs-2 mb-2 d-block"></i>
-                    No network tree exists yet. Refer members to grow your downline organization!
-                </div>
+                @await Html.PartialAsync("_AdminNoResults")
             }
         </div>
     </div>

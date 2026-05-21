@@ -2,54 +2,101 @@
 @{
     ViewData["Title"] = "Network Tree Explorer";
     var targetUser = ViewBag.TargetUser as MLM_Level.Models.User;
+    var nodeCount = Model?.Count ?? 0;
+    var activeNodes = Model?.Count(n => n.IsActive) ?? 0;
 }
 
-<div class="row g-4 mb-4">
-    <div class="col-12">
-        <div class="glass-card p-4">
-            <h4 class="text-white fw-bold mb-2">Network Downline Tree Explorer</h4>
-            <p class="text-secondary mb-0">Search and navigate through any member's hierarchical downline network structures in real time.</p>
+<div class="admin-page-header admin-theme-blue mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-diagram-3"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Network Explorer</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Search and browse member downline hierarchy</p>
+                </div>
+            </div>
         </div>
+        @if (targetUser != null)
+        {
+            <div class="col-lg-4 text-lg-end">
+                <span class="admin-header-badge">
+                    <i class="bi bi-person me-1"></i>@targetUser.Username — @nodeCount downline
+                </span>
+            </div>
+        }
     </div>
 </div>
 
-<!-- Search Input Panel -->
-<div class="glass-card p-4 mb-4">
-    <h5 class="text-white fw-bold mb-3"><i class="bi bi-search text-info me-2"></i>Search Member Organization</h5>
-    <form asp-action="TreeExplorer" method="get">
-        <div class="row g-3 align-items-center">
-            <div class="col-md-8">
-                <input type="text" name="searchUsername" class="form-control auth-glow-input" placeholder="Enter username (e.g. root)" value="@(targetUser?.Username)" />
-            </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-cyber-cyan w-100 py-3">
-                    <i class="bi bi-diagram-3 me-2"></i>Load Downline Tree
-                </button>
-            </div>
-        </div>
-        @if (ViewBag.SearchError != null)
-        {
-            <div class="text-danger small mt-2"><i class="bi bi-exclamation-circle me-1"></i>@ViewBag.SearchError</div>
-        }
-    </form>
-</div>
-
-<!-- Visual tree explorer panel -->
 @if (targetUser != null)
 {
-    <div class="glass-card p-4">
-        <h5 class="text-white fw-bold mb-4 text-center">
-            Organization tree under: <strong class="text-info">@targetUser.Username</strong> (@targetUser.FullName)
-        </h5>
+    <div class="row g-3 mb-4">
+        <div class="col-4">
+            <div class="glass-card admin-stat-card text-center h-100">
+                <p class="admin-stat-label">Downline nodes</p>
+                <p class="admin-stat-value text-primary mb-0">@nodeCount</p>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="glass-card admin-stat-card text-center h-100">
+                <p class="admin-stat-label">Active</p>
+                <p class="admin-stat-value text-success mb-0">@activeNodes</p>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="glass-card admin-stat-card text-center h-100">
+                <p class="admin-stat-label">Root status</p>
+                <p class="admin-stat-value mb-0" style="font-size:1rem;">
+                    @(targetUser.IsActive ? "Active" : "Inactive")
+                </p>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="glass-card p-4 mb-4">
+    <div class="admin-panel-header">
+        <h5 class="admin-panel-title"><i class="bi bi-search text-primary"></i>Find member tree</h5>
+        <p class="text-muted small mb-0">Enter a username to load their organization structure (default: root).</p>
+    </div>
+    <form asp-action="TreeExplorer" method="get" class="row g-3 align-items-end">
+        <div class="col-md-9">
+            <label class="settings-label">Username</label>
+            <input type="text" name="searchUsername" class="form-control settings-input"
+                   placeholder="e.g. root" value="@(targetUser?.Username)" />
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn admin-btn-primary w-100 py-2">
+                <i class="bi bi-diagram-3 me-2"></i>Load tree
+            </button>
+        </div>
+    </form>
+    @if (ViewBag.SearchError != null)
+    {
+        <div class="alert alert-danger border-0 small mt-3 mb-0 py-2">
+            <i class="bi bi-exclamation-circle me-1"></i>@ViewBag.SearchError
+        </div>
+    }
+</div>
+
+@if (targetUser != null)
+{
+    <div class="glass-card admin-tree-panel">
+        <div class="text-center mb-4">
+            <h5 class="fw-bold text-dark mb-1">
+                Tree under <span class="text-primary">@targetUser.Username</span>
+            </h5>
+            <p class="text-muted small mb-0">@targetUser.FullName</p>
+        </div>
 
         <div class="downline-tree-wrapper">
             <div class="tree-root">
-                <!-- Main target node -->
                 <div class="tree-node-box @(targetUser.IsActive ? "active-node" : "inactive-node")">
                     <div class="node-name">@targetUser.Username</div>
                     <div class="node-meta">@targetUser.FullName</div>
                     <div class="node-meta">Sponsor: @(targetUser.Sponsor?.Username ?? "None")</div>
-                    <span class="badge @(targetUser.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size: 0.65rem;">
+                    <span class="badge @(targetUser.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size:0.65rem;">
                         @(targetUser.IsActive ? "Active" : "Inactive")
                     </span>
                 </div>
@@ -67,12 +114,11 @@
                                     <div class="node-name">@lvl1.Username</div>
                                     <div class="node-meta">@lvl1.FullName</div>
                                     <div class="node-meta text-info">Level 1</div>
-                                    <span class="badge @(lvl1.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size: 0.65rem;">
+                                    <span class="badge @(lvl1.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size:0.65rem;">
                                         @(lvl1.IsActive ? "Active" : "Inactive")
                                     </span>
                                 </div>
 
-                                <!-- Level 2 nested children -->
                                 @{
                                     var lvl2Nodes = Model.Where(n => n.Level == 2 && n.ParentId == lvl1.Id).ToList();
                                 }
@@ -86,12 +132,11 @@
                                                     <div class="node-name">@lvl2.Username</div>
                                                     <div class="node-meta">@lvl2.FullName</div>
                                                     <div class="node-meta text-primary">Level 2</div>
-                                                    <span class="badge @(lvl2.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size: 0.65rem;">
+                                                    <span class="badge @(lvl2.IsActive ? "bg-success" : "bg-warning") mt-1" style="font-size:0.65rem;">
                                                         @(lvl2.IsActive ? "Active" : "Inactive")
                                                     </span>
                                                 </div>
 
-                                                <!-- Level 3 nested children -->
                                                 @{
                                                     var lvl3Nodes = Model.Where(n => n.Level == 3 && n.ParentId == lvl2.Id).ToList();
                                                 }
@@ -101,10 +146,10 @@
                                                         @foreach (var lvl3 in lvl3Nodes)
                                                         {
                                                             <li class="tree-li">
-                                                                <div class="tree-node-box @(lvl3.IsActive ? "active-node" : "inactive-node")" style="padding: 0.5rem 0.75rem;">
-                                                                    <div class="node-name" style="font-size: 0.8rem;">@lvl3.Username</div>
-                                                                    <div class="node-meta" style="font-size: 0.7rem;">@lvl3.FullName</div>
-                                                                    <div class="node-meta text-success" style="font-size: 0.7rem;">Level 3</div>
+                                                                <div class="tree-node-box @(lvl3.IsActive ? "active-node" : "inactive-node")" style="padding:0.5rem 0.75rem;">
+                                                                    <div class="node-name" style="font-size:0.8rem;">@lvl3.Username</div>
+                                                                    <div class="node-meta" style="font-size:0.7rem;">@lvl3.FullName</div>
+                                                                    <div class="node-meta text-success" style="font-size:0.7rem;">Level 3</div>
                                                                 </div>
                                                             </li>
                                                         }
@@ -120,12 +165,20 @@
                 }
                 else
                 {
-                    <div class="text-muted small mt-4 text-center">
-                        <i class="bi bi-diagram-3-fill me-1 d-block fs-3 mb-2"></i>
-                        No downline members are placed under this member yet.
+                    <div class="text-muted small mt-4 text-center py-3">
+                        <i class="bi bi-diagram-3 d-block fs-3 mb-2 opacity-50"></i>
+                        No downline members under this user yet.
                     </div>
                 }
             </div>
         </div>
+    </div>
+}
+else if (ViewBag.SearchError == null)
+{
+    <div class="glass-card text-center py-5">
+        <div class="admin-empty-icon mb-4"><i class="bi bi-diagram-3"></i></div>
+        <h5 class="fw-bold text-dark">Search a member</h5>
+        <p class="text-muted small mb-0">Enter a username above to explore their network tree.</p>
     </div>
 }

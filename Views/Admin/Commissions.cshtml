@@ -1,62 +1,224 @@
 @model List<MLM_Level.Models.CommissionTran>
 @{
-    ViewData["Title"] = "System Commissions Distribution Ledger";
+    ViewData["Title"] = "Commissions Log";
+    var totalAmount = Model.Sum(t => t.Amount);
+    var todayUtc = DateTime.UtcNow.Date;
+    var todayCount = Model.Count(t => t.Timestamp.Date == todayUtc);
+    var todayAmount = Model.Where(t => t.Timestamp.Date == todayUtc).Sum(t => t.Amount);
+    var uniqueRecipients = Model.Select(t => t.UserId).Distinct().Count();
+    var levels = Enumerable.Range(1, 5).ToList();
 }
 
-<div class="row g-4 mb-4">
-    <div class="col-12">
-        <div class="glass-card p-4">
-            <h4 class="text-white fw-bold mb-2">Commissions Payout Audit Ledger</h4>
-            <p class="text-secondary mb-0">System-wide audit trail of all level commissions generated and distributed from activation packages.</p>
+<!-- Page Header -->
+<div class="comm-page-header rounded-4 mb-4">
+    <div class="comm-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="comm-page-icon">
+                    <i class="bi bi-currency-exchange"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Commissions Log</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Level-wise payout audit - every commission from member activations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <div class="comm-header-total">
+                <span class="comm-header-total-label">Total distributed</span>
+                <span class="comm-header-total-value">&#8377;@totalAmount.ToString("N2")</span>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="glass-card p-4">
-    <h5 class="text-white fw-bold mb-4"><i class="bi bi-receipt text-info me-2"></i>Global Payout Records</h5>
-    <div class="glass-table-container">
-        @if (Model.Any())
-        {
-            <table class="table glass-table align-middle">
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="glass-card comm-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="comm-stat-label mb-1">Total payouts</p>
+                    <h3 class="comm-stat-value text-success mb-0">&#8377;@totalAmount.ToString("N0")</h3>
+                </div>
+                <div class="comm-stat-icon comm-stat-icon-green"><i class="bi bi-cash-stack"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card comm-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="comm-stat-label mb-1">Transactions</p>
+                    <h3 class="comm-stat-value text-primary mb-0">@Model.Count</h3>
+                </div>
+                <div class="comm-stat-icon comm-stat-icon-blue"><i class="bi bi-receipt"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card comm-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="comm-stat-label mb-1">Today</p>
+                    <h3 class="comm-stat-value text-info mb-0" style="font-size:1.25rem;">@todayCount</h3>
+                    <span class="text-muted" style="font-size:0.7rem;">&#8377;@todayAmount.ToString("N0")</span>
+                </div>
+                <div class="comm-stat-icon comm-stat-icon-cyan"><i class="bi bi-calendar-day"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card comm-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="comm-stat-label mb-1">Recipients</p>
+                    <h3 class="comm-stat-value text-warning mb-0">@uniqueRecipients</h3>
+                    <span class="text-muted" style="font-size:0.7rem;">unique members</span>
+                </div>
+                <div class="comm-stat-icon comm-stat-icon-amber"><i class="bi bi-people"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+<div data-admin-table data-page-size="15" data-search-placeholder="Search recipient, source, or details..." data-count-label="records">
+    <!-- Toolbar -->
+    <div class="glass-card p-3 mb-4 comm-toolbar">
+        <div class="mb-3">
+            <span class="text-dark small fw-semibold d-block mb-1"><i class="bi bi-funnel me-1"></i>Show payouts for</span>
+            <span class="text-muted" style="font-size:0.78rem;">Each card is a commission level (1–5). The small text is how many payout rows exist at that level—not the level number.</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2 comm-level-filters" role="group" aria-label="Filter by commission level">
+            <button type="button" class="comm-filter-btn comm-level-chip active" data-level="all"
+                    aria-label="All levels, @Model.Count payouts">
+                <span class="comm-level-chip-title">All levels</span>
+                <span class="comm-level-chip-meta">@Model.Count payouts</span>
+            </button>
+            @foreach (var lvl in levels)
+            {
+                var levelCount = Model.Count(t => t.Level == lvl);
+                var payoutLabel = levelCount == 1 ? "1 payout" : $"{levelCount} payouts";
+                <button type="button" class="comm-filter-btn comm-level-chip" data-level="@lvl"
+                        aria-label="Level @lvl, @payoutLabel">
+                    <span class="comm-level-chip-title">Level @lvl</span>
+                    <span class="comm-level-chip-meta">@payoutLabel</span>
+                </button>
+            }
+        </div>
+        <div class="admin-table-empty-banner d-none mb-0 mt-2" data-admin-table-empty role="status">
+            <span class="admin-table-empty-banner-icon" aria-hidden="true"><i class="bi bi-search"></i></span>
+            <span>No commissions match your search or filter. Try another keyword or clear filters.</span>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="glass-card admin-table-card">
+        <div class="admin-table-header flex-wrap gap-2">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="bi bi-journal-check text-success me-2"></i>Payout records
+            </h5>
+            <span class="admin-record-badge" data-admin-table-count>@Model.Count records</span>
+            <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:220px;max-width:340px;">
+                <i class="bi bi-search admin-search-icon"></i>
+                <input type="search" data-admin-table-search class="form-control admin-search-input comm-search-input"
+                       placeholder="Search recipient, source, or details..." autocomplete="off" />
+            </div>
+        </div>
+        <div class="admin-table-scroll">
+            <table class="table admin-table" id="commTable">
                 <thead>
                     <tr>
-                        <th>Date & Time</th>
-                        <th>Payout Recipient</th>
-                        <th>Triggered By User</th>
-                        <th>Sponsor Level</th>
-                        <th>Distributed Amount</th>
-                        <th>Audit Details</th>
+                        <th>Date</th>
+                        <th>Recipient</th>
+                        <th>Triggered by</th>
+                        <th>Level</th>
+                        <th>Amount</th>
+                        <th>Details</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var tx in Model)
                     {
-                        <tr>
-                            <td>@tx.Timestamp.ToString("dd MMM yyyy hh:mm:ss tt")</td>
+                        var recipient = tx.User;
+                        var source = tx.FromUser;
+                        var recipientName = recipient?.Username ?? "Unknown";
+                        var recipientFull = recipient?.FullName ?? "-";
+                        var sourceName = source?.Username ?? "System";
+                        var sourceFull = source?.FullName ?? "-";
+                        var recipientInitial = string.IsNullOrWhiteSpace(recipientName) ? "?" : recipientName.Trim()[0].ToString().ToUpper();
+                        var sourceInitial = string.IsNullOrWhiteSpace(sourceName) ? "?" : sourceName.Trim()[0].ToString().ToUpper();
+                        var levelClass = tx.Level == 1 ? "comm-level-1"
+                            : tx.Level == 2 ? "comm-level-2"
+                            : tx.Level == 3 ? "comm-level-3"
+                            : tx.Level == 4 ? "comm-level-4"
+                            : tx.Level == 5 ? "comm-level-5"
+                            : "comm-level-default";
+                        var timeSpan = DateTime.UtcNow - tx.Timestamp;
+                        string timeAgo;
+                        if (timeSpan.TotalMinutes < 1) { timeAgo = "Just now"; }
+                        else if (timeSpan.TotalHours < 1) { timeAgo = $"{(int)timeSpan.TotalMinutes} min ago"; }
+                        else if (timeSpan.TotalDays < 1) { timeAgo = $"{(int)timeSpan.TotalHours} hr ago"; }
+                        else if (timeSpan.TotalDays < 30) { timeAgo = $"{(int)timeSpan.TotalDays} days ago"; }
+                        else { timeAgo = tx.Timestamp.ToString("dd MMM yyyy"); }
+                        var searchText = $"{recipientName} {recipientFull} {sourceName} {sourceFull} {tx.Description} L{tx.Level}".ToLowerInvariant();
+                        <tr class="comm-row" data-level="@tx.Level" data-search="@searchText">
                             <td>
-                                <strong class="text-white">@tx.User.Username</strong><br/>
-                                <span class="small text-muted" style="font-size: 0.75rem;">@tx.User.FullName</span>
+                                <div class="fw-semibold text-dark small">@tx.Timestamp.ToString("dd MMM yyyy")</div>
+                                <div class="text-muted comm-time-meta" title="@tx.Timestamp.ToString("dd MMM yyyy, hh:mm tt") UTC">
+                                    @timeAgo &middot; @tx.Timestamp.ToString("hh:mm tt")
+                                </div>
                             </td>
                             <td>
-                                <strong class="text-white">@tx.FromUser.Username</strong><br/>
-                                <span class="small text-muted" style="font-size: 0.75rem;">@tx.FromUser.FullName</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="comm-avatar comm-avatar-recipient">@recipientInitial</div>
+                                    <div>
+                                        <div class="fw-bold text-dark small">@("@" + recipientName)</div>
+                                        <div class="text-muted comm-subtext">@recipientFull</div>
+                                    </div>
+                                </div>
                             </td>
                             <td>
-                                <span class="badge bg-opacity-10 bg-info text-info border border-info border-opacity-25 px-2 py-1">Level @tx.Level</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="comm-avatar comm-avatar-source">@sourceInitial</div>
+                                    <div>
+                                        <div class="fw-semibold text-dark small">@("@" + sourceName)</div>
+                                        <div class="text-muted comm-subtext">@sourceFull</div>
+                                    </div>
+                                </div>
                             </td>
-                            <td><strong class="text-success">+₹@tx.Amount.ToString("N2")</strong></td>
-                            <td class="text-secondary small">@tx.Description</td>
+                            <td>
+                                <span class="comm-level-badge @levelClass">
+                                    <i class="bi bi-diagram-3 me-1"></i>Level @tx.Level
+                                </span>
+                            </td>
+                            <td>
+                                <span class="comm-amount">+&#8377;@tx.Amount.ToString("N2")</span>
+                            </td>
+                            <td>
+                                <span class="text-muted small comm-desc">@tx.Description</span>
+                            </td>
                         </tr>
                     }
                 </tbody>
             </table>
-        }
-        else
-        {
-            <div class="text-center py-5 text-secondary">
-                <i class="bi bi-file-earmark-spreadsheet fs-2 mb-2 d-block text-muted"></i>
-                No commissions have been generated or distributed yet.
-            </div>
-        }
+        </div>
     </div>
 </div>
+}
+else
+{
+    <div class="glass-card text-center py-5 comm-empty-state">
+        <div class="comm-empty-icon mx-auto mb-4">
+            <i class="bi bi-currency-exchange"></i>
+        </div>
+        <h4 class="fw-bold text-dark mb-2">No commissions yet</h4>
+        <p class="text-muted mb-0 mx-auto" style="max-width:400px;">
+            When members get activated, level commissions will appear here automatically.
+        </p>
+    </div>
+}
+

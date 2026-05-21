@@ -1,76 +1,135 @@
 @model MLM_Level.Models.RegisterViewModel
 @{
     ViewData["Title"] = "Create Free Account";
+    ViewData["AuthPage"] = true;
 }
 
-<div class="auth-page" style="padding-top: 3.5rem; padding-bottom: 3.5rem;">
-    <div class="glass-card auth-card shadow-lg" style="max-width: 520px;">
-        <div class="text-center mb-4">
-            <div class="stat-icon-box icon-box-pink mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.6rem;">
-                <i class="bi bi-diagram-3"></i>
-            </div>
-            <h2 class="text-white fw-bold">Join Network</h2>
-            <p class="text-secondary small mt-1">Register under a sponsor to start earning</p>
+<div class="auth-shell">
+    <aside class="auth-shell-brand">
+        <div class="auth-shell-brand-inner">
+            <a asp-controller="Home" asp-action="Index" class="auth-shell-logo">
+                <i class="bi bi-diagram-3-fill"></i>
+                <span>ELITE MLM</span>
+            </a>
+            <h1 class="auth-shell-title">Start your network journey</h1>
+            <p class="auth-shell-lead">Register free, activate a package, and earn level income up to 5 generations deep.</p>
+            <ul class="auth-shell-perks">
+                <li><i class="bi bi-check-circle-fill"></i> Free member registration</li>
+                <li><i class="bi bi-check-circle-fill"></i> 5-level commission plan</li>
+                <li><i class="bi bi-check-circle-fill"></i> ROI membership packages</li>
+            </ul>
         </div>
+    </aside>
 
-        <form asp-controller="Account" asp-action="Register" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+    <div class="auth-shell-panel auth-shell-panel-wide">
+        <a asp-controller="Home" asp-action="Index" class="auth-shell-back">
+            <span class="auth-shell-back-icon" aria-hidden="true"><i class="bi bi-arrow-left"></i></span>
+            Back to home
+        </a>
 
-            <div class="row">
-                <div class="col-sm-6 mb-3 form-group">
-                    <label asp-for="FullName"></label>
-                    <input asp-for="FullName" class="form-control auth-glow-input" placeholder="e.g. Dileep Kumar" />
-                    <span asp-validation-for="FullName" class="text-danger small mt-1 d-block"></span>
+        <div class="auth-card auth-card-wide">
+            <div class="auth-card-head">
+                <div class="auth-card-icon auth-card-icon-register">
+                    <i class="bi bi-person-plus-fill"></i>
                 </div>
-                <div class="col-sm-6 mb-3 form-group">
-                    <label asp-for="Username"></label>
-                    <input asp-for="Username" class="form-control auth-glow-input" placeholder="e.g. dileep123" />
-                    <span asp-validation-for="Username" class="text-danger small mt-1 d-block"></span>
-                </div>
+                <h2>Create Account</h2>
+                <p>Join under a sponsor and unlock your member dashboard</p>
             </div>
 
-            <div class="row">
-                <div class="col-sm-6 mb-3 form-group">
-                    <label asp-for="Email"></label>
-                    <input asp-for="Email" class="form-control auth-glow-input" placeholder="name@example.com" />
-                    <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+            <form asp-controller="Account" asp-action="Register" method="post" class="auth-form">
+                <div asp-validation-summary="ModelOnly" class="auth-validation-summary"></div>
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="auth-field">
+                            <label asp-for="FullName">Full Name</label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-person-badge auth-input-icon"></i>
+                                <input asp-for="FullName" class="auth-input" placeholder="Your full name" />
+                            </div>
+                            <span asp-validation-for="FullName" class="auth-field-error"></span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="auth-field">
+                            <label asp-for="Username">Username</label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-at auth-input-icon"></i>
+                                <input asp-for="Username" class="auth-input" placeholder="Choose username" autocomplete="username" />
+                            </div>
+                            <span asp-validation-for="Username" class="auth-field-error"></span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="auth-field">
+                            <label asp-for="Email">Email</label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-envelope auth-input-icon"></i>
+                                <input asp-for="Email" class="auth-input" placeholder="name@example.com" autocomplete="email" />
+                            </div>
+                            <span asp-validation-for="Email" class="auth-field-error"></span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="auth-field">
+                            <label asp-for="Phone">Phone</label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-phone auth-input-icon"></i>
+                                <input asp-for="Phone" class="auth-input" placeholder="10-digit mobile" autocomplete="tel" />
+                            </div>
+                            <span asp-validation-for="Phone" class="auth-field-error"></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3 form-group">
-                    <label asp-for="Phone"></label>
-                    <input asp-for="Phone" class="form-control auth-glow-input" placeholder="9876543210" />
-                    <span asp-validation-for="Phone" class="text-danger small mt-1 d-block"></span>
+
+                <div class="auth-field auth-field-highlight">
+                    <label asp-for="SponsorCode">Sponsor / Referral Code</label>
+                    <div class="auth-input-wrap">
+                        <i class="bi bi-link-45deg auth-input-icon"></i>
+                        <input asp-for="SponsorCode" class="auth-input" placeholder="Referral code (optional)" />
+                    </div>
+                    <span class="auth-field-hint">Leave empty to join under the default root node.</span>
+                    <span asp-validation-for="SponsorCode" class="auth-field-error"></span>
                 </div>
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="auth-field">
+                            <label asp-for="Password">Password</label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-lock auth-input-icon"></i>
+                                <input asp-for="Password" class="auth-input auth-input-password" placeholder="Min 6 characters" autocomplete="new-password" />
+                                <button type="button" class="auth-password-toggle" onclick="togglePasswordVisibility(this)" aria-label="Show password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="auth-field-error"></span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="auth-field">
+                            <label asp-for="ConfirmPassword">Confirm Password</label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-lock-fill auth-input-icon"></i>
+                                <input asp-for="ConfirmPassword" class="auth-input auth-input-password" placeholder="Repeat password" autocomplete="new-password" />
+                                <button type="button" class="auth-password-toggle" onclick="togglePasswordVisibility(this)" aria-label="Show password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="ConfirmPassword" class="auth-field-error"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-auth-primary btn-auth-gold w-100">
+                    <i class="bi bi-rocket-takeoff me-2"></i>Create Free Account
+                </button>
+            </form>
+
+            <div class="auth-card-foot">
+                <span>Already registered?</span>
+                <a asp-controller="Account" asp-action="Login" class="auth-link auth-link-bold">Sign in here <i class="bi bi-arrow-right"></i></a>
             </div>
-
-            <div class="mb-3 form-group">
-                <label asp-for="SponsorCode"></label>
-                <div class="position-relative">
-                    <input asp-for="SponsorCode" class="form-control auth-glow-input" placeholder="Referral code (Optional)" style="border-color: rgba(6, 182, 212, 0.4);" />
-                    <span asp-validation-for="SponsorCode" class="text-danger small mt-1 d-block"></span>
-                </div>
-                <small class="text-muted mt-1 d-block" style="font-size: 0.75rem;">If empty, you will be placed under the default root node.</small>
-            </div>
-
-            <div class="row">
-                <div class="col-sm-6 mb-4 form-group">
-                    <label asp-for="Password"></label>
-                    <input asp-for="Password" class="form-control auth-glow-input" placeholder="Min 6 chars" />
-                    <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
-                </div>
-                <div class="col-sm-6 mb-4 form-group">
-                    <label asp-for="ConfirmPassword"></label>
-                    <input asp-for="ConfirmPassword" class="form-control auth-glow-input" placeholder="Repeat password" />
-                    <span asp-validation-for="ConfirmPassword" class="text-danger small mt-1 d-block"></span>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-cyber-pink w-100 py-3 mb-3">
-                <i class="bi bi-person-plus-fill me-1"></i>Create Account
-            </button>
-        </form>
-
-        <div class="text-center mt-3 pt-3 border-top border-opacity-10 border-white">
-            <p class="text-secondary small">Already a member? <a asp-controller="Account" asp-action="Login" class="text-info text-decoration-none fw-bold">Sign in here <i class="bi bi-arrow-right-short"></i></a></p>
         </div>
     </div>
 </div>

@@ -1,0 +1,83 @@
+@model IEnumerable<MLM_Level.Models.CommissionTran>
+@{
+    ViewData["Title"] = "Direct Income";
+    var list = Model?.ToList() ?? new List<MLM_Level.Models.CommissionTran>();
+    var total = (decimal)(ViewBag.TotalIncome ?? 0m);
+}
+
+@await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
+{
+    Title = "Direct Income",
+    Subtitle = "Commissions from your direct referrals (Level 1)",
+    Icon = "bi-arrow-right-circle",
+    ThemeClass = "member-theme-cyan",
+    Badge = $"₹{total:N0} total"
+})
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Total direct income</p>
+                    <p class="member-stat-value text-primary">₹@total.ToString("N2")</p>
+                    <span class="text-muted small">@list.Count payouts</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-blue"><i class="bi bi-arrow-right-circle"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card admin-table-card" data-admin-table data-page-size="15" data-search-placeholder="Search member or description..." data-count-label="records">
+    <div class="admin-table-header flex-wrap gap-2">
+        <h5 class="member-panel-title mb-0"><i class="bi bi-person-check text-primary me-2"></i>Direct commissions</h5>
+        <span class="admin-record-badge" data-admin-table-count>@list.Count records</span>
+        <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:220px;max-width:320px;">
+            <i class="bi bi-search admin-search-icon"></i>
+            <input type="search" data-admin-table-search class="form-control admin-search-input" placeholder="Search..." autocomplete="off" />
+        </div>
+    </div>
+    @if (list.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>From member</th>
+                        <th>Description</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in list)
+                    {
+                        var fromName = item.FromUser?.Username ?? "System";
+                        var searchText = $"{fromName} {item.FromUser?.FullName} {item.Description} {item.Amount}".ToLowerInvariant();
+                        <tr data-search="@searchText">
+                            <td class="admin-subtext">@item.Timestamp.ToLocalTime().ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (item.FromUser != null)
+                                {
+                                    <div class="fw-semibold text-dark small">@item.FromUser.Username</div>
+                                    <div class="admin-subtext">@item.FromUser.FullName</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">System</span>
+                                }
+                            </td>
+                            <td class="admin-subtext">@item.Description</td>
+                            <td class="text-end fw-bold text-success">+₹@item.Amount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        @await Html.PartialAsync("_AdminNoResults")
+    }
+</div>

@@ -1,0 +1,101 @@
+@model IEnumerable<MLM_Level.Models.ActivationRequest>
+@{
+    ViewData["Title"] = "Activation Report";
+    var list = Model?.ToList() ?? new List<MLM_Level.Models.ActivationRequest>();
+    var pending = list.Count(r => r.Status == "Pending");
+}
+
+@await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
+{
+    Title = "Activation Report",
+    Subtitle = "Track your package activation requests and payment proofs",
+    Icon = "bi-shield-check",
+    ThemeClass = "member-theme-amber",
+    Badge = pending > 0 ? $"{pending} pending" : $"{list.Count} total",
+    ActionText = "New request",
+    ActionUrl = "Packages",
+    ActionIcon = "bi-plus-circle"
+})
+
+<div class="glass-card admin-table-card" data-admin-table data-page-size="10" data-search-placeholder="Search UTR or amount..." data-count-label="requests">
+    <div class="admin-table-header flex-wrap gap-2">
+        <h5 class="member-panel-title mb-0"><i class="bi bi-receipt text-warning me-2"></i>Activation history</h5>
+        <span class="admin-record-badge" data-admin-table-count>@list.Count requests</span>
+        <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:220px;max-width:320px;">
+            <i class="bi bi-search admin-search-icon"></i>
+            <input type="search" data-admin-table-search class="form-control admin-search-input" placeholder="Search..." autocomplete="off" />
+        </div>
+    </div>
+    @if (list.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>UTR / Reference</th>
+                        <th>Status</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var req in list)
+                    {
+                        var searchText = $"{req.TransactionReference} {req.Amount} {req.Status} {req.RejectionReason}".ToLowerInvariant();
+                        <tr data-search="@searchText">
+                            <td>
+                                <div class="fw-semibold text-dark small">@req.CreatedDate.ToString("dd MMM yyyy")</div>
+                                <div class="admin-subtext">@req.CreatedDate.ToString("hh:mm tt")</div>
+                            </td>
+                            <td class="fw-bold text-dark">₹@req.Amount.ToString("N0")</td>
+                            <td>
+                                <code class="text-primary small">@req.TransactionReference</code>
+                                @if (!string.IsNullOrEmpty(req.PaymentSlipUrl))
+                                {
+                                    <a href="@req.PaymentSlipUrl" target="_blank" class="ms-1 text-info" title="View slip"><i class="bi bi-file-earmark-image"></i></a>
+                                }
+                            </td>
+                            <td>
+                                @if (req.Status == "Approved")
+                                {
+                                    <span class="admin-badge-success">Approved</span>
+                                }
+                                else if (req.Status == "Pending")
+                                {
+                                    <span class="admin-badge-pending">Pending</span>
+                                }
+                                else
+                                {
+                                    <span class="admin-badge-danger">Rejected</span>
+                                }
+                            </td>
+                            <td class="admin-subtext">
+                                @if (req.Status == "Approved" && req.ApprovedDate.HasValue)
+                                {
+                                    <span>Approved @req.ApprovedDate.Value.ToString("dd MMM yyyy")</span>
+                                }
+                                else if (req.Status == "Pending")
+                                {
+                                    <span>Awaiting admin review</span>
+                                }
+                                else if (!string.IsNullOrWhiteSpace(req.RejectionReason))
+                                {
+                                    <span class="text-danger">@req.RejectionReason</span>
+                                }
+                                else
+                                {
+                                    <span>Declined by admin</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        @await Html.PartialAsync("_AdminNoResults")
+    }
+</div>

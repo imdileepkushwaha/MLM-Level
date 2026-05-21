@@ -17,6 +17,31 @@ namespace MLM_Level.Models
         public bool RememberMe { get; set; }
     }
 
+    public class ForgotPasswordViewModel
+    {
+        [Required(ErrorMessage = "Username or email is required")]
+        [Display(Name = "Username or Email")]
+        public string UsernameOrEmail { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordViewModel
+    {
+        [Required]
+        public string Token { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "New password is required")]
+        [DataType(DataType.Password)]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long")]
+        [Display(Name = "New password")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please confirm your password")]
+        [DataType(DataType.Password)]
+        [Compare("NewPassword", ErrorMessage = "Passwords do not match")]
+        [Display(Name = "Confirm password")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
     public class RegisterViewModel
     {
         [Required(ErrorMessage = "Username is required")]
@@ -28,6 +53,11 @@ namespace MLM_Level.Models
         [EmailAddress(ErrorMessage = "Invalid Email Address")]
         [MaxLength(100)]
         public string Email { get; set; } = string.Empty;
+
+
+
+        [MaxLength(500)]
+        public string CompanyQrCodeUrl { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Full Name is required")]
         [MaxLength(100)]
@@ -93,9 +123,21 @@ namespace MLM_Level.Models
     public class UserWalletViewModel
     {
         public decimal WalletBalance { get; set; }
+        public decimal IncomeWallet { get; set; }
         public decimal TotalIncome { get; set; }
-        public List<CommissionTran> IncomeLedger { get; set; } = new();
+        public int LedgerEntryCount { get; set; }
         public List<WithdrawalRequest> Withdrawals { get; set; } = new();
+    }
+
+    public class UserPackagesViewModel
+    {
+        public User UserInfo { get; set; } = null!;
+        public MlmSetting Settings { get; set; } = new();
+        public List<Package> AvailablePackages { get; set; } = new();
+        public List<UserPackage> ActivePackages { get; set; } = new();
+        public List<ActivationRequest> RecentRequests { get; set; } = new();
+        public bool HasPendingRequest { get; set; }
+        public ActivationRequest? PendingRequest { get; set; }
     }
 
     // --- ADMIN DASHBOARD VIEW MODELS ---
@@ -144,5 +186,65 @@ namespace MLM_Level.Models
         public string Username { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public decimal TotalEarned { get; set; }
+    }
+
+    public class AdminSettingsViewModel
+    {
+        public MlmSetting Settings { get; set; } = new MlmSetting();
+        
+        // Admin Profile
+        public string AdminFullName { get; set; } = string.Empty;
+        public string AdminEmail { get; set; } = string.Empty;
+        public string AdminUsername { get; set; } = string.Empty;
+
+        // Password Update
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        public string ActiveTab { get; set; } = "general";
+    }
+
+    public class AdminNotificationItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Icon { get; set; } = "bi-bell";
+        public string IconClass { get; set; } = "topbar-notif-icon-default";
+        public string Action { get; set; } = string.Empty;
+        public string Controller { get; set; } = "Admin";
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class AdminNotificationsViewModel
+    {
+        public int TotalCount { get; set; }
+        public List<AdminNotificationItem> Items { get; set; } = new();
+    }
+
+    public class MemberNotificationItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Icon { get; set; } = "bi-bell";
+        public string IconClass { get; set; } = "topbar-notif-icon-default";
+        public string Action { get; set; } = string.Empty;
+        public string Controller { get; set; } = "User";
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class MemberNotificationsViewModel
+    {
+        public int TotalCount { get; set; }
+        public List<MemberNotificationItem> Items { get; set; } = new();
+    }
+
+    public class AdminRejectModalViewModel
+    {
+        public string ModalId { get; set; } = string.Empty;
+        public string FormAction { get; set; } = string.Empty;
+        public int RequestId { get; set; }
+        public string Title { get; set; } = "Reject request";
+        public string? Subtitle { get; set; }
     }
 }

@@ -1,0 +1,26 @@
+@{
+    var siteName = ViewBag.MaintenanceSiteName as string ?? Context.Items["MaintenanceSiteName"] as string ?? "Elite MLM";
+    var supportEmail = ViewBag.MaintenanceSupportEmail as string ?? Context.Items["MaintenanceSupportEmail"] as string ?? "support@mlm.com";
+}
+
+<div class="maintenance-overlay" role="dialog" aria-modal="true" aria-labelledby="maintenanceTitle">
+    <div class="maintenance-overlay-backdrop"></div>
+    <div class="maintenance-overlay-card glass-card shadow-lg">
+        <div class="maintenance-overlay-icon" aria-hidden="true">
+            <i class="bi bi-tools"></i>
+        </div>
+        <h2 id="maintenanceTitle" class="maintenance-overlay-title">Website Under Maintenance</h2>
+        <p class="maintenance-overlay-text">
+            <strong>@siteName</strong> is temporarily unavailable while we perform scheduled upgrades.
+            Member login and registration are paused for now.
+        </p>
+        <ul class="maintenance-overlay-list">
+            <li><i class="bi bi-shield-lock"></i> Member portal access is disabled</li>
+            <li><i class="bi bi-clock-history"></i> Please check back shortly</li>
+            <li><i class="bi bi-envelope-at"></i> Need help? <a href="mailto:@supportEmail">@supportEmail</a></li>
+        </ul>
+        <div class="maintenance-overlay-footer">
+            <span class="maintenance-status-pill"><i class="bi bi-exclamation-triangle-fill me-1"></i>Maintenance mode active</span>
+        </div>
+    </div>
+</div>

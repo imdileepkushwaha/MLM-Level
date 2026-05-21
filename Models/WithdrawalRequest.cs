@@ -27,5 +27,8 @@ namespace MLM_Level.Models
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? ProcessedDate { get; set; }
+
+        [MaxLength(500)]
+        public string? RejectionReason { get; set; }
     }
 }

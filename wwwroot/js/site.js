@@ -31,6 +31,14 @@ function copyReferralLink() {
 
 // Fade out alert messages automatically
 document.addEventListener("DOMContentLoaded", function() {
+    // Modals nested in glass cards sit in a lower stacking context than the
+    // body-appended backdrop; attach them to body so they render on top.
+    document.querySelectorAll(".modal").forEach(function(modal) {
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+
     var alerts = document.querySelectorAll(".alert-dismissible");
     alerts.forEach(function(alert) {
         setTimeout(function() {
@@ -47,3 +55,16 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 4000);
     });
 });
+
+// Toggle password visibility utility
+function togglePasswordVisibility(btn) {
+    const input = btn.previousElementSibling;
+    const icon = btn.querySelector('i');
+    if (input.type === "password") {
+        input.type = "text";
+        icon.className = "bi bi-eye-slash";
+    } else {
+        input.type = "password";
+        icon.className = "bi bi-eye";
+    }
+}

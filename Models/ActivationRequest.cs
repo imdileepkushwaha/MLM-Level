@@ -19,6 +19,11 @@ namespace MLM_Level.Models
         [Column(TypeName = "decimal(18, 2)")]
         public decimal Amount { get; set; }
 
+        public int? PackageId { get; set; }
+
+        [ForeignKey("PackageId")]
+        public virtual Package? Package { get; set; }
+
         [Required]
         [MaxLength(100)]
         public string TransactionReference { get; set; } = string.Empty;
@@ -31,5 +36,11 @@ namespace MLM_Level.Models
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? ApprovedDate { get; set; }
+
+        [MaxLength(500)]
+        public string? RejectionReason { get; set; }
+
+        [MaxLength(255)]
+        public string? PaymentSlipUrl { get; set; }
     }
 }

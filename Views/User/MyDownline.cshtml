@@ -1,0 +1,75 @@
+@model IEnumerable<MLM_Level.Models.DownlineNodeViewModel>
+@{
+    ViewData["Title"] = "My Downline";
+    var list = Model?.OrderBy(n => n.Level).ToList() ?? new List<MLM_Level.Models.DownlineNodeViewModel>();
+}
+
+@await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
+{
+    Title = "My Downline",
+    Subtitle = "All members in your network tree by level",
+    Icon = "bi-diagram-3-fill",
+    ThemeClass = "member-theme-violet",
+    Badge = $"{list.Count} members"
+})
+
+<div class="glass-card admin-table-card" data-admin-table data-page-size="15" data-search-placeholder="Search downline..." data-count-label="members">
+    <div class="admin-table-header flex-wrap gap-2">
+        <h5 class="member-panel-title mb-0"><i class="bi bi-people text-primary me-2"></i>Downline members</h5>
+        <span class="admin-record-badge" data-admin-table-count>@list.Count members</span>
+        <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:220px;max-width:320px;">
+            <i class="bi bi-search admin-search-icon"></i>
+            <input type="search" data-admin-table-search class="form-control admin-search-input" placeholder="Search members..." autocomplete="off" />
+        </div>
+    </div>
+    @if (list.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Username</th>
+                        <th>Level</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var node in list)
+                    {
+                        var searchText = $"{node.Username} {node.FullName} {node.SponsorName} {node.Level}".ToLowerInvariant();
+                        <tr data-search="@searchText">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="admin-avatar">@(node.FullName?.FirstOrDefault() ?? 'U')</div>
+                                    <div>
+                                        <div class="fw-bold text-dark small">@node.FullName</div>
+                                        <div class="admin-subtext">Sponsor: @node.SponsorName</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="fw-semibold text-dark small">@@@node.Username</span></td>
+                            <td><span class="admin-badge-type admin-type-commission">L@node.Level</span></td>
+                            <td>
+                                @if (node.IsActive)
+                                {
+                                    <span class="admin-badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="admin-badge-pending">Inactive</span>
+                                }
+                            </td>
+                            <td class="admin-subtext">@node.JoinedDate.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        @await Html.PartialAsync("_AdminNoResults")
+    }
+</div>

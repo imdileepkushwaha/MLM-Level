@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MLM_Level.Data;
@@ -12,14 +15,16 @@ using MLM_Level.Models;
 
 namespace MLM_Level.Controllers
 {
-    [Authorize(Roles = "User")]
+    [Authorize(AuthenticationSchemes = "UserAuth", Roles = "User")]
     public class UserController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public UserController(ApplicationDbContext context)
+        public UserController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         private int GetCurrentUserId()
@@ -27,6 +32,48 @@ namespace MLM_Level.Controllers
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claim == null) throw new InvalidOperationException("User identity not found.");
             return int.Parse(claim.Value);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword, string confirmPassword)
+        {
+            if (string.IsNullOrEmpty(currentPassword) || string.IsNullOrEmpty(newPassword) || string.IsNullOrEmpty(confirmPassword))
+            {
+                return Json(new { success = false, message = "All password fields are required." });
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                return Json(new { success = false, message = "New password and confirmation password do not match." });
+            }
+
+            try
+            {
+                int userId = GetCurrentUserId();
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "User not found." });
+                }
+
+                var passwordHasher = new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
+                var verifyResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, currentPassword);
+                if (verifyResult == Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed)
+                {
+                    return Json(new { success = false, message = "Current password is incorrect." });
+                }
+
+                user.PasswordHash = passwordHasher.HashPassword(user, newPassword);
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Password updated successfully!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "An error occurred while updating the password: " + ex.Message });
+            }
         }
 
         // GET: User/Index (Dashboard)
@@ -153,73 +200,80 @@ namespace MLM_Level.Controllers
             return View(viewModel);
         }
 
-        // GET: User/Activate (Submit Activation Request)
+        // GET: User/Packages
         [HttpGet]
-        public async Task<IActionResult> Activate()
+        public async Task<IActionResult> Packages()
         {
             int userId = GetCurrentUserId();
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null) return NotFound();
-
-            if (user.IsActive)
-            {
-                TempData["InfoMessage"] = "Your account is already active!";
-                return RedirectToAction("Index");
-            }
-
-            // Check if there is a pending activation request
-            var hasPending = await _context.ActivationRequests.AnyAsync(r => r.UserId == userId && r.Status == "Pending");
-            ViewBag.HasPendingRequest = hasPending;
-
-            // Fetch dynamic settings & packages
-            var settings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
-            var activePackages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync();
-
-            ViewBag.MlmSettings = settings;
-            ViewBag.Packages = activePackages;
-
-            return View();
+            var model = await BuildPackagesViewModelAsync(userId);
+            if (model == null) return NotFound();
+            return View(model);
         }
 
-        // POST: User/Activate
+        // GET: User/Activate (legacy route)
+        [HttpGet]
+        public IActionResult Activate() => RedirectToAction(nameof(Packages));
+
+        // POST: User/RequestPackage
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Activate(string transactionReference, int packageId)
+        public async Task<IActionResult> RequestPackage(string transactionReference, int packageId, IFormFile? paymentSlip)
         {
             int userId = GetCurrentUserId();
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
 
-            if (user.IsActive)
+            var hasPending = await _context.ActivationRequests.AnyAsync(r => r.UserId == userId && r.Status == "Pending");
+            if (hasPending)
             {
-                TempData["InfoMessage"] = "Your account is already active!";
-                return RedirectToAction("Index");
+                TempData["ErrorMessage"] = "You already have a pending package request. Please wait for admin approval.";
+                return RedirectToAction(nameof(Packages));
             }
 
             if (string.IsNullOrWhiteSpace(transactionReference))
             {
-                ModelState.AddModelError(string.Empty, "Transaction Reference / UTR is required.");
-                ViewBag.HasPendingRequest = false;
-                ViewBag.MlmSettings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
-                ViewBag.Packages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync();
-                return View();
+                TempData["ErrorMessage"] = "Transaction reference / UTR is required.";
+                return RedirectToAction(nameof(Packages));
+            }
+
+            var normalizedUtr = transactionReference.Trim();
+            var duplicateUtr = await _context.ActivationRequests.AnyAsync(r =>
+                r.Status != "Rejected" &&
+                r.TransactionReference.ToUpper() == normalizedUtr.ToUpper());
+            if (duplicateUtr)
+            {
+                TempData["ErrorMessage"] = "This UTR / transaction reference has already been used. Please enter a different reference.";
+                return RedirectToAction(nameof(Packages));
             }
 
             var package = await _context.Packages.FindAsync(packageId);
             if (package == null || !package.IsActive)
             {
-                ModelState.AddModelError(string.Empty, "Invalid package selection.");
-                ViewBag.HasPendingRequest = false;
-                ViewBag.MlmSettings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
-                ViewBag.Packages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync();
-                return View();
+                TempData["ErrorMessage"] = "Invalid package selection.";
+                return RedirectToAction(nameof(Packages));
+            }
+
+            string? slipUrl = null;
+            if (paymentSlip != null && paymentSlip.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "slips");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(paymentSlip.FileName);
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await paymentSlip.CopyToAsync(stream);
+                }
+                slipUrl = "/uploads/slips/" + uniqueFileName;
             }
 
             var request = new ActivationRequest
             {
                 UserId = userId,
                 Amount = package.Price,
-                TransactionReference = transactionReference.Trim(),
+                PackageId = packageId,
+                TransactionReference = normalizedUtr,
+                PaymentSlipUrl = slipUrl,
                 Status = "Pending",
                 CreatedDate = DateTime.UtcNow
             };
@@ -227,8 +281,127 @@ namespace MLM_Level.Controllers
             _context.ActivationRequests.Add(request);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Activation request for '{package.Name}' submitted! Admin will verify and activate your account shortly.";
-            return RedirectToAction("Index");
+            TempData["SuccessMessage"] = user.IsActive
+                ? $"Package request for '{package.Name}' submitted! Admin will verify your payment shortly."
+                : $"Activation request for '{package.Name}' submitted! Admin will verify and activate your account shortly.";
+            return RedirectToAction(nameof(Packages));
+        }
+
+        // POST: User/Activate (legacy route)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public Task<IActionResult> Activate(string transactionReference, int packageId, IFormFile? paymentSlip)
+            => RequestPackage(transactionReference, packageId, paymentSlip);
+
+        private async Task<UserPackagesViewModel?> BuildPackagesViewModelAsync(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return null;
+
+            var pending = await _context.ActivationRequests
+                .Include(r => r.Package)
+                .FirstOrDefaultAsync(r => r.UserId == userId && r.Status == "Pending");
+
+            return new UserPackagesViewModel
+            {
+                UserInfo = user,
+                Settings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting(),
+                AvailablePackages = await _context.Packages.Where(p => p.IsActive).OrderBy(p => p.Price).ToListAsync(),
+                ActivePackages = await _context.UserPackages
+                    .Include(up => up.Package)
+                    .Where(up => up.UserId == userId)
+                    .OrderByDescending(up => up.ActivationDate)
+                    .ToListAsync(),
+                RecentRequests = await _context.ActivationRequests
+                    .Include(r => r.Package)
+                    .Where(r => r.UserId == userId)
+                    .OrderByDescending(r => r.CreatedDate)
+                    .Take(10)
+                    .ToListAsync(),
+                HasPendingRequest = pending != null,
+                PendingRequest = pending
+            };
+        }
+
+        // GET: User/ActivationReport
+        [HttpGet]
+        public async Task<IActionResult> ActivationReport()
+        {
+            int userId = GetCurrentUserId();
+            var requests = await _context.ActivationRequests
+                .Include(r => r.Package)
+                .Where(r => r.UserId == userId)
+                .OrderByDescending(r => r.CreatedDate)
+                .ToListAsync();
+
+            return View(requests);
+        }
+
+        // GET: User/MyDirect
+        [HttpGet]
+        public async Task<IActionResult> MyDirect()
+        {
+            int userId = GetCurrentUserId();
+            var directs = await _context.Users
+                .Where(u => u.SponsorId == userId)
+                .OrderByDescending(u => u.JoinedDate)
+                .ToListAsync();
+
+            return View(directs);
+        }
+
+        // GET: User/MyDownline
+        [HttpGet]
+        public async Task<IActionResult> MyDownline()
+        {
+            int userId = GetCurrentUserId();
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            var downlineList = new List<DownlineNodeViewModel>();
+
+            try
+            {
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = "sp_GetDownlineTree";
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    var paramStartUserId = command.CreateParameter();
+                    paramStartUserId.ParameterName = "@StartUserId";
+                    paramStartUserId.Value = userId;
+                    command.Parameters.Add(paramStartUserId);
+
+                    _context.Database.OpenConnection();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var node = new DownlineNodeViewModel
+                            {
+                                Id = reader.GetInt32(0),
+                                Username = reader.GetString(1),
+                                FullName = reader.GetString(2),
+                                SponsorId = reader.GetInt32(3),
+                                ParentId = reader.IsDBNull(4) ? null : (int?)reader.GetInt32(4),
+                                Level = reader.GetInt32(5),
+                                IsActive = reader.GetBoolean(6),
+                                JoinedDate = reader.GetDateTime(7),
+                                SponsorName = reader.IsDBNull(8) ? "" : reader.GetString(8),
+                                ParentName = reader.IsDBNull(9) ? "" : reader.GetString(9)
+                            };
+
+                            downlineList.Add(node);
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Active fallbacks
+            }
+
+            return View(downlineList);
         }
 
         // GET: User/Tree (Downline Tree & Levels)
@@ -298,7 +471,7 @@ namespace MLM_Level.Controllers
             return View(viewModel);
         }
 
-        // GET: User/Wallet (Transaction Ledger & Withdraw)
+        // GET: User/Wallet
         [HttpGet]
         public async Task<IActionResult> Wallet()
         {
@@ -306,31 +479,45 @@ namespace MLM_Level.Controllers
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
 
-            var ledger = await _context.CommissionTrans
-                .Include(t => t.FromUser)
-                .Where(t => t.UserId == userId)
-                .OrderByDescending(t => t.Timestamp)
-                .ToListAsync();
-
             var withdrawals = await _context.WithdrawalRequests
                 .Where(w => w.UserId == userId)
                 .OrderByDescending(w => w.CreatedDate)
                 .ToListAsync();
 
-            var totalIncome = ledger.Sum(l => l.Amount);
+            var ledgerQuery = _context.CommissionTrans.Where(t => t.UserId == userId);
+            var totalIncome = await ledgerQuery.SumAsync(t => t.Amount);
+            var ledgerCount = await ledgerQuery.CountAsync();
 
-            // Pass MLM settings to UI
             ViewBag.MlmSettings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
 
             var viewModel = new UserWalletViewModel
             {
                 WalletBalance = user.WalletBalance,
+                IncomeWallet = user.IncomeWallet,
                 TotalIncome = totalIncome,
-                IncomeLedger = ledger,
+                LedgerEntryCount = ledgerCount,
                 Withdrawals = withdrawals
             };
 
             return View(viewModel);
+        }
+
+        // GET: User/IncomeTransactions
+        [HttpGet]
+        public async Task<IActionResult> IncomeTransactions()
+        {
+            int userId = GetCurrentUserId();
+            var ledger = await _context.CommissionTrans
+                .AsNoTracking()
+                .Include(t => t.FromUser)
+                .Where(t => t.UserId == userId)
+                .OrderByDescending(t => t.Timestamp)
+                .ToListAsync();
+
+            ViewBag.TotalIncome = ledger.Sum(l => l.Amount);
+            ViewBag.CreditTotal = ledger.Where(l => l.Amount > 0).Sum(l => l.Amount);
+            ViewBag.DebitTotal = ledger.Where(l => l.Amount < 0).Sum(l => Math.Abs(l.Amount));
+            return View("IncomeTransactions", ledger);
         }
 
         // POST: User/RequestWithdrawal
@@ -341,6 +528,13 @@ namespace MLM_Level.Controllers
             int userId = GetCurrentUserId();
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
+
+            var kyc = await _context.KycDetails.FirstOrDefaultAsync(k => k.UserId == userId);
+            if (kyc == null || kyc.Status != "Approved")
+            {
+                TempData["ErrorMessage"] = "You must complete and get your KYC approved before requesting withdrawals.";
+                return RedirectToAction("Kyc");
+            }
 
             if (amount <= 0)
             {
@@ -561,6 +755,66 @@ namespace MLM_Level.Controllers
             return RedirectToAction("Index");
         }
 
+        // GET: User/DailyIncome
+        [HttpGet]
+        public async Task<IActionResult> DailyIncome()
+        {
+            int userId = GetCurrentUserId();
+            var incomes = await _context.CommissionTrans
+                .Include(c => c.FromUser)
+                .Where(c => c.UserId == userId && c.Amount > 0 && c.Level == 0 && c.Description.Contains("Daily ROI"))
+                .OrderByDescending(c => c.Timestamp)
+                .ToListAsync();
+
+            ViewBag.TotalIncome = incomes.Sum(i => i.Amount);
+            return View(incomes);
+        }
+
+        // GET: User/DirectIncome
+        [HttpGet]
+        public async Task<IActionResult> DirectIncome()
+        {
+            int userId = GetCurrentUserId();
+            var incomes = await _context.CommissionTrans
+                .Include(c => c.FromUser)
+                .Where(c => c.UserId == userId && c.Amount > 0 && c.Level == 1 && c.Description.Contains("Commission"))
+                .OrderByDescending(c => c.Timestamp)
+                .ToListAsync();
+
+            ViewBag.TotalIncome = incomes.Sum(i => i.Amount);
+            return View(incomes);
+        }
+
+        // GET: User/LevelIncome
+        [HttpGet]
+        public async Task<IActionResult> LevelIncome()
+        {
+            int userId = GetCurrentUserId();
+            var incomes = await _context.CommissionTrans
+                .Include(c => c.FromUser)
+                .Where(c => c.UserId == userId && c.Amount > 0 && c.Level > 1 && c.Description.Contains("Commission"))
+                .OrderByDescending(c => c.Timestamp)
+                .ToListAsync();
+
+            ViewBag.TotalIncome = incomes.Sum(i => i.Amount);
+            return View(incomes);
+        }
+
+        // GET: User/Rewards
+        [HttpGet]
+        public async Task<IActionResult> Rewards()
+        {
+            int userId = GetCurrentUserId();
+            var rewards = await _context.MemberRewards
+                .AsNoTracking()
+                .Where(r => r.IsActive && (r.UserId == null || r.UserId == userId))
+                .OrderByDescending(r => r.CreatedDate)
+                .ToListAsync();
+
+            ViewBag.TotalRewardValue = rewards.Sum(r => r.Amount);
+            return View(rewards);
+        }
+
         // GET: User/GetEarningsChartData
         [HttpGet]
         public async Task<IActionResult> GetEarningsChartData()
@@ -584,6 +838,156 @@ namespace MLM_Level.Controllers
             }).ToList();
 
             return Json(chartData);
+        }
+        // KYC Actions
+        [HttpGet]
+        public async Task<IActionResult> Kyc()
+        {
+            var userId = GetCurrentUserId();
+            var kyc = await _context.KycDetails.FirstOrDefaultAsync(k => k.UserId == userId);
+            return View(kyc ?? new KycDetail { UserId = userId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadKyc(
+            string aadharNumber,
+            string panNumber,
+            string bankAccountHolderName,
+            string bankAccountNumber,
+            string bankIfsc,
+            string bankName,
+            IFormFile? aadharFront,
+            IFormFile? aadharBack,
+            IFormFile? panCard,
+            IFormFile? bankPassbook)
+        {
+            var userId = GetCurrentUserId();
+            var kyc = await _context.KycDetails.FirstOrDefaultAsync(k => k.UserId == userId);
+            var isNew = kyc == null;
+
+            if (kyc != null && kyc.Status == "Approved")
+            {
+                TempData["Error"] = "Your KYC is already approved and cannot be changed.";
+                return RedirectToAction("Kyc");
+            }
+
+            aadharNumber = (aadharNumber ?? "").Trim().Replace(" ", "");
+            panNumber = (panNumber ?? "").Trim().ToUpperInvariant();
+            bankAccountHolderName = (bankAccountHolderName ?? "").Trim();
+            bankAccountNumber = (bankAccountNumber ?? "").Trim();
+            bankIfsc = (bankIfsc ?? "").Trim().ToUpperInvariant();
+            bankName = (bankName ?? "").Trim();
+
+            if (aadharNumber.Length != 12 || !aadharNumber.All(char.IsDigit))
+            {
+                TempData["Error"] = "Enter a valid 12-digit Aadhar number.";
+                return RedirectToAction("Kyc");
+            }
+
+            if (panNumber.Length != 10 || !System.Text.RegularExpressions.Regex.IsMatch(panNumber, @"^[A-Z]{5}[0-9]{4}[A-Z]$"))
+            {
+                TempData["Error"] = "Enter a valid PAN number (e.g. ABCDE1234F).";
+                return RedirectToAction("Kyc");
+            }
+
+            if (string.IsNullOrWhiteSpace(bankAccountHolderName) ||
+                string.IsNullOrWhiteSpace(bankAccountNumber) ||
+                string.IsNullOrWhiteSpace(bankIfsc) ||
+                string.IsNullOrWhiteSpace(bankName))
+            {
+                TempData["Error"] = "All bank detail fields are required.";
+                return RedirectToAction("Kyc");
+            }
+
+            if (bankIfsc.Length != 11)
+            {
+                TempData["Error"] = "Enter a valid 11-character IFSC code.";
+                return RedirectToAction("Kyc");
+            }
+
+            if (isNew)
+            {
+                kyc = new KycDetail { UserId = userId };
+                _context.KycDetails.Add(kyc);
+            }
+
+            if (string.IsNullOrEmpty(kyc!.AadharFrontUrl) && (aadharFront == null || aadharFront.Length == 0))
+            {
+                TempData["Error"] = "Aadhar front image is required.";
+                return RedirectToAction("Kyc");
+            }
+            if (string.IsNullOrEmpty(kyc.AadharBackUrl) && (aadharBack == null || aadharBack.Length == 0))
+            {
+                TempData["Error"] = "Aadhar back image is required.";
+                return RedirectToAction("Kyc");
+            }
+            if (string.IsNullOrEmpty(kyc.PanCardUrl) && (panCard == null || panCard.Length == 0))
+            {
+                TempData["Error"] = "PAN card image is required.";
+                return RedirectToAction("Kyc");
+            }
+            if (string.IsNullOrEmpty(kyc.BankPassbookUrl) && (bankPassbook == null || bankPassbook.Length == 0))
+            {
+                TempData["Error"] = "Bank passbook / cancelled cheque image is required.";
+                return RedirectToAction("Kyc");
+            }
+
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "kyc");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            try
+            {
+                if (aadharFront != null && aadharFront.Length > 0)
+                    kyc.AadharFrontUrl = await SaveKycFileAsync(aadharFront, uploadsFolder);
+                if (aadharBack != null && aadharBack.Length > 0)
+                    kyc.AadharBackUrl = await SaveKycFileAsync(aadharBack, uploadsFolder);
+                if (panCard != null && panCard.Length > 0)
+                    kyc.PanCardUrl = await SaveKycFileAsync(panCard, uploadsFolder);
+                if (bankPassbook != null && bankPassbook.Length > 0)
+                    kyc.BankPassbookUrl = await SaveKycFileAsync(bankPassbook, uploadsFolder);
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Kyc");
+            }
+
+            kyc.AadharNumber = aadharNumber;
+            kyc.PanNumber = panNumber;
+            kyc.BankAccountHolderName = bankAccountHolderName;
+            kyc.BankAccountNumber = bankAccountNumber;
+            kyc.BankIfsc = bankIfsc;
+            kyc.BankName = bankName;
+            kyc.Status = "Pending";
+            kyc.RejectionReason = string.Empty;
+            kyc.UpdatedDate = DateTime.UtcNow;
+            if (isNew) kyc.CreatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "KYC submitted successfully. Admin will review your documents shortly.";
+            return RedirectToAction("Kyc");
+        }
+
+        private static async Task<string> SaveKycFileAsync(IFormFile file, string uploadsFolder)
+        {
+            const long maxBytes = 2 * 1024 * 1024;
+            if (file.Length > maxBytes)
+                throw new InvalidOperationException("Each document must be 2MB or smaller.");
+
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".pdf" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowed.Contains(ext))
+                throw new InvalidOperationException("Only JPG, PNG, WEBP, or PDF files are allowed.");
+
+            var uniqueFileName = Guid.NewGuid().ToString("N") + ext;
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+            return "/uploads/kyc/" + uniqueFileName;
         }
     }
 }

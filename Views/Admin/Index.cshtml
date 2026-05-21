@@ -1,187 +1,318 @@
 @model MLM_Level.Models.AdminDashboardViewModel
 @{
-    ViewData["Title"] = "System Administration Dashboard";
+    ViewData["Title"] = "Admin Dashboard";
+    var activePct = Model.TotalUsers > 0 ? (double)Model.ActiveUsers / Model.TotalUsers * 100 : 0;
+    var totalPending = Model.PendingActivationsCount + Model.PendingWithdrawalsCount;
 }
 
-<!-- Stat Metrics -->
-<div class="row g-4 mb-4">
-    <!-- Total Registered -->
-    <div class="col-md-3 col-sm-6">
-        <div class="glass-card p-4">
-            <div class="d-flex justify-content-between align-items-start mb-3">
+<div class="admin-page-header admin-theme-blue mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-grid-1x2-fill"></i></div>
                 <div>
-                    <p class="text-secondary small fw-medium mb-1">Total Members</p>
-                    <h3 class="text-white fw-extrabold mb-0">@Model.TotalUsers</h3>
-                </div>
-                <div class="stat-icon-box icon-box-cyan">
-                    <i class="bi bi-people-fill"></i>
+                    <h2 class="fw-bold text-white mb-0">Admin Dashboard</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Overview of members, sales, commissions and pending approvals</p>
                 </div>
             </div>
-            <a asp-action="Members" class="small text-info text-decoration-none fw-bold">Manage Members <i class="bi bi-arrow-right-short"></i></a>
         </div>
-    </div>
-
-    <!-- Total Active -->
-    <div class="col-md-3 col-sm-6">
-        <div class="glass-card p-4">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <p class="text-secondary small fw-medium mb-1">Active Accounts</p>
-                    <h3 class="text-white fw-extrabold mb-0">@Model.ActiveUsers</h3>
-                </div>
-                <div class="stat-icon-box icon-box-green">
-                    <i class="bi bi-patch-check-fill"></i>
-                </div>
-            </div>
-            <span class="small text-secondary">Ratio: <strong>@(((double)Model.ActiveUsers / (Model.TotalUsers > 0 ? Model.TotalUsers : 1) * 100).ToString("N1"))%</strong> active</span>
-        </div>
-    </div>
-
-    <!-- Total Sales -->
-    <div class="col-md-3 col-sm-6">
-        <div class="glass-card p-4">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <p class="text-secondary small fw-medium mb-1">Gross Sales (₹)</p>
-                    <h3 class="text-white fw-extrabold mb-0">₹@Model.TotalSales.ToString("N2")</h3>
-                </div>
-                <div class="stat-icon-box icon-box-blue">
-                    <i class="bi bi-currency-rupee"></i>
-                </div>
-            </div>
-            <span class="small text-secondary">Based on ₹1,000 package</span>
-        </div>
-    </div>
-
-    <!-- Total Commissions -->
-    <div class="col-md-3 col-sm-6">
-        <div class="glass-card p-4">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <p class="text-secondary small fw-medium mb-1">Commissions Distributed</p>
-                    <h3 class="text-white fw-extrabold mb-0">₹@Model.TotalCommissionsDistributed.ToString("N2")</h3>
-                </div>
-                <div class="stat-icon-box icon-box-pink">
-                    <i class="bi bi-graph-up"></i>
-                </div>
-            </div>
-            <a asp-action="Commissions" class="small text-info text-decoration-none fw-bold">Commission Logs <i class="bi bi-arrow-right-short"></i></a>
+        <div class="col-lg-4 text-lg-end">
+            @if (totalPending > 0)
+            {
+                <span class="admin-header-badge">
+                    <i class="bi bi-bell me-1"></i>@totalPending items need action
+                </span>
+            }
+            else
+            {
+                <span class="admin-header-badge" style="border-color:rgba(16,185,129,0.35);color:#6ee7b7;">
+                    <i class="bi bi-check-circle me-1"></i>All queues clear
+                </span>
+            }
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Left Column: Pending Activations -->
-    <div class="col-lg-6">
-        <div class="glass-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="text-white fw-bold mb-0">
-                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-20 px-2 py-1 small me-2">@Model.PendingActivationsCount</span>
-                    Pending Account Activations
-                </h5>
-                <a asp-action="PendingRequests" class="small text-secondary text-decoration-none">Manage Approvals</a>
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="admin-stat-label">Total members</p>
+                    <p class="admin-stat-value text-primary mb-0">@Model.TotalUsers</p>
+                    <a asp-action="Members" class="admin-subtext text-decoration-none">Manage <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="admin-stat-icon admin-stat-icon-blue"><i class="bi bi-people-fill"></i></div>
             </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="admin-stat-label">Active accounts</p>
+                    <p class="admin-stat-value text-success mb-0">@Model.ActiveUsers</p>
+                    <span class="admin-subtext">@activePct.ToString("N1")% active</span>
+                </div>
+                <div class="admin-stat-icon admin-stat-icon-green"><i class="bi bi-patch-check-fill"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="admin-stat-label">Gross sales</p>
+                    <p class="admin-stat-value text-info mb-0" style="font-size:1.15rem;">&#8377;@Model.TotalSales.ToString("N0")</p>
+                    <span class="admin-subtext">Est. package value</span>
+                </div>
+                <div class="admin-stat-icon admin-stat-icon-cyan"><i class="bi bi-currency-rupee"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="admin-stat-label">Commissions paid</p>
+                    <p class="admin-stat-value text-warning mb-0" style="font-size:1.15rem;">&#8377;@Model.TotalCommissionsDistributed.ToString("N0")</p>
+                    <a asp-action="Commissions" class="admin-subtext text-decoration-none">View log <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="admin-stat-icon admin-stat-icon-amber"><i class="bi bi-graph-up"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-            <div class="glass-table-container">
-                @if (Model.PendingActivations.Any())
-                {
-                    <table class="table glass-table align-middle">
+<!-- Quick links -->
+<div class="row g-2 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+        <a asp-action="PendingActivations" class="glass-card p-3 text-decoration-none d-block text-center h-100 admin-dash-link">
+            <i class="bi bi-shield-lock fs-4 text-warning d-block mb-1"></i>
+            <span class="small fw-semibold text-dark">Activations</span>
+            @if (Model.PendingActivationsCount > 0)
+            {
+                <span class="badge bg-warning text-dark mt-1">@Model.PendingActivationsCount</span>
+            }
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a asp-action="Withdrawals" class="glass-card p-3 text-decoration-none d-block text-center h-100 admin-dash-link">
+            <i class="bi bi-wallet2 fs-4 text-danger d-block mb-1"></i>
+            <span class="small fw-semibold text-dark">Withdrawals</span>
+            @if (Model.PendingWithdrawalsCount > 0)
+            {
+                <span class="badge bg-danger mt-1">@Model.PendingWithdrawalsCount</span>
+            }
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a asp-action="KycApprovals" class="glass-card p-3 text-decoration-none d-block text-center h-100 admin-dash-link">
+            <i class="bi bi-shield-check fs-4 text-primary d-block mb-1"></i>
+            <span class="small fw-semibold text-dark">KYC</span>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a asp-action="Ledger" class="glass-card p-3 text-decoration-none d-block text-center h-100 admin-dash-link">
+            <i class="bi bi-journal-text fs-4 text-info d-block mb-1"></i>
+            <span class="small fw-semibold text-dark">Ledger</span>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a asp-action="Announcements" class="glass-card p-3 text-decoration-none d-block text-center h-100 admin-dash-link">
+            <i class="bi bi-megaphone fs-4 text-success d-block mb-1"></i>
+            <span class="small fw-semibold text-dark">Notices</span>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a asp-action="Settings" class="glass-card p-3 text-decoration-none d-block text-center h-100 admin-dash-link">
+            <i class="bi bi-sliders fs-4 text-secondary d-block mb-1"></i>
+            <span class="small fw-semibold text-dark">Settings</span>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Pending Activations -->
+    <div class="col-lg-6">
+        <div class="glass-card p-4 h-100" data-admin-table data-page-size="5" data-search-placeholder="Search activations..." data-count-label="pending">
+            <div class="d-flex justify-content-between align-items-center admin-panel-header mb-0 pb-3">
+                <h5 class="admin-panel-title mb-0">
+                    <i class="bi bi-shield-lock text-warning"></i>
+                    Pending activations
+                    <span class="admin-badge-pending ms-1">@Model.PendingActivationsCount</span>
+                </h5>
+                <a asp-action="PendingActivations" class="small fw-semibold text-primary text-decoration-none">View all</a>
+            </div>
+            @if (Model.PendingActivations.Any())
+            {
+                <div class="admin-table-scroll admin-table-bleed">
+                    <table class="table admin-table">
                         <thead>
                             <tr>
-                                <th>Member Details</th>
-                                <th>UTR/Ref</th>
-                                <th>Action</th>
+                                <th>Member</th>
+                                <th>UTR</th>
+                                <th class="text-end">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var req in Model.PendingActivations)
                             {
-                                <tr>
+                                var searchText = $"{req.User.Username} {req.TransactionReference}".ToLowerInvariant();
+                                <tr data-search="@searchText">
                                     <td>
-                                        <strong class="text-white">@req.User.Username</strong><br/>
-                                        <span class="small text-muted" style="font-size: 0.75rem;">Joined: @req.User.JoinedDate.ToString("dd MMM yyyy")</span>
+                                        <div class="fw-bold text-dark small">@req.User.Username</div>
+                                        <div class="admin-subtext">@req.CreatedDate.ToString("dd MMM")</div>
                                     </td>
-                                    <td><code class="text-info">@req.TransactionReference</code></td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <form asp-action="ApproveActivation" asp-route-id="@req.Id" method="post">
-                                                <button type="submit" class="btn btn-success btn-sm px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-check-circle"></i></button>
-                                            </form>
-                                            <form asp-action="RejectActivation" asp-route-id="@req.Id" method="post">
-                                                <button type="submit" class="btn btn-danger btn-sm px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-slash-circle"></i></button>
-                                            </form>
-                                        </div>
+                                    <td><code class="small text-primary">@req.TransactionReference</code></td>
+                                    <td class="text-end">
+                                        <form asp-action="ApproveActivation" asp-route-id="@req.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-2" title="Approve"><i class="bi bi-check-lg"></i></button>
+                                        </form>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Reject"
+                                                data-bs-toggle="modal" data-bs-target="#rejectActDash-@req.Id">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
-                }
-                else
+                </div>
+                @foreach (var req in Model.PendingActivations)
                 {
-                    <div class="text-center py-5 text-secondary small">
-                        <i class="bi bi-emoji-smile fs-2 mb-2 d-block text-muted"></i>
-                        No pending activations in queue!
-                    </div>
+                    @await Html.PartialAsync("_AdminRejectModal", new MLM_Level.Models.AdminRejectModalViewModel
+                    {
+                        ModalId = $"rejectActDash-{req.Id}",
+                        FormAction = "RejectActivation",
+                        RequestId = req.Id,
+                        Title = "Reject activation request",
+                        Subtitle = $"{req.User.FullName} (@{req.User.Username}) · UTR {req.TransactionReference}"
+                    })
                 }
-            </div>
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-check-circle text-success fs-3 d-block mb-2"></i>
+                    No pending activations.
+                </div>
+            }
         </div>
     </div>
 
-    <!-- Right Column: Pending Withdrawals -->
+    <!-- Pending Withdrawals -->
     <div class="col-lg-6">
-        <div class="glass-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="text-white fw-bold mb-0">
-                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-20 px-2 py-1 small me-2">@Model.PendingWithdrawalsCount</span>
-                    Pending Withdrawal Approvals
+        <div class="glass-card p-4 h-100" data-admin-table data-page-size="5" data-search-placeholder="Search withdrawals..." data-count-label="pending">
+            <div class="d-flex justify-content-between align-items-center admin-panel-header mb-0 pb-3">
+                <h5 class="admin-panel-title mb-0">
+                    <i class="bi bi-wallet2 text-danger"></i>
+                    Pending withdrawals
+                    <span class="admin-badge-pending ms-1">@Model.PendingWithdrawalsCount</span>
                 </h5>
-                <a asp-action="PendingRequests" class="small text-secondary text-decoration-none">Manage Approvals</a>
+                <a asp-action="Withdrawals" class="small fw-semibold text-primary text-decoration-none">View all</a>
             </div>
-
-            <div class="glass-table-container">
-                @if (Model.PendingWithdrawals.Any())
-                {
-                    <table class="table glass-table align-middle">
+            @if (Model.PendingWithdrawals.Any())
+            {
+                <div class="admin-table-scroll admin-table-bleed">
+                    <table class="table admin-table">
                         <thead>
                             <tr>
                                 <th>Member</th>
                                 <th>Amount</th>
-                                <th>Action</th>
+                                <th class="text-end">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var w in Model.PendingWithdrawals)
                             {
-                                <tr>
+                                var searchText = $"{w.User.Username} {w.Amount}".ToLowerInvariant();
+                                <tr data-search="@searchText">
                                     <td>
-                                        <strong class="text-white">@w.User.Username</strong><br/>
-                                        <span class="small text-muted" style="font-size: 0.75rem;">Balance: ₹@w.User.WalletBalance.ToString("N2")</span>
+                                        <div class="fw-bold text-dark small">@w.User.Username</div>
+                                        <div class="admin-subtext">Bal &#8377;@w.User.WalletBalance.ToString("N0")</div>
                                     </td>
-                                    <td><strong class="text-warning">₹@w.Amount.ToString("N2")</strong></td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <form asp-action="ApproveWithdrawal" asp-route-id="@w.Id" method="post">
-                                                <button type="submit" class="btn btn-success btn-sm px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-check-circle"></i></button>
-                                            </form>
-                                            <form asp-action="RejectWithdrawal" asp-route-id="@w.Id" method="post">
-                                                <button type="submit" class="btn btn-danger btn-sm px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-arrow-counterclockwise"></i></button>
-                                            </form>
-                                        </div>
+                                    <td class="fw-bold text-warning">&#8377;@w.Amount.ToString("N2")</td>
+                                    <td class="text-end">
+                                        <form asp-action="ApproveWithdrawal" asp-route-id="@w.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-2" title="Approve"><i class="bi bi-check-lg"></i></button>
+                                        </form>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Reject"
+                                                data-bs-toggle="modal" data-bs-target="#rejectWdDash-@w.Id">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
-                }
-                else
+                </div>
+                @foreach (var w in Model.PendingWithdrawals)
                 {
-                    <div class="text-center py-5 text-secondary small">
-                        <i class="bi bi-emoji-smile fs-2 mb-2 d-block text-muted"></i>
-                        No pending withdrawal requests in queue!
-                    </div>
+                    @await Html.PartialAsync("_AdminRejectModal", new MLM_Level.Models.AdminRejectModalViewModel
+                    {
+                        ModalId = $"rejectWdDash-{w.Id}",
+                        FormAction = "RejectWithdrawal",
+                        RequestId = w.Id,
+                        Title = "Reject withdrawal request",
+                        Subtitle = $"{w.User.FullName} (@{w.User.Username}) · ₹{w.Amount:N2}"
+                    })
                 }
-            </div>
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-check-circle text-success fs-3 d-block mb-2"></i>
+                    No pending withdrawals.
+                </div>
+            }
         </div>
     </div>
 </div>
+
+@if (Model.RecentUsers.Any())
+{
+    <div class="glass-card admin-table-card mt-4" data-admin-table data-page-size="10" data-search-placeholder="Search users..." data-count-label="users">
+        <div class="admin-table-header">
+            <h5 class="fw-bold mb-0"><i class="bi bi-person-plus text-primary me-2"></i>Recent registrations</h5>
+            <span class="admin-record-badge" data-admin-table-count>@Model.RecentUsers.Count users</span>
+        </div>
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Joined</th>
+                        <th>Username</th>
+                        <th>Name</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model.RecentUsers)
+                    {
+                        var searchText = $"{u.Username} {u.FullName}".ToLowerInvariant();
+                        <tr data-search="@searchText">
+                            <td class="admin-subtext">@u.JoinedDate.ToString("dd MMM yyyy")</td>
+                            <td class="fw-semibold text-dark small">@u.Username</td>
+                            <td class="admin-subtext">@u.FullName</td>
+                            <td>
+                                @if (u.IsActive)
+                                {
+                                    <span class="admin-badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="admin-badge-inactive">Inactive</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

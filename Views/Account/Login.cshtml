@@ -1,51 +1,96 @@
 @model MLM_Level.Models.LoginViewModel
 @{
     ViewData["Title"] = "Member Login";
+    ViewData["AuthPage"] = true;
+    var maintenanceMode = ViewBag.MaintenanceMode == true;
 }
 
-<div class="auth-page">
-    <div class="glass-card auth-card shadow-lg">
-        <div class="text-center mb-4">
-            <div class="stat-icon-box icon-box-cyan mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.6rem;">
-                <i class="bi bi-shield-lock-fill"></i>
-            </div>
-            <h2 class="text-white fw-bold">Sign In</h2>
-            <p class="text-secondary small mt-1">Access the Elite MLM Portal</p>
+<div class="auth-shell@(maintenanceMode ? " auth-shell-maintenance" : "")">
+    <aside class="auth-shell-brand">
+        <div class="auth-shell-brand-inner">
+            <a asp-controller="Home" asp-action="Index" class="auth-shell-logo">
+                <i class="bi bi-diagram-3-fill"></i>
+                <span>ELITE MLM</span>
+            </a>
+            <h1 class="auth-shell-title">Welcome back</h1>
+            <p class="auth-shell-lead">Sign in to manage your team, track level income, and request withdrawals from your E-Wallet.</p>
+            <ul class="auth-shell-perks">
+                <li><i class="bi bi-check-circle-fill"></i> Real-time commission ledger</li>
+                <li><i class="bi bi-check-circle-fill"></i> Genealogy tree & downline view</li>
+                <li><i class="bi bi-check-circle-fill"></i> Secure KYC verified payouts</li>
+            </ul>
         </div>
+    </aside>
 
-        <form asp-controller="Account" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+    <div class="auth-shell-panel">
+        <a asp-controller="Home" asp-action="Index" class="auth-shell-back">
+            <span class="auth-shell-back-icon" aria-hidden="true"><i class="bi bi-arrow-left"></i></span>
+            Back to home
+        </a>
 
-            <div class="mb-3 form-group">
-                <label asp-for="UsernameOrEmail"></label>
-                <div class="position-relative">
-                    <input asp-for="UsernameOrEmail" class="form-control auth-glow-input w-100" placeholder="Enter username or email" />
-                    <span asp-validation-for="UsernameOrEmail" class="text-danger small mt-1 d-block"></span>
+        <div class="auth-card@(maintenanceMode ? " auth-card-disabled" : "")">
+            <div class="auth-card-head">
+                <div class="auth-card-icon auth-card-icon-login">
+                    <i class="bi bi-shield-lock-fill"></i>
                 </div>
+                <h2>Member Sign In</h2>
+                <p>Enter your credentials to access the portal</p>
             </div>
 
-            <div class="mb-4 form-group">
-                <label asp-for="Password"></label>
-                <div class="position-relative">
-                    <input asp-for="Password" class="form-control auth-glow-input w-100" placeholder="••••••••" />
-                    <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="auth-alert auth-alert-success">
+                    <i class="bi bi-check-circle-fill"></i>@TempData["SuccessMessage"]
                 </div>
-            </div>
-
-            <div class="mb-4 d-flex justify-content-between align-items-center">
-                <div class="form-check">
-                    <input asp-for="RememberMe" class="form-check-input" style="background-color: rgba(15,23,42,0.6); border-color: var(--glass-border);" />
-                    <label asp-for="RememberMe" class="form-check-label text-secondary small">Remember Me</label>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="auth-alert auth-alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>@TempData["ErrorMessage"]
                 </div>
+            }
+
+            <form asp-controller="Account" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" class="auth-form">
+                <div asp-validation-summary="ModelOnly" class="auth-validation-summary"></div>
+
+                <div class="auth-field">
+                    <label asp-for="UsernameOrEmail">Username or Email</label>
+                    <div class="auth-input-wrap">
+                        <i class="bi bi-person auth-input-icon"></i>
+                        <input asp-for="UsernameOrEmail" class="auth-input" placeholder="Enter username or email" autocomplete="username" />
+                    </div>
+                    <span asp-validation-for="UsernameOrEmail" class="auth-field-error"></span>
+                </div>
+
+                <div class="auth-field">
+                    <label asp-for="Password">Password</label>
+                    <div class="auth-input-wrap">
+                        <i class="bi bi-lock auth-input-icon"></i>
+                        <input asp-for="Password" class="auth-input auth-input-password" placeholder="Enter password" autocomplete="current-password" />
+                        <button type="button" class="auth-password-toggle" onclick="togglePasswordVisibility(this)" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="auth-field-error"></span>
+                </div>
+
+                <div class="auth-row">
+                    <div class="form-check auth-check">
+                        <input asp-for="RememberMe" class="form-check-input" id="rememberMe" />
+                        <label asp-for="RememberMe" class="form-check-label" for="rememberMe">Remember me</label>
+                    </div>
+                    <a asp-controller="Account" asp-action="ForgotPassword" class="auth-link">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-auth-primary w-100">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                </button>
+            </form>
+
+            <div class="auth-card-foot">
+                <span>New member?</span>
+                <a asp-controller="Account" asp-action="Register" class="auth-link auth-link-bold">Create free account <i class="bi bi-arrow-right"></i></a>
             </div>
-
-            <button type="submit" class="btn btn-cyber-cyan w-100 py-3 mb-3">
-                <i class="bi bi-box-arrow-in-right me-1"></i>Authenticate
-            </button>
-        </form>
-
-        <div class="text-center mt-3 pt-3 border-top border-opacity-10 border-white">
-            <p class="text-secondary small">Not registered yet? <a asp-controller="Account" asp-action="Register" class="text-info text-decoration-none fw-bold">Create an account <i class="bi bi-arrow-right-short"></i></a></p>
         </div>
     </div>
 </div>

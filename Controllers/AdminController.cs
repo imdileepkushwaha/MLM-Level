@@ -12,28 +12,30 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace MLM_Level.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly MLM_Level.Services.IEmailService _emailService;
+        private readonly MLM_Level.Services.IMaintenanceModeService _maintenance;
 
-        public AdminController(ApplicationDbContext context)
+        public AdminController(
+            ApplicationDbContext context,
+            MLM_Level.Services.IEmailService emailService,
+            MLM_Level.Services.IMaintenanceModeService maintenance)
         {
             _context = context;
+            _emailService = emailService;
+            _maintenance = maintenance;
         }
 
         // GET: Admin/Login
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Login(string? returnUrl = null)
+        public async Task<IActionResult> Login(string? returnUrl = null)
         {
-            if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                if (User.IsInRole("Admin"))
-                    return RedirectToAction("Index", "Admin");
-                else
-                    return RedirectToAction("Index", "User");
-            }
+            var adminAuth = await HttpContext.AuthenticateAsync("AdminAuth");
+            if (adminAuth.Succeeded) return RedirectToAction("Index", "Admin");
 
             ViewData["ReturnUrl"] = returnUrl;
             return View();
@@ -88,7 +90,7 @@ namespace MLM_Level.Controllers
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Admin")
             };
 
-            var claimsIdentity = new System.Security.Claims.ClaimsIdentity(claims, Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+            var claimsIdentity = new System.Security.Claims.ClaimsIdentity(claims, "AdminAuth");
 
             var authProperties = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
             {
@@ -96,7 +98,7 @@ namespace MLM_Level.Controllers
                 ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
             };
 
-            await HttpContext.SignInAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme, new System.Security.Claims.ClaimsPrincipal(claimsIdentity), authProperties);
+            await HttpContext.SignInAsync("AdminAuth", new System.Security.Claims.ClaimsPrincipal(claimsIdentity), authProperties);
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -215,9 +217,31 @@ namespace MLM_Level.Controllers
             return RedirectToAction("Members");
         }
 
-        // GET: Admin/PendingRequests
+        // GET: Admin/Withdrawals
         [HttpGet]
-        public async Task<IActionResult> PendingRequests()
+        public async Task<IActionResult> Withdrawals()
+        {
+            var withdrawals = await _context.WithdrawalRequests
+                .Include(w => w.User)
+                .OrderByDescending(w => w.CreatedDate)
+                .ToListAsync();
+
+            var viewModel = new AdminApprovalsViewModel
+            {
+                WithdrawalRequests = withdrawals
+            };
+
+            return View(viewModel);
+        }
+
+        // GET: Admin/PendingRequests (legacy route)
+        [HttpGet]
+        public IActionResult PendingRequests()
+            => RedirectToAction(nameof(Withdrawals));
+
+        // GET: Admin/PendingActivations
+        [HttpGet]
+        public async Task<IActionResult> PendingActivations()
         {
             var activations = await _context.ActivationRequests
                 .Include(r => r.User)
@@ -225,19 +249,7 @@ namespace MLM_Level.Controllers
                 .OrderBy(r => r.CreatedDate)
                 .ToListAsync();
 
-            var withdrawals = await _context.WithdrawalRequests
-                .Include(w => w.User)
-                .Where(w => w.Status == "Pending")
-                .OrderBy(w => w.CreatedDate)
-                .ToListAsync();
-
-            var viewModel = new AdminApprovalsViewModel
-            {
-                ActivationRequests = activations,
-                WithdrawalRequests = withdrawals
-            };
-
-            return View(viewModel);
+            return View(activations);
         }
 
         // POST: Admin/ApproveActivation/5
@@ -247,13 +259,14 @@ namespace MLM_Level.Controllers
         {
             var request = await _context.ActivationRequests
                 .Include(r => r.User)
+                .Include(r => r.Package)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (request == null) return NotFound();
             if (request.Status != "Pending")
             {
                 TempData["ErrorMessage"] = "Request is already processed.";
-                return RedirectToAction("PendingRequests");
+                return RedirectToAction("Withdrawals");
             }
 
             // 1. Update request status
@@ -264,6 +277,23 @@ namespace MLM_Level.Controllers
             var user = request.User;
             user.IsActive = true;
             user.ActivationDate = DateTime.UtcNow;
+
+            // 2.5 Add UserPackage for ROI if applicable
+            if (request.PackageId.HasValue && request.Package != null && request.Package.RoiDurationDays > 0)
+            {
+                var userPackage = new UserPackage
+                {
+                    UserId = user.Id,
+                    PackageId = request.PackageId.Value,
+                    Amount = request.Amount,
+                    RoiPercentage = request.Package.RoiPercentage,
+                    RoiDurationDays = request.Package.RoiDurationDays,
+                    DaysPaid = 0,
+                    IsActive = true,
+                    ActivationDate = DateTime.UtcNow
+                };
+                _context.UserPackages.Add(userPackage);
+            }
 
             _context.Entry(request).State = EntityState.Modified;
             _context.Entry(user).State = EntityState.Modified;
@@ -283,31 +313,77 @@ namespace MLM_Level.Controllers
                 TempData["ErrorMessage"] = "Commissions distribution failed: " + ex.Message;
             }
 
+            // Fire and forget Activation Email
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    string emailBody = $@"
+                        <h2>Congratulations {user.FullName}!</h2>
+                        <p>Your Elite MLM account (<strong>{user.Username}</strong>) has been successfully activated.</p>
+                        <p>Your package <strong>{request.Package?.Name}</strong> is now active, and you are eligible to earn commissions from your downline.</p>
+                        <br/>
+                        <p>Login to your dashboard to view your network and earnings!</p>
+                    ";
+                    await _emailService.SendEmailAsync(user.Email, "Account Activated - Elite MLM", emailBody);
+                }
+                catch { /* ignore SMTP errors */ }
+            });
+
             TempData["SuccessMessage"] = $"Account '{user.Username}' activated, and commissions have been distributed up to 5 levels!";
-            return RedirectToAction("PendingRequests");
+            return RedirectToAction("Withdrawals");
         }
 
         // POST: Admin/RejectActivation/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RejectActivation(int id)
+        public async Task<IActionResult> RejectActivation(int id, string rejectionReason)
         {
-            var request = await _context.ActivationRequests.FindAsync(id);
+            if (string.IsNullOrWhiteSpace(rejectionReason))
+            {
+                TempData["ErrorMessage"] = "Rejection reason is required.";
+                return RedirectToAction("PendingActivations");
+            }
+
+            var request = await _context.ActivationRequests
+                .Include(r => r.User)
+                .Include(r => r.Package)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
             if (request == null) return NotFound();
             if (request.Status != "Pending")
             {
                 TempData["ErrorMessage"] = "Request is already processed.";
-                return RedirectToAction("PendingRequests");
+                return RedirectToAction("PendingActivations");
             }
 
             request.Status = "Rejected";
             request.ApprovedDate = DateTime.UtcNow;
+            request.RejectionReason = rejectionReason.Trim();
 
             _context.Entry(request).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Activation request rejected.";
-            return RedirectToAction("PendingRequests");
+            var user = request.User;
+            var packageName = request.Package?.Name ?? "Package";
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    string emailBody = $@"
+                        <h2>Activation Request Declined</h2>
+                        <p>Hi {user.FullName},</p>
+                        <p>Your activation request for <strong>{packageName}</strong> (UTR: <strong>{request.TransactionReference}</strong>) was declined.</p>
+                        <p><strong>Reason:</strong> {request.RejectionReason}</p>
+                        <p>Please review the reason, submit a corrected payment proof if needed, and try again from your Packages page.</p>
+                    ";
+                    await _emailService.SendEmailAsync(user.Email, "Activation Declined - Elite MLM", emailBody);
+                }
+                catch { /* ignore SMTP errors */ }
+            });
+
+            TempData["SuccessMessage"] = "Activation request rejected. Member has been notified.";
+            return RedirectToAction("PendingActivations");
         }
 
         // POST: Admin/ApproveWithdrawal/5
@@ -320,7 +396,7 @@ namespace MLM_Level.Controllers
             if (request.Status != "Pending")
             {
                 TempData["ErrorMessage"] = "Request is already processed.";
-                return RedirectToAction("PendingRequests");
+                return RedirectToAction("Withdrawals");
             }
 
             request.Status = "Approved";
@@ -329,15 +405,43 @@ namespace MLM_Level.Controllers
             _context.Entry(request).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 
+            // Fetch user for email
+            var user = await _context.Users.FindAsync(request.UserId);
+            if (user != null)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        string emailBody = $@"
+                            <h2>Withdrawal Request Approved!</h2>
+                            <p>Hi {user.FullName},</p>
+                            <p>Your withdrawal request of <strong>₹{request.Amount:N2}</strong> has been approved and processed.</p>
+                            <p>The amount (after applicable deductions) should reflect in your bank account shortly.</p>
+                            <br/>
+                            <p>Thank you for being a part of Elite MLM!</p>
+                        ";
+                        await _emailService.SendEmailAsync(user.Email, "Withdrawal Approved - Elite MLM", emailBody);
+                    }
+                    catch { /* ignore SMTP errors */ }
+                });
+            }
+
             TempData["SuccessMessage"] = "Withdrawal request approved and processed.";
-            return RedirectToAction("PendingRequests");
+            return RedirectToAction("Withdrawals");
         }
 
         // POST: Admin/RejectWithdrawal/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RejectWithdrawal(int id)
+        public async Task<IActionResult> RejectWithdrawal(int id, string rejectionReason)
         {
+            if (string.IsNullOrWhiteSpace(rejectionReason))
+            {
+                TempData["ErrorMessage"] = "Rejection reason is required.";
+                return RedirectToAction("Withdrawals");
+            }
+
             var request = await _context.WithdrawalRequests
                 .Include(w => w.User)
                 .FirstOrDefaultAsync(w => w.Id == id);
@@ -346,20 +450,37 @@ namespace MLM_Level.Controllers
             if (request.Status != "Pending")
             {
                 TempData["ErrorMessage"] = "Request is already processed.";
-                return RedirectToAction("PendingRequests");
+                return RedirectToAction("Withdrawals");
             }
 
-            // Refund user wallet
             request.User.WalletBalance += request.Amount;
             request.Status = "Rejected";
             request.ProcessedDate = DateTime.UtcNow;
+            request.RejectionReason = rejectionReason.Trim();
 
             _context.Entry(request).State = EntityState.Modified;
             _context.Entry(request.User).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Withdrawal request rejected. Funds have been refunded to member's wallet.";
-            return RedirectToAction("PendingRequests");
+            var user = request.User;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    string emailBody = $@"
+                        <h2>Withdrawal Request Declined</h2>
+                        <p>Hi {user.FullName},</p>
+                        <p>Your withdrawal request of <strong>₹{request.Amount:N2}</strong> was declined and the amount has been refunded to your wallet.</p>
+                        <p><strong>Reason:</strong> {request.RejectionReason}</p>
+                        <p>You can review your wallet and submit a new request if needed.</p>
+                    ";
+                    await _emailService.SendEmailAsync(user.Email, "Withdrawal Declined - Elite MLM", emailBody);
+                }
+                catch { /* ignore SMTP errors */ }
+            });
+
+            TempData["SuccessMessage"] = "Withdrawal request rejected. Funds refunded and member notified.";
+            return RedirectToAction("Withdrawals");
         }
 
         // GET: Admin/Commissions
@@ -587,7 +708,7 @@ namespace MLM_Level.Controllers
 
         // GET: Admin/Settings
         [HttpGet]
-        public async Task<IActionResult> Settings()
+        public async Task<IActionResult> Settings(string activeTab = "general")
         {
             var settings = await _context.MlmSettings.FirstOrDefaultAsync();
             if (settings == null)
@@ -596,19 +717,28 @@ namespace MLM_Level.Controllers
                 _context.MlmSettings.Add(settings);
                 await _context.SaveChangesAsync();
             }
-            return View(settings);
+
+            var adminUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == User.Identity!.Name);
+            
+            var viewModel = new AdminSettingsViewModel
+            {
+                Settings = settings,
+                AdminFullName = adminUser?.FullName ?? "",
+                AdminEmail = adminUser?.Email ?? "",
+                AdminUsername = adminUser?.Username ?? "",
+                ActiveTab = activeTab
+            };
+
+            return View(viewModel);
         }
 
         // POST: Admin/Settings
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Settings(MlmSetting model)
+        public async Task<IActionResult> Settings(AdminSettingsViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
+            var adminUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == User.Identity!.Name);
+            
             var settings = await _context.MlmSettings.FirstOrDefaultAsync();
             if (settings == null)
             {
@@ -616,21 +746,69 @@ namespace MLM_Level.Controllers
                 _context.MlmSettings.Add(settings);
             }
 
-            settings.Level1Commission = model.Level1Commission;
-            settings.Level2Commission = model.Level2Commission;
-            settings.Level3Commission = model.Level3Commission;
-            settings.Level4Commission = model.Level4Commission;
-            settings.Level5Commission = model.Level5Commission;
-            settings.MinWithdrawalLimit = model.MinWithdrawalLimit;
-            settings.WithdrawalFeePercent = model.WithdrawalFeePercent;
-            settings.CompanyQrCodeUrl = model.CompanyQrCodeUrl ?? string.Empty;
-            settings.BankDetails = model.BankDetails ?? string.Empty;
+            // General Settings
+            settings.SiteName = model.Settings.SiteName ?? "Elite MLM Engine";
+            settings.SupportEmail = model.Settings.SupportEmail ?? "support@mlm.com";
+            settings.MaintenanceMode = model.Settings.MaintenanceMode ?? "Online";
+
+            // MLM & Payouts
+            settings.Level1Commission = model.Settings.Level1Commission;
+            settings.Level2Commission = model.Settings.Level2Commission;
+            settings.Level3Commission = model.Settings.Level3Commission;
+            settings.Level4Commission = model.Settings.Level4Commission;
+            settings.Level5Commission = model.Settings.Level5Commission;
+            
+            // Store Charges
+            settings.MinWithdrawalLimit = model.Settings.MinWithdrawalLimit;
+            settings.WithdrawalFeePercent = model.Settings.WithdrawalFeePercent;
+            settings.TdsPercent = model.Settings.TdsPercent;
+            settings.AdminChargePercent = model.Settings.AdminChargePercent;
+            
+            // Integrations
+            settings.CompanyQrCodeUrl = model.Settings.CompanyQrCodeUrl ?? string.Empty;
+            settings.BankDetails = model.Settings.BankDetails ?? string.Empty;
+
+            settings.SmtpHost = model.Settings.SmtpHost ?? string.Empty;
+            settings.SmtpPort = model.Settings.SmtpPort;
+            settings.SmtpUsername = model.Settings.SmtpUsername ?? string.Empty;
+            settings.SmtpPassword = model.Settings.SmtpPassword ?? string.Empty;
+            settings.SmtpEnableSsl = model.Settings.SmtpEnableSsl;
+
+            settings.SmsApiUrl = model.Settings.SmsApiUrl ?? string.Empty;
+            settings.SmsApiKey = model.Settings.SmsApiKey ?? string.Empty;
+            settings.SmsSenderId = model.Settings.SmsSenderId ?? string.Empty;
+
+            settings.WhatsAppAccessToken = model.Settings.WhatsAppAccessToken ?? string.Empty;
+            settings.WhatsAppInstanceId = model.Settings.WhatsAppInstanceId ?? string.Empty;
+            settings.WhatsAppProvider = model.Settings.WhatsAppProvider ?? string.Empty;
 
             _context.Entry(settings).State = EntityState.Modified;
+
+            // Admin Profile Update
+            if (model.ActiveTab == "adminProfile" && adminUser != null)
+            {
+                adminUser.FullName = model.AdminFullName ?? adminUser.FullName;
+                adminUser.Email = model.AdminEmail ?? adminUser.Email;
+                _context.Entry(adminUser).State = EntityState.Modified;
+            }
+
+            // Password Update
+            if (model.ActiveTab == "password" && adminUser != null)
+            {
+                if (!string.IsNullOrEmpty(model.NewPassword) && model.NewPassword == model.ConfirmPassword)
+                {
+                    // Check current password logic if necessary. Here we just update.
+                    var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
+                    adminUser.PasswordHash = hasher.HashPassword(adminUser, model.NewPassword);
+                    _context.Entry(adminUser).State = EntityState.Modified;
+                }
+            }
+
             await _context.SaveChangesAsync();
+            _maintenance.InvalidateCache();
 
             TempData["SuccessMessage"] = "System settings updated successfully.";
-            return RedirectToAction("Settings");
+            return RedirectToAction("Settings", new { activeTab = model.ActiveTab });
         }
 
         // GET: Admin/Packages
@@ -644,7 +822,7 @@ namespace MLM_Level.Controllers
         // POST: Admin/CreatePackage
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreatePackage(string name, decimal price, string description)
+        public async Task<IActionResult> CreatePackage(string name, decimal price, string description, decimal roiPercentage, int roiDurationDays)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -663,6 +841,8 @@ namespace MLM_Level.Controllers
                 Name = name.Trim(),
                 Price = price,
                 Description = description?.Trim() ?? string.Empty,
+                RoiPercentage = roiPercentage,
+                RoiDurationDays = roiDurationDays,
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow
             };
@@ -671,6 +851,39 @@ namespace MLM_Level.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"Package '{package.Name}' created successfully.";
+            return RedirectToAction("Packages");
+        }
+
+        // POST: Admin/EditPackage
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditPackage(int id, string name, decimal price, string description, decimal roiPercentage, int roiDurationDays)
+        {
+            var package = await _context.Packages.FindAsync(id);
+            if (package == null) return NotFound();
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                TempData["ErrorMessage"] = "Package name is required.";
+                return RedirectToAction("Packages");
+            }
+
+            if (price <= 0)
+            {
+                TempData["ErrorMessage"] = "Price must be greater than zero.";
+                return RedirectToAction("Packages");
+            }
+
+            package.Name = name.Trim();
+            package.Price = price;
+            package.Description = description?.Trim() ?? string.Empty;
+            package.RoiPercentage = roiPercentage;
+            package.RoiDurationDays = roiDurationDays;
+
+            _context.Entry(package).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Package '{package.Name}' updated successfully.";
             return RedirectToAction("Packages");
         }
 
@@ -754,5 +967,249 @@ namespace MLM_Level.Controllers
             TempData["SuccessMessage"] = "Announcement deleted successfully.";
             return RedirectToAction("Announcements");
         }
+
+        // GET: Admin/Rewards
+        [HttpGet]
+        public async Task<IActionResult> Rewards()
+        {
+            var rewards = await _context.MemberRewards
+                .Include(r => r.User)
+                .OrderByDescending(r => r.CreatedDate)
+                .ToListAsync();
+            return View(rewards);
+        }
+
+        // POST: Admin/CreateReward
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateReward(
+            string title,
+            string description,
+            decimal amount,
+            string rewardType,
+            string? username)
+        {
+            if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(description))
+            {
+                TempData["ErrorMessage"] = "Title and description are required.";
+                return RedirectToAction(nameof(Rewards));
+            }
+
+            int? userId = null;
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                var member = await _context.Users.FirstOrDefaultAsync(u =>
+                    u.Username == username.Trim() && !u.IsAdmin);
+                if (member == null)
+                {
+                    TempData["ErrorMessage"] = $"Member username '{username.Trim()}' not found.";
+                    return RedirectToAction(nameof(Rewards));
+                }
+                userId = member.Id;
+            }
+
+            var reward = new MemberReward
+            {
+                UserId = userId,
+                Title = title.Trim(),
+                Description = description.Trim(),
+                Amount = amount < 0 ? 0 : amount,
+                RewardType = string.IsNullOrWhiteSpace(rewardType) ? "Bonus" : rewardType.Trim(),
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _context.MemberRewards.Add(reward);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = userId.HasValue
+                ? $"Reward published for @{username!.Trim()}."
+                : "Reward published for all members.";
+            return RedirectToAction(nameof(Rewards));
+        }
+
+        // POST: Admin/ToggleReward
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleReward(int id)
+        {
+            var reward = await _context.MemberRewards.FindAsync(id);
+            if (reward == null) return NotFound();
+
+            reward.IsActive = !reward.IsActive;
+            _context.Entry(reward).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Reward is now {(reward.IsActive ? "visible" : "hidden")} to members.";
+            return RedirectToAction(nameof(Rewards));
+        }
+
+        // POST: Admin/DeleteReward
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteReward(int id)
+        {
+            var reward = await _context.MemberRewards.FindAsync(id);
+            if (reward == null) return NotFound();
+
+            _context.MemberRewards.Remove(reward);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Reward deleted.";
+            return RedirectToAction(nameof(Rewards));
+        }
+
+        // POST: Admin/TestEmail
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TestEmail(string testEmail)
+        {
+            if (string.IsNullOrWhiteSpace(testEmail))
+            {
+                TempData["ErrorMessage"] = "Recipient email is required.";
+                return RedirectToAction("Settings", new { activeTab = "smtp" });
+            }
+
+            try
+            {
+                await _emailService.SendEmailAsync(testEmail, "Test Email from Elite MLM System", 
+                    "<h3>Success!</h3><p>Your SMTP settings are configured correctly and the email system is working.</p>");
+                TempData["SuccessMessage"] = $"Test email sent successfully to {testEmail}.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Failed to send test email: {ex.Message}";
+            }
+
+            return RedirectToAction("Settings", new { activeTab = "smtp" });
+        }
+        // GET: Admin/RoiManagement
+        [HttpGet]
+        public async Task<IActionResult> RoiManagement()
+        {
+            var nowIst = DateTime.UtcNow.AddHours(5).AddMinutes(30);
+            var startOfTodayIst = nowIst.Date;
+            var startOfTodayUtc = startOfTodayIst.AddHours(-5).AddMinutes(-30);
+
+            var activeUserPackages = await _context.UserPackages
+                .Include(up => up.User)
+                .Include(up => up.Package)
+                .Where(up => up.IsActive && up.DaysPaid < up.RoiDurationDays && (up.LastPaidDate == null || up.LastPaidDate < startOfTodayUtc))
+                .OrderBy(up => up.ActivationDate)
+                .ToListAsync();
+
+            return View(activeUserPackages);
+        }
+
+        // POST: Admin/DistributeRoi
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DistributeRoi()
+        {
+            int processedCount = 0;
+            decimal totalDistributed = 0;
+
+            try
+            {
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = "EXEC sp_DistributeDailyROI";
+                    command.CommandType = System.Data.CommandType.Text;
+                    
+                    if (command.Connection.State != System.Data.ConnectionState.Open)
+                        await command.Connection.OpenAsync();
+
+                    using (var result = await command.ExecuteReaderAsync())
+                    {
+                        if (await result.ReadAsync())
+                        {
+                            processedCount = result.GetInt32(0);
+                            totalDistributed = result.GetDecimal(1);
+                        }
+                    }
+                }
+
+                if (processedCount > 0)
+                {
+                    TempData["SuccessMessage"] = $"Successfully distributed ROI to {processedCount} users. Total Amount: ₹{totalDistributed:N2}.";
+                }
+                else
+                {
+                    TempData["InfoMessage"] = "No pending ROI payouts found for today.";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Failed to distribute ROI: " + ex.Message;
+            }
+
+            return RedirectToAction("RoiManagement");
+        }
+        // KYC Actions
+        [HttpGet]
+        public async Task<IActionResult> KycApprovals()
+        {
+            var kycList = await _context.KycDetails
+                .Include(k => k.User)
+                .OrderByDescending(k => k.CreatedDate)
+                .ToListAsync();
+            return View(kycList);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateKycStatus(int id, string status, string rejectionReason)
+        {
+            var kyc = await _context.KycDetails.FindAsync(id);
+            if (kyc == null) return NotFound();
+
+            kyc.Status = status;
+            if (status == "Rejected")
+            {
+                kyc.RejectionReason = rejectionReason;
+            }
+            kyc.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"KYC status updated to {status} successfully.";
+            return RedirectToAction("KycApprovals");
+        }
+        [HttpGet]
+        public async Task<IActionResult> ExportPendingWithdrawalsCsv()
+        {
+            var pendingWithdrawals = await _context.WithdrawalRequests
+                .Include(w => w.User)
+                .Where(w => w.Status == "Pending")
+                .OrderBy(w => w.CreatedDate)
+                .ToListAsync();
+
+            var settings = await _context.MlmSettings.FirstOrDefaultAsync() ?? new MlmSetting();
+            
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("Id,User Name,Username,Requested Amount,Processing Fee (%),Net Amount,Bank Account Details,Request Date");
+
+            foreach (var req in pendingWithdrawals)
+            {
+                var feeAmount = req.Amount * (settings.WithdrawalFeePercent / 100);
+                var netAmount = req.Amount - feeAmount;
+                
+                // Fetch bank details string (which we don't have distinct cols for, but they should be in KycDetails or Profile). 
+                // Let's pull from KYC if available
+                var kyc = await _context.KycDetails.FirstOrDefaultAsync(k => k.UserId == req.UserId && k.Status == "Approved");
+                string bankInfo = kyc != null && !string.IsNullOrEmpty(kyc.BankAccountNumber)
+                    ? $"{kyc.BankAccountHolderName} | {kyc.BankName} | A/c {kyc.BankAccountNumber} | IFSC {kyc.BankIfsc}"
+                    : (kyc != null ? $"Passbook: {kyc.BankPassbookUrl}" : "No Verified Bank Info");
+
+                // Escape commas in strings
+                string userName = req.User.FullName.Replace(",", " ");
+                string username = req.User.Username.Replace(",", " ");
+                
+                csv.AppendLine($"{req.Id},{userName},{username},{req.Amount:F2},{settings.WithdrawalFeePercent:F2},{netAmount:F2},{bankInfo},{req.CreatedDate:yyyy-MM-dd HH:mm:ss}");
+            }
+
+            return File(System.Text.Encoding.UTF8.GetBytes(csv.ToString()), "text/csv", $"PendingWithdrawals_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+        }
     }
 }
+

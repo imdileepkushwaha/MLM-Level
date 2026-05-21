@@ -1,0 +1,73 @@
+@model IEnumerable<MLM_Level.Models.User>
+@{
+    ViewData["Title"] = "My Direct Referrals";
+    var list = Model?.ToList() ?? new List<MLM_Level.Models.User>();
+}
+
+@await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
+{
+    Title = "My Direct Referrals",
+    Subtitle = "Members you personally sponsored into the network",
+    Icon = "bi-person-check-fill",
+    ThemeClass = "member-theme-cyan",
+    Badge = $"{list.Count} direct"
+})
+
+<div class="glass-card admin-table-card" data-admin-table data-page-size="10" data-search-placeholder="Search direct members..." data-count-label="members">
+    <div class="admin-table-header flex-wrap gap-2">
+        <h5 class="member-panel-title mb-0"><i class="bi bi-people text-primary me-2"></i>Direct team</h5>
+        <span class="admin-record-badge" data-admin-table-count>@list.Count members</span>
+        <div class="admin-search-wrap admin-table-search-wrap ms-lg-auto" style="min-width:220px;max-width:320px;">
+            <i class="bi bi-search admin-search-icon"></i>
+            <input type="search" data-admin-table-search class="form-control admin-search-input" placeholder="Search members..." autocomplete="off" />
+        </div>
+    </div>
+    @if (list.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Username</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in list)
+                    {
+                        var searchText = $"{user.Username} {user.FullName} {user.Email}".ToLowerInvariant();
+                        <tr data-search="@searchText">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="admin-avatar">@(user.FullName?.FirstOrDefault() ?? 'U')</div>
+                                    <div>
+                                        <div class="fw-bold text-dark small">@user.FullName</div>
+                                        <div class="admin-subtext">@user.Email</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="fw-semibold text-dark small">@@@user.Username</span></td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="admin-badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="admin-badge-pending">Inactive</span>
+                                }
+                            </td>
+                            <td class="admin-subtext">@user.JoinedDate.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        @await Html.PartialAsync("_AdminNoResults")
+    }
+</div>

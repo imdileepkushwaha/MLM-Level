@@ -1,0 +1,129 @@
+@model IEnumerable<MLM_Level.Models.CommissionTran>
+@{
+    ViewData["Title"] = "Income Transactions";
+    var ledger = Model?.ToList() ?? new List<MLM_Level.Models.CommissionTran>();
+    var totalIncome = (decimal)(ViewBag.TotalIncome ?? 0m);
+    var creditTotal = (decimal)(ViewBag.CreditTotal ?? 0m);
+    var debitTotal = (decimal)(ViewBag.DebitTotal ?? 0m);
+}
+
+@await Html.PartialAsync("_MemberPageHeader", new MemberPageHeaderViewModel
+{
+    Title = "Income Transactions",
+    Subtitle = "Complete history of credits and debits to your wallet",
+    Icon = "bi-receipt-cutoff",
+    ThemeClass = "member-theme-cyan",
+    Badge = $"₹{totalIncome:N0} net"
+})
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-4 col-md-6">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Net balance change</p>
+                    <p class="member-stat-value">₹@totalIncome.ToString("N2")</p>
+                    <span class="text-muted small">@ledger.Count transactions</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-blue"><i class="bi bi-journal-text"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Total credits</p>
+                    <p class="member-stat-value text-success">+₹@creditTotal.ToString("N2")</p>
+                    <span class="wallet-chip wallet-chip-success">Income received</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-green"><i class="bi bi-arrow-down-circle"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-12">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Total debits</p>
+                    <p class="member-stat-value text-danger">-₹@debitTotal.ToString("N2")</p>
+                    <span class="text-muted small">Withdrawals, P2P, fees</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-amber"><i class="bi bi-arrow-up-circle"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card admin-table-card member-panel-card" id="printArea" data-admin-table data-page-size="15" data-search-placeholder="Search transactions..." data-count-label="transactions">
+    <div class="admin-table-header flex-wrap gap-2">
+        <h5 class="member-panel-title mb-0"><i class="bi bi-receipt-cutoff text-primary me-2"></i>Transaction ledger</h5>
+        <span class="admin-record-badge" data-admin-table-count>@ledger.Count transactions</span>
+        <button type="button" onclick="window.print()" class="btn btn-sm btn-light border rounded-pill px-3 d-print-none ms-lg-auto">
+            <i class="bi bi-printer me-1"></i>Print
+        </button>
+        <div class="admin-search-wrap admin-table-search-wrap" style="min-width:220px;max-width:320px;">
+            <i class="bi bi-search admin-search-icon"></i>
+            <input type="search" data-admin-table-search class="form-control admin-search-input" placeholder="Search ledger..." autocomplete="off" />
+        </div>
+    </div>
+
+    <div class="d-none d-print-block px-4 pt-3 border-bottom">
+        <h3 class="fw-bold text-dark mb-1">ELITE MLM PLATFORM</h3>
+        <p class="text-muted small mb-0">Income transaction statement · @DateTime.UtcNow.ToString("dd MMM yyyy HH:mm") UTC</p>
+    </div>
+
+    @if (ledger.Any())
+    {
+        <div class="admin-table-scroll">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Source</th>
+                        <th>Type</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tx in ledger)
+                    {
+                        var fromName = tx.FromUser?.FullName ?? "System";
+                        var fromUser = tx.FromUser?.Username ?? "system";
+                        var searchText = $"{tx.Description} {fromUser} {fromName} {tx.Level} {tx.Amount}".ToLowerInvariant();
+                        var isCredit = tx.Amount > 0;
+                        <tr data-search="@searchText">
+                            <td>
+                                <div class="fw-semibold text-dark small">@tx.Timestamp.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                <div class="admin-subtext">@tx.Timestamp.ToLocalTime().ToString("hh:mm tt")</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark small text-print-dark">@tx.Description</div>
+                                <div class="admin-subtext">@fromName (@fromUser)</div>
+                            </td>
+                            <td>
+                                @if (tx.Level > 0)
+                                {
+                                    <span class="admin-badge-type admin-type-commission">Level @tx.Level</span>
+                                }
+                                else
+                                {
+                                    <span class="admin-badge-type admin-type-p2p">P2P</span>
+                                }
+                            </td>
+                            <td class="text-end fw-bold @(isCredit ? "text-success" : "text-danger")">
+                                @(isCredit ? "+" : "-")₹@Math.Abs(tx.Amount).ToString("N2")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="p-2">
+            @await Html.PartialAsync("~/Views/Shared/_AdminNoResults.cshtml")
+        </div>
+    }
+</div>

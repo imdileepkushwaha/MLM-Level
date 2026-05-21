@@ -1,0 +1,68 @@
+@inject MLM_Level.Services.IAdminNotificationService AdminNotificationService
+@{
+    var Model = await AdminNotificationService.GetNotificationsAsync();
+    string TimeAgo(DateTime utc)
+    {
+        var span = DateTime.UtcNow - utc;
+        if (span.TotalMinutes < 1) return "Just now";
+        if (span.TotalHours < 1) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalDays < 1) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+        return utc.ToLocalTime().ToString("dd MMM");
+    }
+}
+<div class="dropdown topbar-notifications-dropdown">
+    <button class="topbar-icon-btn position-relative" type="button" id="adminNotificationsBtn"
+            data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+            aria-label="Notifications@(Model.TotalCount > 0 ? $" ({Model.TotalCount} pending)" : "")">
+        <i class="bi bi-bell"></i>
+        @if (Model.TotalCount > 0)
+        {
+            <span class="topbar-notification-badge">@(Model.TotalCount > 9 ? "9+" : Model.TotalCount.ToString())</span>
+        }
+    </button>
+    <div class="dropdown-menu dropdown-menu-end topbar-notifications-menu shadow border-0"
+         aria-labelledby="adminNotificationsBtn">
+        <div class="topbar-notifications-header">
+            <span class="fw-bold text-dark">Notifications</span>
+            @if (Model.TotalCount > 0)
+            {
+                <span class="topbar-notifications-count">@Model.TotalCount pending</span>
+            }
+        </div>
+        <div class="topbar-notifications-body">
+            @if (Model.Items.Any())
+            {
+                @foreach (var item in Model.Items)
+                {
+                    <a class="topbar-notification-item" asp-controller="@item.Controller" asp-action="@item.Action">
+                        <span class="topbar-notif-icon @item.IconClass" aria-hidden="true">
+                            <i class="bi @item.Icon"></i>
+                        </span>
+                        <span class="topbar-notif-content">
+                            <span class="topbar-notif-title">@item.Title</span>
+                            <span class="topbar-notif-desc">@item.Description</span>
+                        </span>
+                        <span class="topbar-notif-time">@TimeAgo(item.CreatedAt)</span>
+                    </a>
+                }
+            }
+            else
+            {
+                <div class="topbar-notifications-empty">
+                    <i class="bi bi-bell-slash"></i>
+                    <p class="mb-0 fw-semibold text-dark small">All caught up</p>
+                    <p class="mb-0 text-muted" style="font-size:0.78rem;">No pending actions right now.</p>
+                </div>
+            }
+        </div>
+        @if (Model.TotalCount > 0)
+        {
+            <div class="topbar-notifications-footer">
+                <a asp-controller="Admin" asp-action="Index" class="topbar-notifications-viewall">
+                    View dashboard <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        }
+    </div>
+</div>

@@ -1,83 +1,593 @@
 @model MLM_Level.Models.User
+@using Microsoft.EntityFrameworkCore
+@inject MLM_Level.Data.ApplicationDbContext DbContext
 @{
-    ViewData["Title"] = "My Account Profile";
+    ViewData["Title"] = "My Profile";
+    var fullName = Model.FullName ?? "User";
+    var initials = "";
+    if (!string.IsNullOrEmpty(fullName))
+    {
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length > 0)
+        {
+            initials += parts[0][0];
+            if (parts.Length > 1) initials += parts[1][0];
+        }
+    }
+    if (string.IsNullOrEmpty(initials)) initials = "U";
+
+    // Dynamic database queries
+    var directReferralsCount = DbContext.Users.Count(u => u.SponsorId == Model.Id);
+    var totalEarnings = DbContext.CommissionTrans.Where(t => t.UserId == Model.Id).Sum(t => (decimal?)t.Amount) ?? 0.00m;
+
+    // Fetch team stats
+    var teamIdParam = new Microsoft.Data.SqlClient.SqlParameter("@UserId", Model.Id);
+    var totalTeamParam = new Microsoft.Data.SqlClient.SqlParameter("@TotalTeam", System.Data.SqlDbType.Int) { Direction = System.Data.ParameterDirection.Output };
+    var activeTeamParam = new Microsoft.Data.SqlClient.SqlParameter("@ActiveTeam", System.Data.SqlDbType.Int) { Direction = System.Data.ParameterDirection.Output };
+    DbContext.Database.ExecuteSqlRaw("EXEC sp_GetTeamStats @UserId, @TotalTeam OUTPUT, @ActiveTeam OUTPUT", teamIdParam, totalTeamParam, activeTeamParam);
+    int totalTeamSize = (int)(totalTeamParam.Value != DBNull.Value ? totalTeamParam.Value : 0);
+    var kyc = DbContext.KycDetails.AsNoTracking().FirstOrDefault(k => k.UserId == Model.Id);
+    var kycApproved = kyc?.Status == "Approved";
 }
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="glass-card p-5">
-            <h3 class="text-white fw-bold mb-2">My Profile Settings</h3>
-            <p class="text-secondary mb-4">View account information, sponsors details, and update personal credentials.</p>
+<!-- Page Header & Breadcrumb -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="text-dark fw-bold mb-1">User Profile</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item"><a asp-controller="User" asp-action="Index" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a asp-controller="User" asp-action="Profile" class="text-decoration-none text-muted">User Management</a></li>
+                <li class="breadcrumb-item active text-primary" aria-current="page">User Profile</li>
+            </ol>
+        </nav>
+    </div>
+</div>
 
-            <div class="row g-4">
-                <!-- Profile Edit Form -->
-                <div class="col-md-6 border-end border-opacity-10 border-white">
-                    <h5 class="text-white fw-bold mb-3"><i class="bi bi-person-gear text-info me-2"></i>Update Personal Details</h5>
-                    
-                    <form asp-action="Profile" method="post">
-                        <div class="mb-3 form-group">
-                            <label>Username (Read-only)</label>
-                            <input class="form-control auth-glow-input" value="@Model.Username" readonly style="opacity: 0.6; cursor: not-allowed;" />
-                        </div>
+<div class="row g-4">
+    <!-- Left Column (Profile Header & Contact Info) -->
+    <div class="col-xl-4 col-lg-5">
+        <!-- Profile Main Card -->
+        <div class="glass-card p-0 overflow-hidden text-center mb-4">
+            <!-- Gradient Banner Background -->
+            <div class="profile-banner">
+                <button type="button" class="btn btn-sm text-white position-absolute top-0 end-0 m-3" style="background: rgba(255, 255, 255, 0.2); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Options">
+                    <i class="bi bi-three-dots"></i>
+                </button>
+            </div>
 
-                        <div class="mb-3 form-group">
-                            <label>Email Address (Read-only)</label>
-                            <input class="form-control auth-glow-input" value="@Model.Email" readonly style="opacity: 0.6; cursor: not-allowed;" />
-                        </div>
+            <!-- Avatar -->
+            <div class="profile-avatar-container">
+                <div class="profile-avatar-wrapper">
+                    @initials
+                </div>
+                <div class="profile-status-dot" title="Available"></div>
+            </div>
 
-                        <div class="mb-3 form-group">
-                            <label for="fullName">Full Name</label>
-                            <input type="text" id="fullName" name="fullName" class="form-control auth-glow-input" value="@Model.FullName" required />
-                        </div>
+            <!-- Details -->
+            <div class="px-4 pb-4">
+                <h4 class="text-dark fw-bold mb-1 mt-2">
+                    @Model.FullName
+                    <i class="bi bi-patch-check-fill text-primary ms-1" style="font-size: 1rem;" title="Verified Profile"></i>
+                </h4>
+                <p class="text-muted small mb-2">Member Portal Active</p>
+                <p class="text-secondary small mb-3">@("@" + Model.Username)</p>
 
-                        <div class="mb-4 form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="text" id="phone" name="phone" class="form-control auth-glow-input" value="@Model.Phone" />
-                        </div>
+                <!-- Status pill -->
+                <span class="badge mb-4" style="background-color: @(Model.IsActive ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)"); color: @(Model.IsActive ? "#10b981" : "#ef4444"); border-radius: 20px; padding: 0.4rem 0.8rem; font-size: 0.75rem; font-weight: 600;">
+                    <span style="font-size: 0.6rem; vertical-align: middle; margin-right: 4px;">●</span> @(Model.IsActive ? "Active" : "Inactive")
+                </span>
 
-                        <button type="submit" class="btn btn-cyber-cyan w-100 py-3">
-                            <i class="bi bi-save me-1"></i>Save Changes
-                        </button>
-                    </form>
+                <!-- XP/Referrals Progress Bar -->
+                <div class="border rounded-3 p-3 mb-4 text-start" style="background: #fafafc; border-color: var(--glass-border) !important;">
+                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem; font-weight: 700;">
+                        <span class="text-primary text-uppercase">Level Progress</span>
+                        <span class="text-muted">₹@Model.WalletBalance / ₹10,000 XP</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: @Math.Min(100, Math.Max(15, (int)(Model.WalletBalance * 100 / 10000)))%;" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
                 </div>
 
-                <!-- Sponsor Info & Meta -->
-                <div class="col-md-6">
-                    <h5 class="text-white fw-bold mb-3"><i class="bi bi-people-fill text-pink me-2"></i>Sponsor Information</h5>
-                    
-                    <div class="glass-card p-4 mb-4">
-                        @if (Model.Sponsor != null)
-                        {
-                            <div class="text-center py-2">
-                                <div class="stat-icon-box icon-box-cyan mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.4rem;">
-                                    <i class="bi bi-person-check"></i>
-                                </div>
-                                <h6 class="text-white fw-bold mb-1">Sponsor: @Model.Sponsor.Username</h6>
-                                <p class="text-secondary small mb-3">@Model.Sponsor.FullName</p>
-                                
-                                <div class="text-start border-top border-opacity-10 border-dark pt-3 small">
-                                    <div class="text-secondary mb-1">Email: <strong class="text-white">@Model.Sponsor.Email</strong></div>
-                                    <div class="text-secondary">Phone: <strong class="text-white">@Model.Sponsor.Phone</strong></div>
-                                </div>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="text-center py-4">
-                                <i class="bi bi-diagram-3-fill text-muted fs-3 mb-2 d-block"></i>
-                                <span class="text-secondary small">No sponsor. You are under root administration.</span>
-                            </div>
-                        }
-                    </div>
+                <!-- Actions -->
+                <div class="d-flex gap-2">
+                    <button class="btn btn-cyber-cyan w-50 py-2" style="border-radius: 10px; font-weight: 600;" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                        <i class="bi bi-key-fill me-1"></i> Password
+                    </button>
+                    <button class="btn btn-light w-50 py-2 border" style="border-radius: 10px; font-weight: 600; background: #ffffff;" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        <i class="bi bi-pencil-square me-1"></i> Edit
+                    </button>
+                </div>
 
-                    <h5 class="text-white fw-bold mb-3"><i class="bi bi-meta text-info me-2"></i>Account Metadata</h5>
-                    <div class="glass-card p-3 bg-opacity-10 bg-info border-info border-opacity-10 small text-secondary">
-                        <div class="mb-2">Registration: <strong class="text-white">@Model.JoinedDate.ToString("dd MMM yyyy hh:mm tt")</strong></div>
-                        <div class="mb-2">Referral Code: <strong class="text-white">@Model.ReferralCode</strong></div>
-                        <div>Level Tree Parent: <strong class="text-white">@(Model.Parent?.Username ?? "Root")</strong></div>
+                <!-- Socials -->
+                <div class="d-flex justify-content-center gap-3 mt-4">
+                    <a href="#" class="profile-social-btn"><i class="bi bi-github"></i></a>
+                    <a href="#" class="profile-social-btn"><i class="bi bi-linkedin"></i></a>
+                    <a href="#" class="profile-social-btn"><i class="bi bi-twitter-x"></i></a>
+                    <a href="#" class="profile-social-btn" onclick="copyReferralLink('@Model.ReferralCode')"><i class="bi bi-link-45deg"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information Card -->
+        <div class="glass-card p-4">
+            <h5 class="text-dark fw-bold mb-4">Contact Information</h5>
+            
+            <div class="contact-info-list">
+                <div class="contact-info-item">
+                    <div class="contact-icon-box contact-icon-lavender">
+                        <i class="bi bi-envelope"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">Email</div>
+                        <div class="text-dark fw-semibold text-truncate" style="font-size: 0.9rem;">@Model.Email</div>
+                    </div>
+                </div>
+
+                <div class="contact-info-item">
+                    <div class="contact-icon-box contact-icon-green">
+                        <i class="bi bi-telephone"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">Phone</div>
+                        <div class="text-dark fw-semibold" style="font-size: 0.9rem;">@(string.IsNullOrEmpty(Model.Phone) ? "Not provided" : Model.Phone)</div>
+                    </div>
+                </div>
+
+                <div class="contact-info-item">
+                    <div class="contact-icon-box contact-icon-orange">
+                        <i class="bi bi-link-45deg"></i>
+                    </div>
+                    <div class="overflow-hidden w-100" style="max-width: calc(100% - 48px);">
+                        <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">Referral Link</div>
+                        <div class="d-flex align-items-center justify-content-between text-primary fw-semibold text-truncate" style="font-size: 0.82rem; cursor: pointer;" onclick="copyReferralLink('@Model.ReferralCode')" title="Click to copy Referral Link">
+                            <span class="text-truncate me-2">@($"{Context.Request.Scheme}://{Context.Request.Host}/Account/Register?sponsorCode={Model.ReferralCode}")</span>
+                            <i class="bi bi-copy text-muted ms-auto" style="font-size: 0.85rem;" onmouseover="this.className='bi bi-copy text-primary'" onmouseout="this.className='bi bi-copy text-muted'"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-info-item">
+                    <div class="contact-icon-box contact-icon-purple">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">Timezone</div>
+                        <div class="text-dark fw-semibold" style="font-size: 0.9rem;">IST (UTC+5:30)</div>
+                    </div>
+                </div>
+
+                <div class="contact-info-item">
+                    <div class="contact-icon-box contact-icon-cyan">
+                        <i class="bi bi-briefcase"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">Department</div>
+                        <div class="text-dark fw-semibold" style="font-size: 0.9rem;">Product Development</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column (Stats, Timeline, Charts) -->
+    <div class="col-xl-8 col-lg-7">
+        <!-- Welcome Back Banner -->
+        <div class="glass-card p-4 mb-4 border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.04) 0%, rgba(168, 85, 247, 0.04) 100%);">
+            <div class="row align-items-center">
+                <div class="col-md-5">
+                    <div class="text-primary small text-uppercase fw-bold mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                        <i class="bi bi-stars text-warning me-1"></i> Welcome Back
+                    </div>
+                    <h3 class="text-dark fw-bold mb-2">Hi, @fullName!</h3>
+                    
+                </div>
+                <div class="col-md-7 mt-3 mt-md-0 d-flex justify-content-md-end gap-3 text-center">
+                    <div class="p-2 px-3 border rounded-3 bg-white d-flex align-items-center gap-2" style="border-color: var(--glass-border) !important;">
+                        <div class="contact-icon-box contact-icon-lavender" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.95rem;">
+                            <i class="bi bi-people-fill text-primary"></i>
+                        </div>
+                        <div class="text-start">
+                            <div class="text-primary fw-bold fs-5" style="line-height: 1.1;">@totalTeamSize</div>
+                            <div class="text-muted small" style="font-size: 0.65rem;">My Team</div>
+                        </div>
+                    </div>
+                    <div class="p-2 px-3 border rounded-3 bg-white d-flex align-items-center gap-2" style="border-color: var(--glass-border) !important;">
+                        <div class="contact-icon-box contact-icon-green" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.95rem;">
+                            <i class="bi bi-person-check-fill text-success"></i>
+                        </div>
+                        <div class="text-start">
+                            <div class="text-success fw-bold fs-5" style="line-height: 1.1;">@directReferralsCount</div>
+                            <div class="text-muted small" style="font-size: 0.65rem;">My Direct</div>
+                        </div>
+                    </div>
+                    <div class="p-2 px-3 border rounded-3 bg-white d-flex align-items-center gap-2" style="border-color: var(--glass-border) !important;">
+                        <div class="contact-icon-box contact-icon-pink" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.95rem;">
+                            <i class="bi bi-diagram-3-fill text-danger"></i>
+                        </div>
+                        <div class="text-start">
+                            <div class="text-danger fw-bold fs-5" style="line-height: 1.1;">@totalTeamSize</div>
+                            <div class="text-muted small" style="font-size: 0.65rem;">My Downline</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4 Mini Stat Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-md-4">
+                <div class="mini-grid-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="contact-icon-box contact-icon-lavender" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.95rem;">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <span class="trend-badge-up"><i class="bi bi-arrow-up"></i> Direct</span>
+                    </div>
+                    <h4 class="text-dark fw-bold mb-0">@directReferralsCount</h4>
+                    <span class="text-muted small" style="font-size: 0.72rem;">Referrals</span>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-md-4">
+                <div class="mini-grid-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="contact-icon-box contact-icon-green" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.95rem;">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <span class="trend-badge-up"><i class="bi bi-arrow-up"></i> Income</span>
+                    </div>
+                    <h4 class="text-dark fw-bold mb-0">₹@totalEarnings.ToString("N0")</h4>
+                    <span class="text-muted small" style="font-size: 0.72rem;">Total Earnings</span>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-md-4">
+                <div class="mini-grid-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="contact-icon-box contact-icon-orange" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.95rem;">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <span class="trend-badge-up"><i class="bi bi-arrow-up"></i> Balance</span>
+                    </div>
+                    <h4 class="text-dark fw-bold mb-0">₹@Model.WalletBalance.ToString("N0")</h4>
+                    <span class="text-muted small" style="font-size: 0.72rem;">Wallet Bal</span>
+                </div>
+            </div>
+
+            <!-- <div class="col-sm-6 col-md-3">
+                <div class="mini-grid-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="contact-icon-box contact-icon-pink" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.95rem;">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <span class="trend-badge-up text-uppercase" style="background-color: @(Model.IsActive ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)"); color: @(Model.IsActive ? "#10b981" : "#ef4444");">@((Model.IsActive ? "Active" : "Inactive"))</span>
+                    </div>
+                    <h4 class="text-dark fw-bold mb-0" style="font-size: 1.15rem; line-height: 1.6;">@((Model.IsActive ? "Activated" : "Not Active"))</h4>
+                    <span class="text-muted small" style="font-size: 0.72rem;">Account Status</span>
+                </div>
+            </div> -->
+        </div>
+
+        <!-- About Me & Weekly Productivity Grid -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="glass-card p-4 h-100">
+                    <h5 class="text-dark fw-bold mb-3">Sponsor Network Info</h5>
+                    <p class="text-secondary small mb-4">
+                        You are registered under a verified sponsor in the Elite MLM network hierarchy. Feel free to contact your sponsor for tips on team building and level rewards.
+                    </p>
+                    
+                    <div class="border-top border-light pt-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-circle avatar-lg avatar-color-@(Math.Abs((Model.Sponsor?.Username ?? "R").GetHashCode()) % 6)">
+                                @(Model.Sponsor != null ? Model.Sponsor.Username.Substring(0, Math.Min(2, Model.Sponsor.Username.Length)).ToUpper() : "R")
+                            </div>
+                            <div>
+                                <h6 class="text-dark fw-bold mb-0">Sponsor: @(Model.Sponsor?.FullName ?? "Root Administrator")</h6>
+                                <p class="text-muted small mb-0">Email: @(Model.Sponsor?.Email ?? "admin@elitemlm.com")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="glass-card p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="text-dark fw-bold mb-0">Weekly Productivity</h5>
+                        <span class="trend-badge-up"><i class="bi bi-arrow-up"></i> +18%</span>
+                    </div>
+                    
+                    <!-- Dynamic Line Chart SVG -->
+                    <div class="mt-3" style="height: 120px; position: relative;">
+                        <svg viewBox="0 0 500 150" style="width: 100%; height: 100%;">
+                            <defs>
+                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.2"/>
+                                    <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M 0,110 C 50,70 100,90 150,60 C 200,30 250,50 300,40 C 350,30 400,100 450,110 L 500,120" 
+                                  fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M 0,110 C 50,70 100,90 150,60 C 200,30 250,50 300,40 C 350,30 400,100 450,110 L 500,120 L 500,150 L 0,150 Z" 
+                                  fill="url(#chartGradient)"/>
+                        </svg>
+                        
+                        <div class="d-flex justify-content-between text-muted small mt-2" style="font-size: 0.65rem;">
+                            <span>Mon</span>
+                            <span>Tue</span>
+                            <span>Wed</span>
+                            <span>Thu</span>
+                            <span>Fri</span>
+                            <span>Sat</span>
+                            <span>Sun</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Links & Recent Activity -->
+        <div class="row g-4">
+            <!-- Quick Links -->
+            <div class="col-md-6">
+                <div class="glass-card p-4 h-100">
+                    <h5 class="text-dark fw-bold mb-4">Quick Links</h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <a asp-controller="User" asp-action="Packages" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-yellow">
+                                    <i class="bi bi-box-seam fs-5"></i>
+                                    <span>@(Model.IsActive ? "Active Member" : "Activate Account")</span>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-6">
+                            <a asp-controller="User" asp-action="Kyc" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-purple">
+                                    <i class="bi bi-shield-check fs-5"></i>
+                                    <span>@(kycApproved ? "KYC Verified" : "Complete KYC")</span>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-6">
+                            <a asp-controller="User" asp-action="MyDirect" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-green">
+                                    <i class="bi bi-person-check fs-5"></i>
+                                    <span>@directReferralsCount Direct</span>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-6">
+                            <a asp-controller="User" asp-action="MyDownline" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-pink">
+                                    <i class="bi bi-diagram-3 fs-5"></i>
+                                    <span>@totalTeamSize Team</span>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-6">
+                            <a asp-controller="User" asp-action="Wallet" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-blue">
+                                    <i class="bi bi-wallet2 fs-5"></i>
+                                    <span>₹@Model.WalletBalance.ToString("N0") Wallet</span>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-6">
+                            <a asp-controller="User" asp-action="IncomeTransactions" class="achievement-grid-link">
+                                <div class="achievement-grid-item achievement-lavender">
+                                    <i class="bi bi-receipt-cutoff fs-5"></i>
+                                    <span>Income Ledger</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Timeline -->
+            <div class="col-md-6">
+                <div class="glass-card p-4 h-100">
+                    <h5 class="text-dark fw-bold mb-4">Recent Activity</h5>
+                    
+                    <div class="activity-timeline">
+                        <div class="activity-timeline-item">
+                            <div class="text-dark fw-bold small">Registered on Elite Network</div>
+                            <span class="text-muted small" style="font-size: 0.72rem;">Joined: @Model.JoinedDate.ToString("dd MMM yyyy")</span>
+                        </div>
+
+                        <div class="activity-timeline-item activity-item-green">
+                            <div class="text-dark fw-bold small">Direct Referral Code Issued</div>
+                            <span class="text-muted small" style="font-size: 0.72rem;">Code: <strong class="text-primary">@Model.ReferralCode</strong></span>
+                        </div>
+
+                        <div class="activity-timeline-item activity-item-pink">
+                            <div class="text-dark fw-bold small">Default Placement Set</div>
+                            <span class="text-muted small" style="font-size: 0.72rem;">Tree Parent: @(Model.Parent?.Username ?? "Root Administrator")</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0 m-2">
+                <h5 class="modal-title fw-bold" id="editProfileModalLabel">Update Personal Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="Profile" method="post">
+                <div class="modal-body px-4">
+                    <p class="text-secondary small mb-4">Modify your profile details and click save changes.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Username (Read-only)</label>
+                        <input class="form-control" value="@Model.Username" readonly style="background-color: #f3f4f6; cursor: not-allowed; border-radius: 8px; font-size: 0.9rem;" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Email Address (Read-only)</label>
+                        <input class="form-control" value="@Model.Email" readonly style="background-color: #f3f4f6; cursor: not-allowed; border-radius: 8px; font-size: 0.9rem;" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fullNameInput" class="form-label small fw-bold">Full Name</label>
+                        <input type="text" id="fullNameInput" name="fullName" class="form-control" value="@Model.FullName" required style="border-radius: 8px; font-size: 0.9rem;" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="phoneInput" class="form-label small fw-bold">Phone Number</label>
+                        <input type="text" id="phoneInput" name="phone" class="form-control" value="@Model.Phone" style="border-radius: 8px; font-size: 0.9rem;" />
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal" style="border-radius: 8px; font-size: 0.9rem;">Cancel</button>
+                    <button type="submit" class="btn btn-cyber-cyan px-4" style="border-radius: 8px; font-size: 0.9rem;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px);">
+            <div class="modal-header border-bottom-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title text-dark fw-bold" id="changePasswordModalLabel"><i class="bi bi-key-fill text-primary me-2"></i>Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="changePasswordForm" onsubmit="submitChangePassword(event)">
+                <div class="modal-body px-4 py-3">
+                    <div id="changePasswordAlert" class="alert d-none small animate__animated animate__fadeIn" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label for="currentPassword" class="form-label small fw-bold">Current Password</label>
+                        <div class="position-relative">
+                            <input type="password" id="currentPassword" name="currentPassword" class="form-control pe-5" required style="border-radius: 8px; font-size: 0.9rem;" placeholder="••••••••" />
+                            <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y me-2 border-0 bg-transparent text-secondary py-0 px-2" onclick="togglePasswordVisibility(this)" style="z-index: 10;">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label small fw-bold">New Password</label>
+                        <div class="position-relative">
+                            <input type="password" id="newPassword" name="newPassword" class="form-control pe-5" required style="border-radius: 8px; font-size: 0.9rem;" placeholder="••••••••" />
+                            <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y me-2 border-0 bg-transparent text-secondary py-0 px-2" onclick="togglePasswordVisibility(this)" style="z-index: 10;">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label small fw-bold">Confirm New Password</label>
+                        <div class="position-relative">
+                            <input type="password" id="confirmPassword" name="confirmPassword" class="form-control pe-5" required style="border-radius: 8px; font-size: 0.9rem;" placeholder="••••••••" />
+                            <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y me-2 border-0 bg-transparent text-secondary py-0 px-2" onclick="togglePasswordVisibility(this)" style="z-index: 10;">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal" style="border-radius: 8px; font-size: 0.9rem;">Cancel</button>
+                    <button type="submit" id="btnSubmitPassword" class="btn btn-cyber-cyan px-4" style="border-radius: 8px; font-size: 0.9rem;">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyReferralLink(code) {
+            const link = window.location.origin + "/Account/Register?sponsorCode=" + code;
+            navigator.clipboard.writeText(link).then(() => {
+                alert("Referral registration link copied to clipboard:\n" + link);
+            }).catch(err => {
+                console.error("Failed to copy link: ", err);
+            });
+        }
+
+        function submitChangePassword(e) {
+            e.preventDefault();
+            const alertDiv = document.getElementById("changePasswordAlert");
+            const btn = document.getElementById("btnSubmitPassword");
+            const currentPassword = document.getElementById("currentPassword").value;
+            const newPassword = document.getElementById("newPassword").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+
+            if (newPassword !== confirmPassword) {
+                alertDiv.className = "alert alert-danger small";
+                alertDiv.textContent = "New passwords do not match.";
+                alertDiv.classList.remove("d-none");
+                return;
+            }
+
+            // Get verification token
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : "";
+
+            btn.disabled = true;
+            btn.textContent = "Updating...";
+            alertDiv.classList.add("d-none");
+
+            const formData = new FormData();
+            formData.append("currentPassword", currentPassword);
+            formData.append("newPassword", newPassword);
+            formData.append("confirmPassword", confirmPassword);
+            formData.append("__RequestVerificationToken", token);
+
+            fetch("/User/ChangePassword", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = "Update Password";
+                if (data.success) {
+                    alertDiv.className = "alert alert-success small";
+                    alertDiv.textContent = data.message;
+                    alertDiv.classList.remove("d-none");
+                    // Clear inputs
+                    document.getElementById("currentPassword").value = "";
+                    document.getElementById("newPassword").value = "";
+                    document.getElementById("confirmPassword").value = "";
+                    // Auto close modal after 1.5s
+                    setTimeout(() => {
+                        const modalEl = document.getElementById("changePasswordModal");
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                        alertDiv.classList.add("d-none");
+                    }, 1500);
+                } else {
+                    alertDiv.className = "alert alert-danger small";
+                    alertDiv.textContent = data.message;
+                    alertDiv.classList.remove("d-none");
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.textContent = "Update Password";
+                alertDiv.className = "alert alert-danger small";
+                alertDiv.textContent = "An error occurred. Please try again.";
+                alertDiv.classList.remove("d-none");
+            });
+        }
+    </script>
+}

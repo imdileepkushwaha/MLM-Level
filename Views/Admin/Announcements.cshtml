@@ -1,104 +1,418 @@
 @model List<MLM_Level.Models.Announcement>
 @{
-    ViewData["Title"] = "System Announcements & Notice Board";
+    ViewData["Title"] = "Announcements & Notice Board";
+    var liveCount = Model.Count(a => a.IsActive);
+    var hiddenCount = Model.Count(a => !a.IsActive);
+    var lastPosted = Model.Any() ? Model.Max(a => a.CreatedDate) : (DateTime?)null;
 }
 
-<div class="row g-4 mb-4">
-    <!-- Info -->
-    <div class="col-lg-7">
-        <div class="glass-card p-4 h-100">
-            <h4 class="text-white fw-bold mb-2">Notice Board & News Announcements</h4>
-            <p class="text-secondary mb-0">Publish critical network updates, promotional notifications, and alerts directly to member dashboards.</p>
+@functions {
+    string TimeAgo(DateTime date)
+    {
+        var span = DateTime.UtcNow - date;
+        if (span.TotalMinutes < 1) return "Just now";
+        if (span.TotalHours < 1) return $"{(int)span.TotalMinutes} min ago";
+        if (span.TotalDays < 1) return $"{(int)span.TotalHours} hr ago";
+        if (span.TotalDays < 30) return $"{(int)span.TotalDays} days ago";
+        return date.ToString("dd MMM yyyy");
+    }
+}
+
+<div class="admin-page-header admin-theme-amber mb-4">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-megaphone-fill"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Notice Board</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Publish updates and alerts — members see live notices on their dashboard</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <button type="button" class="btn admin-btn-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#createAnnModal" id="btnOpenCompose">
+                <i class="bi bi-plus-lg me-2"></i>New Announcement
+            </button>
         </div>
     </div>
+</div>
 
-    <!-- Create Announcement Form -->
-    <div class="col-lg-5">
-        <div class="glass-card p-4">
-            <h5 class="text-white fw-bold mb-3"><i class="bi bi-megaphone-fill text-pink me-2"></i>Create Notice</h5>
-            <form asp-controller="Admin" asp-action="CreateAnnouncement" method="post">
+<div class="modal fade" id="createAnnModal" tabindex="-1" aria-labelledby="createAnnModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg ann-compose-modal" style="border-radius:16px;">
+            <form asp-controller="Admin" asp-action="CreateAnnouncement" method="post" id="annCreateForm">
                 @Html.AntiForgeryToken()
-                <div class="mb-2 form-group">
-                    <input type="text" name="title" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Notice Title (e.g. Server Maintenance)" required />
+                <div class="modal-header px-4 pt-4 pb-0 ann-compose-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="ann-compose-icon">
+                            <i class="bi bi-pencil-square"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-dark mb-0" id="createAnnModalLabel">Compose Announcement</h5>
+                            <p class="text-muted small mb-0">Goes live immediately after you publish</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="mb-2 form-group">
-                    <textarea name="content" rows="3" class="form-control form-control-sm auth-glow-input bg-transparent border-secondary border-opacity-25 text-white" placeholder="Write notice content here..." required></textarea>
+                <div class="modal-body p-4 pt-3">
+                    <div class="row g-4">
+                        <div class="col-lg-7">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary mb-2" for="annTitle">
+                                    Title <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="title" id="annTitle" maxlength="200"
+                                       class="form-control ann-input" placeholder="e.g. System maintenance on Sunday" required autofocus />
+                                <div class="d-flex justify-content-between mt-1">
+                                    <span class="text-muted" style="font-size:0.75rem;">Keep it short and clear</span>
+                                    <span class="text-muted" style="font-size:0.75rem;"><span id="titleCount">0</span>/200</span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary mb-2" for="annContent">
+                                    Message <span class="text-danger">*</span>
+                                </label>
+                                <textarea name="content" id="annContent" rows="5"
+                                          class="form-control ann-input" style="resize:vertical; min-height:120px;"
+                                          placeholder="Write the full message members will read..." required></textarea>
+                            </div>
+                            <div class="ann-tip-box">
+                                <i class="bi bi-lightbulb-fill text-warning"></i>
+                                <span>You can hide or show any notice later without deleting it.</span>
+                            </div>
+                        </div>
+                        <div class="col-lg-5">
+                            <p class="small fw-semibold text-secondary text-uppercase mb-2" style="letter-spacing:0.06em;">Live preview</p>
+                            <div class="ann-preview-panel" id="annPreviewPanel">
+                                <div class="ann-preview-badge"><i class="bi bi-eye me-1"></i> Member view</div>
+                                <h6 class="fw-bold mb-2 ann-preview-title" id="annPreviewTitle">Your title appears here</h6>
+                                <p class="small text-secondary mb-0 ann-preview-body" id="annPreviewBody">Your message will show on member dashboards like this.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-cyber-pink btn-sm w-100 py-2">
-                    <i class="bi bi-send me-1"></i>Publish Notice
-                </button>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0 gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="ann-btn-primary px-4 py-2">
+                        <i class="bi bi-send-fill me-2"></i>Publish Now
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Notice Board List -->
-<div class="row g-4">
-    <div class="col-12">
-        <div class="glass-card p-4">
-            <h5 class="text-white fw-bold mb-4"><i class="bi bi-clock-history text-info me-2"></i>Announcement History</h5>
-            
-            @if (Model.Any())
-            {
-                <div class="list-group list-group-flush bg-transparent">
-                    @foreach (var announcement in Model)
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="glass-card ann-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="ann-stat-label mb-1">Total</p>
+                    <h3 class="ann-stat-value text-primary mb-0">@Model.Count</h3>
+                </div>
+                <div class="ann-stat-icon ann-stat-icon-blue"><i class="bi bi-collection"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card ann-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="ann-stat-label mb-1">Live</p>
+                    <h3 class="ann-stat-value text-success mb-0">@liveCount</h3>
+                </div>
+                <div class="ann-stat-icon ann-stat-icon-green"><i class="bi bi-broadcast"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card ann-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="ann-stat-label mb-1">Hidden</p>
+                    <h3 class="ann-stat-value text-secondary mb-0">@hiddenCount</h3>
+                </div>
+                <div class="ann-stat-icon ann-stat-icon-gray"><i class="bi bi-eye-slash"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card ann-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="ann-stat-label mb-1">Last posted</p>
+                    <h3 class="ann-stat-value text-warning mb-0" style="font-size:1.15rem;">
+                        @(lastPosted.HasValue ? lastPosted.Value.ToString("dd MMM") : "—")
+                    </h3>
+                    @if (lastPosted.HasValue)
                     {
-                        <div class="list-group-item bg-transparent border-white border-opacity-10 py-4 px-0">
-                            <div class="d-flex w-100 justify-content-between align-items-start mb-2">
-                                <div>
-                                    <h5 class="text-white fw-bold mb-1">
-                                        @announcement.Title
-                                        @if (!announcement.IsActive)
-                                        {
-                                            <span class="badge bg-opacity-10 bg-secondary text-secondary border border-secondary border-opacity-25 ms-2 fs-6" style="font-size: 0.65rem;">Inactive</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-opacity-10 bg-success text-success border border-success border-opacity-25 ms-2 fs-6" style="font-size: 0.65rem;">Live</span>
-                                        }
-                                    </h5>
-                                    <small class="text-muted"><i class="bi bi-calendar-event me-1"></i>Published on @announcement.CreatedDate.ToString("dd MMM yyyy hh:mm tt") UTC</small>
-                                </div>
-                                
-                                <div class="d-flex gap-2">
-                                    <form asp-controller="Admin" asp-action="ToggleAnnouncement" method="post" class="d-inline">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@announcement.Id" />
-                                        @if (announcement.IsActive)
-                                        {
-                                            <button type="submit" class="btn btn-cyber-outline btn-sm">
-                                                <i class="bi bi-eye-slash me-1"></i>Hide
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button type="submit" class="btn btn-cyber-outline btn-sm">
-                                                <i class="bi bi-eye me-1"></i>Show
-                                            </button>
-                                        }
-                                    </form>
-
-                                    <form asp-controller="Admin" asp-action="DeleteAnnouncement" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this announcement?');">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@announcement.Id" />
-                                        <button type="submit" class="btn btn-danger btn-sm">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                            <p class="text-secondary mb-0" style="white-space: pre-line;">@announcement.Content</p>
-                        </div>
+                        <span class="text-muted" style="font-size:0.7rem;">@TimeAgo(lastPosted.Value)</span>
                     }
                 </div>
-            }
-            else
-            {
-                <div class="text-center py-5 text-secondary">
-                    <i class="bi bi-chat-left-dots fs-2 mb-2 d-block text-muted"></i>
-                    No announcements have been published.
-                </div>
-            }
+                <div class="ann-stat-icon ann-stat-icon-amber"><i class="bi bi-clock-history"></i></div>
+            </div>
         </div>
     </div>
 </div>
+
+@if (Model.Any())
+{
+    <!-- Toolbar: search + filters -->
+    <div class="glass-card p-3 mb-4 ann-toolbar">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-6">
+                <div class="ann-search-wrap">
+                    <i class="bi bi-search ann-search-icon"></i>
+                    <input type="search" id="annSearch" class="form-control ann-search-input" placeholder="Search by title or message..." autocomplete="off" />
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex flex-wrap gap-2 justify-content-md-end" role="group" aria-label="Filter announcements">
+                    <button type="button" class="ann-filter-btn active" data-filter="all">All (@Model.Count)</button>
+                    <button type="button" class="ann-filter-btn" data-filter="live">Live (@liveCount)</button>
+                    <button type="button" class="ann-filter-btn" data-filter="hidden">Hidden (@hiddenCount)</button>
+                </div>
+            </div>
+        </div>
+        <p class="text-muted small mb-0 mt-2 d-none" id="annNoResults">
+            <i class="bi bi-search me-1"></i>No announcements match your search.
+        </p>
+    </div>
+
+    <!-- List -->
+    <div class="d-flex flex-column gap-3" id="annList">
+        @foreach (var announcement in Model.OrderByDescending(a => a.CreatedDate))
+        {
+            var statusKey = announcement.IsActive ? "live" : "hidden";
+            var contentPreview = announcement.Content.Length > 220
+                ? announcement.Content.Substring(0, 220).TrimEnd() + "…"
+                : announcement.Content;
+            var isLong = announcement.Content.Length > 220;
+
+            <article class="glass-card ann-item-card @(announcement.IsActive ? "ann-item-live" : "ann-item-hidden")"
+                     data-status="@statusKey"
+                     data-search="@($"{announcement.Title} {announcement.Content}".ToLower())">
+                <div class="ann-item-accent @(announcement.IsActive ? "ann-item-accent-live" : "")"></div>
+                <div class="card-body p-4 ps-4">
+                    <div class="row g-3 align-items-start">
+                        <div class="col-lg-8">
+                            <div class="d-flex align-items-start gap-2 flex-wrap mb-2">
+                                <h5 class="fw-bold text-dark mb-0 ann-item-title">@announcement.Title</h5>
+                                @if (announcement.IsActive)
+                                {
+                                    <span class="ann-badge ann-badge-live">
+                                        <span class="ann-pulse-dot"></span>Live
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="ann-badge ann-badge-hidden">
+                                        <i class="bi bi-eye-slash me-1"></i>Hidden
+                                    </span>
+                                }
+                            </div>
+                            <div class="ann-meta mb-3">
+                                <span title="@announcement.CreatedDate.ToString("dd MMM yyyy, hh:mm tt") UTC">
+                                    <i class="bi bi-calendar3 me-1"></i>@TimeAgo(announcement.CreatedDate)
+                                </span>
+                                <span class="ann-meta-sep">·</span>
+                                <span class="text-muted">@announcement.CreatedDate.ToString("dd MMM yyyy")</span>
+                            </div>
+                            <div class="ann-content-wrap">
+                                @if (isLong)
+                                {
+                                    <p class="text-secondary mb-0 ann-content-short">@contentPreview</p>
+                                    <p class="text-secondary mb-0 ann-content-full" style="display:none; white-space:pre-line; line-height:1.65;">@announcement.Content</p>
+                                    <button type="button" class="btn btn-link btn-sm p-0 mt-1 ann-toggle-content text-primary fw-semibold">Read more</button>
+                                }
+                                else
+                                {
+                                    <p class="text-secondary mb-0 ann-content-full" style="white-space:pre-line; line-height:1.65;">@announcement.Content</p>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="ann-actions d-flex flex-wrap gap-2 justify-content-lg-end">
+                                <form asp-controller="Admin" asp-action="ToggleAnnouncement" method="post" class="m-0">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@announcement.Id" />
+                                    @if (announcement.IsActive)
+                                    {
+                                        <button type="submit" class="btn ann-action-btn ann-action-hide" title="Hide from members">
+                                            <i class="bi bi-eye-slash me-1"></i>Hide
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn ann-action-btn ann-action-publish" title="Show to members">
+                                            <i class="bi bi-eye me-1"></i>Publish
+                                        </button>
+                                    }
+                                </form>
+                                <button type="button" class="btn ann-action-btn ann-action-delete"
+                                        data-bs-toggle="modal" data-bs-target="#deleteAnnModal"
+                                        data-ann-id="@announcement.Id" data-ann-title="@announcement.Title"
+                                        title="Delete permanently">
+                                    <i class="bi bi-trash3 me-1"></i>Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        }
+    </div>
+}
+else
+{
+    <div class="glass-card text-center py-5 ann-empty-state">
+        <div class="ann-empty-icon mx-auto mb-4">
+            <i class="bi bi-megaphone"></i>
+        </div>
+        <h4 class="fw-bold text-dark mb-2">No announcements yet</h4>
+        <p class="text-muted mb-4 mx-auto" style="max-width:360px;">
+            Create your first notice to inform all members about updates, maintenance, or promotions.
+        </p>
+        <button class="ann-btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#createAnnModal">
+            <i class="bi bi-plus-lg me-2"></i>Create First Announcement
+        </button>
+    </div>
+}
+
+<!-- Delete confirmation modal -->
+<div class="modal fade" id="deleteAnnModal" tabindex="-1" aria-labelledby="deleteAnnModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
+            <div class="modal-body p-4 text-center">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                     style="width:56px;height:56px;background:rgba(239,68,68,0.1);color:#dc2626;">
+                    <i class="bi bi-trash3 fs-4"></i>
+                </div>
+                <h5 class="fw-bold mb-2" id="deleteAnnModalLabel">Delete announcement?</h5>
+                <p class="text-muted small mb-0">
+                    <strong id="deleteAnnTitle" class="text-dark"></strong> will be removed permanently. This cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center gap-2 pb-4 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <form asp-controller="Admin" asp-action="DeleteAnnouncement" method="post" id="deleteAnnForm" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="deleteAnnId" value="" />
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold">
+                        <i class="bi bi-trash3 me-1"></i>Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const titleInput = document.getElementById('annTitle');
+    const contentInput = document.getElementById('annContent');
+    const titleCount = document.getElementById('titleCount');
+    const previewTitle = document.getElementById('annPreviewTitle');
+    const previewBody = document.getElementById('annPreviewBody');
+    const searchInput = document.getElementById('annSearch');
+    const noResults = document.getElementById('annNoResults');
+    const list = document.getElementById('annList');
+    const deleteModal = document.getElementById('deleteAnnModal');
+
+    function updatePreview() {
+        if (!titleInput) return;
+        const t = titleInput.value.trim() || 'Your title appears here';
+        const c = contentInput.value.trim() || 'Your message will show on member dashboards like this.';
+        previewTitle.textContent = t;
+        previewBody.textContent = c;
+        if (titleCount) titleCount.textContent = titleInput.value.length;
+    }
+
+    if (titleInput) {
+        titleInput.addEventListener('input', updatePreview);
+        contentInput.addEventListener('input', updatePreview);
+        updatePreview();
+    }
+
+    // Open compose modal if URL hash
+    if (window.location.hash === '#compose') {
+        const modalEl = document.getElementById('createAnnModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+    }
+
+    const composeModal = document.getElementById('createAnnModal');
+    if (composeModal) {
+        composeModal.addEventListener('hidden.bs.modal', function () {
+            const form = document.getElementById('annCreateForm');
+            if (form) form.reset();
+            updatePreview();
+        });
+    }
+
+    // Filter buttons
+    let activeFilter = 'all';
+    document.querySelectorAll('.ann-filter-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.ann-filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            activeFilter = this.dataset.filter;
+            applyFilters();
+        });
+    });
+
+    function applyFilters() {
+        if (!list) return;
+        const q = (searchInput?.value || '').trim().toLowerCase();
+        let visible = 0;
+        list.querySelectorAll('.ann-item-card').forEach(card => {
+            const status = card.dataset.status;
+            const text = card.dataset.search || '';
+            const matchFilter = activeFilter === 'all' || status === activeFilter;
+            const matchSearch = !q || text.includes(q);
+            const show = matchFilter && matchSearch;
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        if (noResults) noResults.classList.toggle('d-none', visible > 0 || !q);
+    }
+
+    if (searchInput) searchInput.addEventListener('input', applyFilters);
+
+    // Read more / less
+    document.querySelectorAll('.ann-toggle-content').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const wrap = this.closest('.ann-content-wrap');
+            const short = wrap.querySelector('.ann-content-short');
+            const full = wrap.querySelector('.ann-content-full');
+            const expanded = full.style.display !== 'none';
+            if (expanded) {
+                full.style.display = 'none';
+                short.style.display = '';
+                this.textContent = 'Read more';
+            } else {
+                full.style.display = '';
+                short.style.display = 'none';
+                this.textContent = 'Show less';
+            }
+        });
+    });
+
+    // Delete modal
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            if (!btn) return;
+            document.getElementById('deleteAnnId').value = btn.dataset.annId;
+            document.getElementById('deleteAnnTitle').textContent = btn.dataset.annTitle || 'This announcement';
+        });
+    }
+})();
+</script>
+}

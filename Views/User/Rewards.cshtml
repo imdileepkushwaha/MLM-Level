@@ -1,0 +1,222 @@
+@model IEnumerable<MLM_Level.Models.MemberReward>
+@{
+    ViewData["Title"] = "Rewards";
+    var list = Model?.ToList() ?? new List<MLM_Level.Models.MemberReward>();
+    var totalValue = (decimal)(ViewBag.TotalRewardValue ?? 0m);
+    var personalCount = list.Count(r => r.UserId != null);
+    var communityCount = list.Count(r => r.UserId == null);
+    var latest = list.FirstOrDefault();
+
+    string RewardIcon(string type) => type switch
+    {
+        "Trophy" => "bi-trophy-fill",
+        "Cash Reward" => "bi-cash-coin",
+        "Gift" => "bi-gift-fill",
+        "Recognition" => "bi-star-fill",
+        _ => "bi-award-fill"
+    };
+
+    string RewardTheme(string type) => type switch
+    {
+        "Trophy" => "member-reward-gold",
+        "Cash Reward" => "member-reward-green",
+        "Gift" => "member-reward-pink",
+        "Recognition" => "member-reward-blue",
+        _ => "member-reward-amber"
+    };
+}
+
+@await Html.PartialAsync("_MemberPageHeader", new MLM_Level.Models.MemberPageHeaderViewModel
+{
+    Title = "Rewards",
+    Subtitle = "Bonuses, trophies, and recognitions published for you by admin",
+    Icon = "bi-trophy",
+    ThemeClass = "member-theme-amber",
+    Badge = list.Count > 0 ? $"₹{totalValue:N0} total value" : "No rewards yet"
+})
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-4 col-md-6">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Total rewards</p>
+                    <p class="member-stat-value text-warning">@list.Count</p>
+                    <span class="text-muted small">Published for you</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-amber"><i class="bi bi-trophy"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Personal</p>
+                    <p class="member-stat-value text-primary">@personalCount</p>
+                    <span class="wallet-chip wallet-chip-success">Only for you</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-violet"><i class="bi bi-person-hearts"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-12">
+        <div class="glass-card member-stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="member-stat-label">Reward value</p>
+                    <p class="member-stat-value text-success">₹@totalValue.ToString("N2")</p>
+                    <span class="text-muted small">@communityCount community-wide</span>
+                </div>
+                <div class="member-stat-icon member-stat-icon-green"><i class="bi bi-cash-stack"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (latest != null)
+{
+    var latestTheme = RewardTheme(latest.RewardType);
+    var latestIcon = RewardIcon(latest.RewardType);
+    <div class="member-rewards-spotlight @latestTheme mb-4">
+        <div class="member-rewards-spotlight-glow"></div>
+        <div class="member-rewards-spotlight-inner">
+            <div class="member-rewards-spotlight-icon">
+                <i class="bi @latestIcon"></i>
+            </div>
+            <div class="member-rewards-spotlight-content">
+                <span class="member-rewards-spotlight-label"><i class="bi bi-stars me-1"></i>Latest reward</span>
+                <h4 class="member-rewards-spotlight-title">@latest.Title</h4>
+                <p class="member-rewards-spotlight-desc">@latest.Description</p>
+                <div class="member-rewards-spotlight-meta">
+                    <span class="member-reward-type-badge">@latest.RewardType</span>
+                    @if (latest.UserId == null)
+                    {
+                        <span class="member-reward-scope-badge member-reward-scope-community"><i class="bi bi-people-fill"></i> All members</span>
+                    }
+                    else
+                    {
+                        <span class="member-reward-scope-badge member-reward-scope-personal"><i class="bi bi-person-fill"></i> For you</span>
+                    }
+                    <span class="member-rewards-spotlight-date"><i class="bi bi-calendar3 me-1"></i>@latest.CreatedDate.ToLocalTime().ToString("dd MMM yyyy")</span>
+                </div>
+            </div>
+            <div class="member-rewards-spotlight-value">
+                @if (latest.Amount > 0)
+                {
+                    <span class="member-reward-amount-pill member-reward-amount-pill-lg">₹@latest.Amount.ToString("N2")</span>
+                }
+                else
+                {
+                    <span class="member-reward-amount-pill member-reward-amount-pill-lg member-reward-amount-pill-muted"><i class="bi bi-star-fill me-1"></i>Recognition</span>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@if (list.Any())
+{
+    <div class="glass-card member-panel-card member-rewards-section">
+        <div class="member-rewards-section-header">
+            <div>
+                <h5 class="member-panel-title mb-1"><i class="bi bi-collection text-warning me-2"></i>All rewards</h5>
+                <p class="text-muted small mb-0">Browse bonuses and recognitions from admin</p>
+            </div>
+            <div class="member-tab-nav member-rewards-filter" role="tablist">
+                <button type="button" class="nav-link active" data-reward-filter="all">All (@list.Count)</button>
+                <button type="button" class="nav-link" data-reward-filter="personal">For you (@personalCount)</button>
+                <button type="button" class="nav-link" data-reward-filter="community">Community (@communityCount)</button>
+            </div>
+        </div>
+
+        <div class="member-rewards-grid" id="rewardsGrid">
+            @foreach (var reward in list)
+            {
+                var theme = RewardTheme(reward.RewardType);
+                var icon = RewardIcon(reward.RewardType);
+                var scope = reward.UserId == null ? "community" : "personal";
+                <article class="member-reward-card @theme" data-reward-scope="@scope">
+                    <div class="member-reward-accent"></div>
+                    <div class="member-reward-card-head">
+                        <div class="member-reward-icon-wrap">
+                            <i class="bi @icon"></i>
+                        </div>
+                        <div class="member-reward-badges">
+                            <span class="member-reward-type-badge">@reward.RewardType</span>
+                            @if (reward.UserId == null)
+                            {
+                                <span class="member-reward-scope-badge member-reward-scope-community"><i class="bi bi-people-fill"></i> All</span>
+                            }
+                            else
+                            {
+                                <span class="member-reward-scope-badge member-reward-scope-personal"><i class="bi bi-person-fill"></i> You</span>
+                            }
+                        </div>
+                    </div>
+                    <h5 class="member-reward-title">@reward.Title</h5>
+                    <p class="member-reward-desc">@reward.Description</p>
+                    <div class="member-reward-footer">
+                        @if (reward.Amount > 0)
+                        {
+                            <span class="member-reward-amount-pill">₹@reward.Amount.ToString("N2")</span>
+                        }
+                        else
+                        {
+                            <span class="member-reward-amount-pill member-reward-amount-pill-muted"><i class="bi bi-star-fill me-1"></i>Recognition</span>
+                        }
+                        <span class="member-reward-date"><i class="bi bi-clock me-1"></i>@reward.CreatedDate.ToLocalTime().ToString("dd MMM yyyy")</span>
+                    </div>
+                </article>
+            }
+        </div>
+
+        <div class="member-rewards-filter-empty d-none" id="rewardsFilterEmpty">
+            <i class="bi bi-funnel"></i>
+            <p>No rewards in this category</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="glass-card member-panel-card member-rewards-empty">
+        <div class="member-rewards-empty-icon"><i class="bi bi-trophy"></i></div>
+        <h5 class="member-rewards-empty-title">No rewards yet</h5>
+        <p class="member-rewards-empty-text">When admin publishes bonuses, trophies, or recognitions for you, they will appear here.</p>
+        <div class="member-quick-actions justify-content-center mt-3">
+            <a asp-controller="User" asp-action="DailyIncome" class="member-quick-btn"><i class="bi bi-calendar-day"></i> Daily income</a>
+            <a asp-controller="User" asp-action="DirectIncome" class="member-quick-btn"><i class="bi bi-people"></i> Direct income</a>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var filterBtns = document.querySelectorAll('[data-reward-filter]');
+            var cards = document.querySelectorAll('#rewardsGrid .member-reward-card');
+            var emptyState = document.getElementById('rewardsFilterEmpty');
+            if (!filterBtns.length || !cards.length) return;
+
+            filterBtns.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var filter = btn.getAttribute('data-reward-filter');
+                    filterBtns.forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+
+                    var visible = 0;
+                    cards.forEach(function (card) {
+                        var scope = card.getAttribute('data-reward-scope');
+                        var show = filter === 'all' || scope === filter;
+                        card.classList.toggle('d-none', !show);
+                        if (show) visible++;
+                    });
+
+                    if (emptyState) {
+                        emptyState.classList.toggle('d-none', visible > 0);
+                    }
+                });
+            });
+        })();
+    </script>
+}
