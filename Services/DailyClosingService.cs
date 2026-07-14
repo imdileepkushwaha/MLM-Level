@@ -27,7 +27,7 @@ namespace MLM_Level.Services
             _logger.LogInformation("Daily Closing Service started.");
 
             // Let startup DB initialization finish before the first sweep.
-            await Task.Delay(TimeSpan.FromSeconds(8), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(35), stoppingToken);
 
             using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
 
@@ -68,48 +68,52 @@ namespace MLM_Level.Services
                 int processedCount = 0;
                 decimal totalProcessed = 0;
 
-                using var transaction = await context.Database.BeginTransactionAsync();
-                try
+                var strategy = context.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
                 {
-                    foreach (var user in usersWithIncome)
+                    await using var transaction = await context.Database.BeginTransactionAsync();
+                    try
                     {
-                        decimal grossIncome = user.IncomeWallet;
-                        decimal tdsAmount = grossIncome * (tdsPercent / 100m);
-                        decimal adminChargeAmount = grossIncome * (adminChargePercent / 100m);
-                        decimal netPayable = grossIncome - tdsAmount - adminChargeAmount;
-
-                        // Transfer balance
-                        user.WalletBalance += netPayable;
-                        user.IncomeWallet = 0; // Reset pending wallet
-
-                        // Create transaction record for the ledger
-                        string desc = $"Closing Payout: Gross ₹{grossIncome:F2} | TDS ({tdsPercent}%): ₹{tdsAmount:F2} | Admin Chg ({adminChargePercent}%): ₹{adminChargeAmount:F2} | Net: ₹{netPayable:F2}";
-                        
-                        var commTran = new CommissionTran
+                        foreach (var user in usersWithIncome)
                         {
-                            UserId = user.Id,
-                            FromUserId = user.Id, // System/Self
-                            Amount = netPayable,
-                            Level = 100, // Special level representing Net Closing Payout
-                            Description = desc,
-                            Timestamp = DateTime.UtcNow
-                        };
-                        context.CommissionTrans.Add(commTran);
+                            decimal grossIncome = user.IncomeWallet;
+                            decimal tdsAmount = grossIncome * (tdsPercent / 100m);
+                            decimal adminChargeAmount = grossIncome * (adminChargePercent / 100m);
+                            decimal netPayable = grossIncome - tdsAmount - adminChargeAmount;
 
-                        totalProcessed += netPayable;
-                        processedCount++;
+                            user.WalletBalance += netPayable;
+                            user.IncomeWallet = 0;
+
+                            string desc = $"Closing Payout: Gross ₹{grossIncome:F2} | TDS ({tdsPercent}%): ₹{tdsAmount:F2} | Admin Chg ({adminChargePercent}%): ₹{adminChargeAmount:F2} | Net: ₹{netPayable:F2}";
+
+                            context.CommissionTrans.Add(new CommissionTran
+                            {
+                                UserId = user.Id,
+                                FromUserId = user.Id,
+                                Amount = netPayable,
+                                Level = 100,
+                                Description = desc,
+                                Timestamp = DateTime.UtcNow
+                            });
+
+                            totalProcessed += netPayable;
+                            processedCount++;
+                        }
+
+                        await context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        _logger.LogInformation(
+                            "Daily Closing: Successfully processed closing for {Count} users. Total Net Payouts: ₹{Amount}",
+                            processedCount,
+                            totalProcessed);
                     }
-
-                    await context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    _logger.LogInformation("Daily Closing: Successfully processed closing for {Count} users. Total Net Payouts: ₹{Amount}", processedCount, totalProcessed);
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Daily Closing: Error occurred during transaction.");
-                }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
+                });
             }
             catch (Exception ex)
             {

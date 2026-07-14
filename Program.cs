@@ -33,6 +33,7 @@ builder.Services.AddScoped<MLM_Level.Services.IEmailService, MLM_Level.Services.
 builder.Services.AddScoped<MLM_Level.Services.IMaintenanceModeService, MLM_Level.Services.MaintenanceModeService>();
 builder.Services.AddScoped<MLM_Level.Services.IAdminNotificationService, MLM_Level.Services.AdminNotificationService>();
 builder.Services.AddScoped<MLM_Level.Services.IMemberNotificationService, MLM_Level.Services.MemberNotificationService>();
+builder.Services.AddScoped<MLM_Level.Services.IMemberIdService, MLM_Level.Services.MemberIdService>();
 builder.Services.AddHostedService<MLM_Level.Services.RoiDistributionService>();
 builder.Services.AddHostedService<MLM_Level.Services.DailyClosingService>();
 
@@ -73,15 +74,25 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    try
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    var context = services.GetRequiredService<ApplicationDbContext>();
+
+    for (var attempt = 1; attempt <= 3; attempt++)
     {
-        var context = services.GetRequiredService<ApplicationDbContext>();
-        DbInitializer.Initialize(context);
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while creating or seeding the database.");
+        try
+        {
+            DbInitializer.Initialize(context);
+            break;
+        }
+        catch (Exception ex) when (attempt < 3)
+        {
+            logger.LogWarning(ex, "Database init attempt {Attempt} failed. Retrying...", attempt);
+            await Task.Delay(TimeSpan.FromSeconds(5 * attempt));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Database initialization failed after {Attempt} attempts.", attempt);
+        }
     }
 }
 

@@ -44,11 +44,6 @@ namespace MLM_Level.Models
 
     public class RegisterViewModel
     {
-        [Required(ErrorMessage = "Username is required")]
-        [StringLength(50, MinimumLength = 3, ErrorMessage = "Username must be between 3 and 50 characters")]
-        [RegularExpression("^[a-zA-Z0-9_]+$", ErrorMessage = "Username can only contain letters, numbers, and underscores")]
-        public string Username { get; set; } = string.Empty;
-
         [Required(ErrorMessage = "Email address is required")]
         [EmailAddress(ErrorMessage = "Invalid Email Address")]
         [MaxLength(100)]

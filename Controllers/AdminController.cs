@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MLM_Level.Data;
@@ -511,8 +513,11 @@ namespace MLM_Level.Controllers
             }
             else
             {
-                // Default to top seeded root user
-                targetUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == "root");
+                // Default tree root: first member after admin (typically ML000002)
+                targetUser = await _context.Users
+                    .Where(u => !u.IsAdmin)
+                    .OrderBy(u => u.Id)
+                    .FirstOrDefaultAsync();
             }
 
             var treeNodes = new List<DownlineNodeViewModel>();
@@ -809,6 +814,103 @@ namespace MLM_Level.Controllers
 
             TempData["SuccessMessage"] = "System settings updated successfully.";
             return RedirectToAction("Settings", new { activeTab = model.ActiveTab });
+        }
+
+        // POST: Admin/SaveHomePopup
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveHomePopup(IFormFile? popupImage, bool removePopup = false)
+        {
+            popupImage ??= Request.Form.Files.FirstOrDefault(f => f.Name == "popupImage");
+            var enabledValues = Request.Form["homePopupEnabled"];
+            var homePopupEnabled = enabledValues.Count > 0 &&
+                string.Equals(enabledValues[enabledValues.Count - 1], "true", StringComparison.OrdinalIgnoreCase);
+
+            var settings = await _context.MlmSettings.FirstOrDefaultAsync();
+            if (settings == null)
+            {
+                settings = new MlmSetting();
+                _context.MlmSettings.Add(settings);
+            }
+
+            if (removePopup)
+            {
+                DeletePopupImageFile(settings.HomePopupImageUrl);
+                settings.HomePopupImageUrl = string.Empty;
+                settings.HomePopupEnabled = false;
+                await _context.SaveChangesAsync();
+                _maintenance.InvalidateCache();
+                TempData["SuccessMessage"] = "Homepage popup removed.";
+                return RedirectToAction("Settings", new { activeTab = "homePopup" });
+            }
+
+            settings.HomePopupEnabled = homePopupEnabled;
+
+            if (popupImage != null && popupImage.Length > 0)
+            {
+                try
+                {
+                    DeletePopupImageFile(settings.HomePopupImageUrl);
+                    settings.HomePopupImageUrl = await SaveHomePopupImageAsync(popupImage);
+                    settings.HomePopupEnabled = true;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    TempData["ErrorMessage"] = ex.Message;
+                    return RedirectToAction("Settings", new { activeTab = "homePopup" });
+                }
+            }
+            else if (homePopupEnabled && string.IsNullOrWhiteSpace(settings.HomePopupImageUrl))
+            {
+                TempData["ErrorMessage"] = "Please upload a popup image first, then save again.";
+                return RedirectToAction("Settings", new { activeTab = "homePopup" });
+            }
+
+            await _context.SaveChangesAsync();
+            _maintenance.InvalidateCache();
+
+            if (settings.HomePopupEnabled && !string.IsNullOrWhiteSpace(settings.HomePopupImageUrl))
+                TempData["SuccessMessage"] = "Homepage popup is now LIVE. Open the homepage in a new tab to preview it.";
+            else if (!string.IsNullOrWhiteSpace(settings.HomePopupImageUrl))
+                TempData["SuccessMessage"] = "Popup image saved. Turn on the switch and save again to show it on the homepage.";
+            else
+                TempData["SuccessMessage"] = "Homepage popup settings saved.";
+
+            return RedirectToAction("Settings", new { activeTab = "homePopup" });
+        }
+
+        private static async Task<string> SaveHomePopupImageAsync(IFormFile file)
+        {
+            const long maxBytes = 3 * 1024 * 1024;
+            if (file.Length > maxBytes)
+                throw new InvalidOperationException("Popup image must be 3MB or smaller.");
+
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowed.Contains(ext))
+                throw new InvalidOperationException("Only JPG, PNG, WEBP, or GIF images are allowed.");
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "popups");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var uniqueFileName = Guid.NewGuid().ToString("N") + ext;
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            await using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            return "/uploads/popups/" + uniqueFileName;
+        }
+
+        private static void DeletePopupImageFile(string? imageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl) || !imageUrl.StartsWith("/uploads/popups/", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", imageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            if (System.IO.File.Exists(filePath))
+                System.IO.File.Delete(filePath);
         }
 
         // GET: Admin/Packages

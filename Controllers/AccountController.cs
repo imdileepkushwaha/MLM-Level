@@ -19,12 +19,17 @@ namespace MLM_Level.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly IEmailService _emailService;
+        private readonly IMemberIdService _memberIdService;
 
-        public AccountController(ApplicationDbContext context, IEmailService emailService)
+        public AccountController(
+            ApplicationDbContext context,
+            IEmailService emailService,
+            IMemberIdService memberIdService)
         {
             _context = context;
             _passwordHasher = new PasswordHasher<User>();
             _emailService = emailService;
+            _memberIdService = memberIdService;
         }
 
         // GET: Account/Login
@@ -111,9 +116,43 @@ namespace MLM_Level.Controllers
             var model = new RegisterViewModel();
             if (!string.IsNullOrEmpty(sponsorCode))
             {
-                model.SponsorCode = sponsorCode;
+                model.SponsorCode = sponsorCode.Trim();
+                var sponsor = await _context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u =>
+                        u.ReferralCode == model.SponsorCode || u.Username == model.SponsorCode);
+
+                ViewBag.SponsorDisplayName = sponsor?.FullName ?? string.Empty;
+                ViewBag.SponsorVerified = sponsor != null;
             }
             return View(model);
+        }
+
+        // GET: Account/LookupSponsor
+        [HttpGet]
+        public async Task<IActionResult> LookupSponsor(string? code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                return Json(new { found = false });
+            }
+
+            var trimmed = code.Trim();
+            var sponsor = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.ReferralCode == trimmed || u.Username == trimmed);
+
+            if (sponsor == null)
+            {
+                return Json(new { found = false, message = "Sponsor code not found." });
+            }
+
+            return Json(new
+            {
+                found = true,
+                fullName = sponsor.FullName,
+                memberId = sponsor.Username
+            });
         }
 
         // POST: Account/Register
@@ -123,13 +162,6 @@ namespace MLM_Level.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return View(model);
-            }
-
-            // Check if username already exists
-            if (await _context.Users.AnyAsync(u => u.Username == model.Username))
-            {
-                ModelState.AddModelError("Username", "Username is already taken.");
                 return View(model);
             }
 
@@ -144,7 +176,8 @@ namespace MLM_Level.Controllers
             User? sponsor = null;
             if (!string.IsNullOrEmpty(model.SponsorCode))
             {
-                sponsor = await _context.Users.FirstOrDefaultAsync(u => u.ReferralCode == model.SponsorCode);
+                sponsor = await _context.Users.FirstOrDefaultAsync(u =>
+                    u.ReferralCode == model.SponsorCode || u.Username == model.SponsorCode);
                 if (sponsor == null)
                 {
                     ModelState.AddModelError("SponsorCode", "Referral/Sponsor code is invalid.");
@@ -153,11 +186,15 @@ namespace MLM_Level.Controllers
             }
             else
             {
-                // Fallback to seeded 'root' member
-                sponsor = await _context.Users.FirstOrDefaultAsync(u => u.Username == "root");
+                // Default sponsor: first member after admin (typically ML000002)
+                sponsor = await _context.Users
+                    .Where(u => !u.IsAdmin)
+                    .OrderBy(u => u.Id)
+                    .FirstOrDefaultAsync();
+
                 if (sponsor == null)
                 {
-                    // Fallback to admin if root is missing
+                    // Fallback to admin if no members exist yet
                     sponsor = await _context.Users.FirstOrDefaultAsync(u => u.IsAdmin);
                 }
             }
@@ -175,26 +212,49 @@ namespace MLM_Level.Controllers
                 parentId = sponsor.DefaultPlacementId.Value;
             }
 
-            // Create New User
-            var newUser = new User
+            User? newUser = null;
+            string memberId = string.Empty;
+
+            for (var attempt = 0; attempt < 3; attempt++)
             {
-                Username = model.Username,
-                Email = model.Email,
-                FullName = model.FullName,
-                Phone = model.Phone,
-                SponsorId = sponsor.Id,
-                ParentId = parentId, // Set dynamic parent
-                JoinedDate = DateTime.UtcNow,
-                IsActive = false, // Must submit activation payment request
-                IsAdmin = false,
-                WalletBalance = 0.00m,
-                ReferralCode = GenerateUniqueReferralCode()
-            };
+                memberId = await _memberIdService.GenerateNextMemberIdAsync();
 
-            newUser.PasswordHash = _passwordHasher.HashPassword(newUser, model.Password);
+                newUser = new User
+                {
+                    Username = memberId,
+                    Email = model.Email,
+                    FullName = model.FullName,
+                    Phone = model.Phone,
+                    SponsorId = sponsor.Id,
+                    ParentId = parentId,
+                    JoinedDate = DateTime.UtcNow,
+                    IsActive = false,
+                    IsAdmin = false,
+                    WalletBalance = 0.00m,
+                    ReferralCode = memberId
+                };
 
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
+                newUser.PasswordHash = _passwordHasher.HashPassword(newUser, model.Password);
+
+                _context.Users.Add(newUser);
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    break;
+                }
+                catch (DbUpdateException) when (attempt < 2)
+                {
+                    _context.Entry(newUser).State = EntityState.Detached;
+                    newUser = null;
+                }
+            }
+
+            if (newUser == null)
+            {
+                ModelState.AddModelError(string.Empty, "Could not assign a Member ID. Please try again.");
+                return View(model);
+            }
 
             // Fire and forget welcome email (wrap in try-catch so registration doesn't fail if SMTP is not set)
             _ = Task.Run(async () =>
@@ -204,8 +264,8 @@ namespace MLM_Level.Controllers
                     string emailBody = $@"
                         <h2>Welcome to Elite MLM, {newUser.FullName}!</h2>
                         <p>Your account has been created successfully.</p>
-                        <p><strong>Username:</strong> {newUser.Username}</p>
-                        <p><strong>Sponsor ID:</strong> {(sponsor != null ? sponsor.Username : "None")}</p>
+                        <p><strong>Member ID:</strong> {newUser.Username}</p>
+                        <p><strong>Sponsor:</strong> {(sponsor != null ? sponsor.Username : "None")}</p>
                         <br/>
                         <p>Login to your dashboard to activate your account and start earning!</p>
                     ";
@@ -214,7 +274,7 @@ namespace MLM_Level.Controllers
                 catch { /* Ignore SMTP errors to prevent blocking registration */ }
             });
 
-            TempData["SuccessMessage"] = "Registration successful! Please login.";
+            TempData["SuccessMessage"] = $"Registration successful! Your Member ID is {memberId}. Please login.";
             return RedirectToAction("Login");
         }
 
@@ -353,26 +413,6 @@ namespace MLM_Level.Controllers
         public IActionResult AccessDenied()
         {
             return View();
-        }
-
-        private string GenerateUniqueReferralCode()
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            var random = new Random();
-            string code;
-
-            do
-            {
-                var stringChars = new char[8];
-                for (int i = 0; i < stringChars.Length; i++)
-                {
-                    stringChars[i] = chars[random.Next(chars.Length)];
-                }
-                code = "MLM" + new string(stringChars);
-            }
-            while (_context.Users.Any(u => u.ReferralCode == code));
-
-            return code;
         }
 
         private static string GenerateResetToken()

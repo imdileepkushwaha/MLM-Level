@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>General Settings - Admin Portal - Elite MLM</title>
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="/css/site.css?v=s13z6aOmPeTzwmIFe0r0vcDJ4mLtYDDmckbT0WqDdU8" />
+    <link rel="stylesheet" href="/css/admin.css?v=E4AT946U2EpQR3Q08945ZfT7ao7VW0Suq4AMKfc1aJM" />
+</head>
+<body>
+
+    <!-- Panelix Admin Layout -->
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="dashboard-sidebar">
+            <div class="dashboard-brand d-flex justify-content-between align-items-center pe-3">
+                <div class="d-flex align-items-center">
+                    <div class="dashboard-brand-logo">
+                        <i class="bi bi-diagram-3-fill"></i>
+                    </div>
+                    <a class="dashboard-brand-text" href="/">Elite Admin</a>
+                </div>
+                <button class="btn btn-sm btn-light d-lg-none" type="button" onclick="document.querySelector('.dashboard-sidebar').classList.remove('sidebar-open')">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="sidebar-scrollable">
+                <h5>Main</h5>
+                <nav class="nav flex-column">
+                    <a class="sidebar-link " href="/Admin">
+                        <i class="bi bi-grid"></i> Dashboard
+                    </a>
+                </nav>
+
+                <h5>Network</h5>
+                <nav class="nav flex-column">
+                    <a class="sidebar-link " href="/Admin/Members">
+                        <i class="bi bi-people"></i> All Members
+                    </a>
+                    <a class="sidebar-link " href="/Admin/Withdrawals">
+                        <i class="bi bi-wallet2"></i> Withdrawals
+                    </a>
+                    <a class="sidebar-link " href="/Admin/PendingActivations">
+                        <i class="bi bi-shield-lock"></i> Activation Requests
+                    </a>
+                    <a class="sidebar-link " href="/Admin/KycApprovals">
+                        <i class="bi bi-shield-check"></i> KYC Approvals
+                    </a>
+                    <a class="sidebar-link " href="/Admin/TreeExplorer">
+                        <i class="bi bi-diagram-3"></i> Network Explorer
+                    </a>
+                </nav>
+
+                <h5>Financials & Notices</h5>
+                <nav class="nav flex-column">
+                    <a class="sidebar-link " href="/Admin/Commissions">
+                        <i class="bi bi-currency-exchange"></i> Commissions Log
+                    </a>
+                    <a class="sidebar-link " href="/Admin/RoiManagement">
+                        <i class="bi bi-graph-up-arrow"></i> ROI Management
+                    </a>
+                    <a class="sidebar-link " href="/Admin/Ledger">
+                        <i class="bi bi-receipt-cutoff"></i> Audit Ledger
+                    </a>
+                    <a class="sidebar-link " href="/Admin/Packages">
+                        <i class="bi bi-box-seam"></i> Packages
+                    </a>
+                    <a class="sidebar-link " href="/Admin/Announcements">
+                        <i class="bi bi-megaphone"></i> Notice Board
+                    </a>
+                    <a class="sidebar-link " href="/Admin/Rewards">
+                        <i class="bi bi-trophy"></i> Member Rewards
+                    </a>
+                </nav>
+
+                <h5>System</h5>
+                <nav class="nav flex-column">
+                    <a class="sidebar-link " href="/Admin/Tickets">
+                        <i class="bi bi-chat-dots"></i> Support Tickets
+                    </a>
+                    <a class="sidebar-link active" href="/Admin/Settings">
+                        <i class="bi bi-sliders"></i> General Settings
+                    </a>
+
+                    <a class="sidebar-link text-danger" href="/Account/Logout">
+                        <i class="bi bi-box-arrow-right text-danger"></i> Sign Out
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="dashboard-main-area">
+            <!-- Topbar Header -->
+            <header class="dashboard-topbar d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <!-- Mobile Hamburger -->
+                    <button class="btn btn-light d-block d-lg-none me-3" type="button" onclick="document.querySelector('.dashboard-sidebar').classList.toggle('sidebar-open')">
+                        <i class="bi bi-list fs-4"></i>
+                    </button>
+
+                    <div class="topbar-search-container d-none d-md-flex">
+                        <i class="bi bi-search topbar-search-icon"></i>
+                        <input type="text" class="topbar-search-input" placeholder="Search anything... (Ctrl+K)" />
+                    </div>
+                </div>
+
+                <div class="topbar-actions">
+                    <div class="dropdown topbar-notifications-dropdown">
+    <button class="topbar-icon-btn position-relative" type="button" id="adminNotificationsBtn"
+            data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+            aria-label="Notifications">
+        <i class="bi bi-bell"></i>
+    </button>
+    <div class="dropdown-menu dropdown-menu-end topbar-notifications-menu shadow border-0"
+         aria-labelledby="adminNotificationsBtn">
+        <div class="topbar-notifications-header">
+            <span class="fw-bold text-dark">Notifications</span>
+        </div>
+        <div class="topbar-notifications-body">
+                <div class="topbar-notifications-empty">
+                    <i class="bi bi-bell-slash"></i>
+                    <p class="mb-0 fw-semibold text-dark small">All caught up</p>
+                    <p class="mb-0 text-muted" style="font-size:0.78rem;">No pending actions right now.</p>
+                </div>
+        </div>
+    </div>
+</div>
+
+                    <a class="topbar-icon-btn" href="#">
+                        <i class="bi bi-envelope"></i>
+                    </a>
+
+                    <div class="dropdown">
+                        <button class="topbar-profile dropdown-toggle" type="button" id="adminMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="avatar-circle avatar-color-4">
+                                SA
+                            </div>
+                            <div class="user-profile-info">
+                                <span class="user-profile-name">System Administrator</span>
+                                <span class="user-profile-role">Administrator</span>
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end border shadow-sm py-2" aria-labelledby="adminMenuButton" style="border-radius: 12px; font-size: 0.9rem;">
+                            <li><a class="dropdown-item py-2" href="/Admin/Settings"><i class="bi bi-sliders me-2 text-secondary"></i>Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item py-2 text-danger" href="/Account/Logout"><i class="bi bi-box-arrow-right me-2 text-danger"></i>Sign Out</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <main role="main" class="dashboard-content">
+                
+<!-- Page Header -->
+<div class="admin-page-header admin-theme-violet mb-4" style="--admin-btn:linear-gradient(45deg,#6366f1,#4f46e5);">
+    <div class="admin-page-header-glow"></div>
+    <div class="row align-items-center position-relative z-1 g-3">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="admin-page-icon"><i class="bi bi-sliders"></i></div>
+                <div>
+                    <h2 class="fw-bold text-white mb-0">System Settings</h2>
+                    <p class="mb-0 text-white-50 small mt-1">Platform config, payouts, integrations, and admin account</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <span class="admin-header-badge">
+                <i class="bi bi-check-circle me-1"></i>
+                Website Online
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Site</p>
+            <p class="fw-bold text-dark mb-0 text-truncate small" title="Elite MLM Engine">Elite MLM Engine</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Min withdrawal</p>
+            <p class="fw-bold text-success mb-0">&#8377;500</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Level 1 commission</p>
+            <p class="fw-bold text-primary mb-0">10.00%</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="glass-card admin-stat-card h-100">
+            <p class="admin-stat-label">Support email</p>
+            <p class="fw-bold text-dark mb-0 text-truncate small" title="support@mlm.com">support@mlm.com</p>
+        </div>
+    </div>
+</div> -->
+
+<form method="post" id="settingsForm" action="/Admin/Settings">
+    
+    
+    <input type="hidden" id="ActiveTabInput" data-val="true" data-val-required="The ActiveTab field is required." name="ActiveTab" value="homePopup" />
+
+    <div class="row align-items-start g-4">
+        <!-- Sidebar -->
+        <div class="col-md-4 col-lg-3">
+            <div class="glass-card p-3 settings-sidebar h-100">
+                <nav class="nav flex-column nav-pills settings-nav" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+
+                    <span class="settings-nav-group">Platform</span>
+                    <button class="nav-link settings-nav-link " id="tab-general" data-bs-toggle="pill" data-bs-target="#content-general" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'general'">
+                        <span class="settings-nav-icon settings-nav-icon-red"><i class="bi bi-sliders"></i></span>General
+                    </button>
+                    <button class="nav-link settings-nav-link " id="tab-commission" data-bs-toggle="pill" data-bs-target="#content-commission" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'commission'">
+                        <span class="settings-nav-icon settings-nav-icon-blue"><i class="bi bi-diagram-3"></i></span>Commission Setup
+                    </button>
+                    <button class="nav-link settings-nav-link " id="tab-withdrawals" data-bs-toggle="pill" data-bs-target="#content-withdrawals" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'withdrawals'">
+                        <span class="settings-nav-icon settings-nav-icon-purple"><i class="bi bi-receipt"></i></span>Withdrawal Rules
+                    </button>
+                    <button class="nav-link settings-nav-link " id="tab-paymentSetup" data-bs-toggle="pill" data-bs-target="#content-paymentSetup" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'paymentSetup'">
+                        <span class="settings-nav-icon settings-nav-icon-red"><i class="bi bi-bank"></i></span>Payment Setup
+                    </button>
+                    <button class="nav-link settings-nav-link active" id="tab-homePopup" data-bs-toggle="pill" data-bs-target="#content-homePopup" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'homePopup'">
+                        <span class="settings-nav-icon settings-nav-icon-amber"><i class="bi bi-image"></i></span>Website Popup
+                    </button>
+
+                    <span class="settings-nav-group">Integrations</span>
+                    <button class="nav-link settings-nav-link " id="tab-smtp" data-bs-toggle="pill" data-bs-target="#content-smtp" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'smtp'">
+                        <span class="settings-nav-icon settings-nav-icon-cyan"><i class="bi bi-envelope"></i></span>SMTP Email
+                    </button>
+                    <button class="nav-link settings-nav-link " id="tab-sms" data-bs-toggle="pill" data-bs-target="#content-sms" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'sms'">
+                        <span class="settings-nav-icon settings-nav-icon-pink"><i class="bi bi-chat-text"></i></span>SMS Gateway
+                    </button>
+                    <button class="nav-link settings-nav-link " id="tab-whatsapp" data-bs-toggle="pill" data-bs-target="#content-whatsapp" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'whatsapp'">
+                        <span class="settings-nav-icon settings-nav-icon-green"><i class="bi bi-whatsapp"></i></span>WhatsApp API
+                    </button>
+
+                    <span class="settings-nav-group">Account</span>
+                    <button class="nav-link settings-nav-link " id="tab-adminProfile" data-bs-toggle="pill" data-bs-target="#content-adminProfile" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'adminProfile'">
+                        <span class="settings-nav-icon settings-nav-icon-indigo"><i class="bi bi-person-badge"></i></span>Admin Profile
+                    </button>
+                    <button class="nav-link settings-nav-link " id="tab-password" data-bs-toggle="pill" data-bs-target="#content-password" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'password'">
+                        <span class="settings-nav-icon settings-nav-icon-green"><i class="bi bi-shield-lock"></i></span>Password
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="col-md-8 col-lg-9">
+            <div class="tab-content" id="v-pills-tabContent">
+
+                <div class="tab-pane fade " id="content-general" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">General settings</h5>
+                            <p class="text-muted small mb-0">Site identity, support contact, and maintenance mode.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Site Name</label>
+                            <input type="text" class="form-control settings-input" data-val="true" data-val-maxlength="The field SiteName must be a string or array type with a maximum length of &#x27;200&#x27;." data-val-maxlength-max="200" data-val-required="The SiteName field is required." id="Settings_SiteName" maxlength="200" name="Settings.SiteName" value="Elite MLM Engine" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Support Email</label>
+                            <input type="email" class="form-control settings-input" data-val="true" data-val-maxlength="The field SupportEmail must be a string or array type with a maximum length of &#x27;200&#x27;." data-val-maxlength-max="200" data-val-required="The SupportEmail field is required." id="Settings_SupportEmail" maxlength="200" name="Settings.SupportEmail" value="support@mlm.com" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Maintenance Mode</label>
+                            <select class="form-select settings-input" data-val="true" data-val-maxlength="The field MaintenanceMode must be a string or array type with a maximum length of &#x27;50&#x27;." data-val-maxlength-max="50" data-val-required="The MaintenanceMode field is required." id="Settings_MaintenanceMode" name="Settings.MaintenanceMode">
+                                <option value="Online" selected="selected">Website Online — members can access the portal</option>
+                                <option value="Offline">Maintenance Mode — member access paused</option>
+                            </select>
+                            <small class="text-muted d-block mt-2">When maintenance mode is on, members see a maintenance popup and cannot sign in. Admin portal stays available.</small>
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save general settings</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade " id="content-commission" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">Commission setup</h5>
+                            <p class="text-muted small mb-0">Set commission percentages for multi-level hierarchy.</p>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="settings-label">Level 1 Commission (%)</label>
+                                <input type="number" step="0.01" class="form-control settings-input" required data-val="true" data-val-number="The field Level1Commission must be a number." data-val-required="The Level1Commission field is required." id="Settings_Level1Commission" name="Settings.Level1Commission" value="10.00" /><input name="__Invariant" type="hidden" value="Settings.Level1Commission" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Level 2 Commission (%)</label>
+                                <input type="number" step="0.01" class="form-control settings-input" required data-val="true" data-val-number="The field Level2Commission must be a number." data-val-required="The Level2Commission field is required." id="Settings_Level2Commission" name="Settings.Level2Commission" value="5.00" /><input name="__Invariant" type="hidden" value="Settings.Level2Commission" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Level 3 Commission (%)</label>
+                                <input type="number" step="0.01" class="form-control settings-input" required data-val="true" data-val-number="The field Level3Commission must be a number." data-val-required="The Level3Commission field is required." id="Settings_Level3Commission" name="Settings.Level3Commission" value="3.00" /><input name="__Invariant" type="hidden" value="Settings.Level3Commission" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Level 4 Commission (%)</label>
+                                <input type="number" step="0.01" class="form-control settings-input" required data-val="true" data-val-number="The field Level4Commission must be a number." data-val-required="The Level4Commission field is required." id="Settings_Level4Commission" name="Settings.Level4Commission" value="2.00" /><input name="__Invariant" type="hidden" value="Settings.Level4Commission" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Level 5 Commission (%)</label>
+                                <input type="number" step="0.01" class="form-control settings-input" required data-val="true" data-val-number="The field Level5Commission must be a number." data-val-required="The Level5Commission field is required." id="Settings_Level5Commission" name="Settings.Level5Commission" value="1.00" /><input name="__Invariant" type="hidden" value="Settings.Level5Commission" />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save commission setup</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade " id="content-withdrawals" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">Withdrawal rules</h5>
+                            <p class="text-muted small mb-0">Minimum thresholds and withdrawal fees.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Minimum Payout Threshold (&#8377;)</label>
+                            <input type="number" step="0.01" class="form-control settings-input" required data-val="true" data-val-number="The field MinWithdrawalLimit must be a number." data-val-required="The MinWithdrawalLimit field is required." id="Settings_MinWithdrawalLimit" name="Settings.MinWithdrawalLimit" value="500.00" /><input name="__Invariant" type="hidden" value="Settings.MinWithdrawalLimit" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Withdrawal Processing Fee (%)</label>
+                            <input type="number" step="0.01" class="form-control settings-input" required data-val="true" data-val-number="The field WithdrawalFeePercent must be a number." data-val-required="The WithdrawalFeePercent field is required." id="Settings_WithdrawalFeePercent" name="Settings.WithdrawalFeePercent" value="0.00" /><input name="__Invariant" type="hidden" value="Settings.WithdrawalFeePercent" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">TDS Tax Deduction (%)</label>
+                            <input type="number" step="0.01" class="form-control settings-input" required data-val="true" data-val-number="The field TdsPercent must be a number." data-val-required="The TdsPercent field is required." id="Settings_TdsPercent" name="Settings.TdsPercent" value="0.00" /><input name="__Invariant" type="hidden" value="Settings.TdsPercent" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Daily Closing Admin Charge (%)</label>
+                            <input type="number" step="0.01" class="form-control settings-input" required data-val="true" data-val-number="The field AdminChargePercent must be a number." data-val-required="The AdminChargePercent field is required." id="Settings_AdminChargePercent" name="Settings.AdminChargePercent" value="0.00" /><input name="__Invariant" type="hidden" value="Settings.AdminChargePercent" />
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save rules</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade " id="content-paymentSetup" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">Payment setup</h5>
+                            <p class="text-muted small mb-0">Manual payment instructions for members.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">UPI ID / Address</label>
+                            <input type="text" class="form-control settings-input" placeholder="e.g. elitemlm@paytm" data-val="true" data-val-maxlength="The field CompanyQrCodeUrl must be a string or array type with a maximum length of &#x27;500&#x27;." data-val-maxlength-max="500" data-val-required="The CompanyQrCodeUrl field is required." id="Settings_CompanyQrCodeUrl" maxlength="500" name="Settings.CompanyQrCodeUrl" value="" />
+                            <small class="text-muted d-block mt-1">Direct UPI ID shown to members on activation view.</small>
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Bank Deposit Information</label>
+                            <textarea rows="4" class="form-control settings-input" placeholder="Enter bank transfer instructions..." data-val="true" data-val-maxlength="The field BankDetails must be a string or array type with a maximum length of &#x27;1000&#x27;." data-val-maxlength-max="1000" data-val-required="The BankDetails field is required." id="Settings_BankDetails" maxlength="1000" name="Settings.BankDetails">
+Bank: Cyber Bank India&#xD;&#xA;A/c Name: Elite MLM Technologies&#xD;&#xA;A/c No: 990184719047209&#xD;&#xA;IFSC: CYBR0001084</textarea>
+                            <small class="text-muted d-block mt-1">Bank Name, IFSC, Account Number, etc.</small>
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save payment setup</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade show active" id="content-homePopup" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel admin-popup-settings">
+                        <div class="settings-panel-header d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1">Website popup</h5>
+                                <p class="text-muted small mb-0">Festival wishes, offers, or announcements on the homepage when visitors arrive.</p>
+                            </div>
+                                <span class="admin-popup-status admin-popup-status-off"><i class="bi bi-eye-slash me-1"></i>Not configured</span>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="admin-popup-steps mb-4">
+                                    <div class="admin-popup-step is-active">
+                                        <span class="admin-popup-step-num">1</span>
+                                        <div>
+                                            <strong>Upload image</strong>
+                                            <p class="mb-0 small text-muted">Offer banner, festival greeting, promo poster</p>
+                                        </div>
+                                    </div>
+                                    <div class="admin-popup-step ">
+                                        <span class="admin-popup-step-num">2</span>
+                                        <div>
+                                            <strong>Enable popup</strong>
+                                            <p class="mb-0 small text-muted">Turn on the switch below</p>
+                                        </div>
+                                    </div>
+                                    <div class="admin-popup-step ">
+                                        <span class="admin-popup-step-num">3</span>
+                                        <div>
+                                            <strong>Save &amp; preview</strong>
+                                            <p class="mb-0 small text-muted">Check the homepage — popup opens automatically</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="homePopupFields">
+                                    <div class="admin-popup-toggle-card mb-3">
+                                        <div class="form-check form-switch m-0">
+                                            <input type="hidden" name="homePopupEnabled" value="false" form="homePopupSaveForm" />
+                                            <input class="form-check-input" type="checkbox" name="homePopupEnabled" id="homePopupEnabled" value="true"
+                                                   form="homePopupSaveForm"  />
+                                            <label class="form-check-label settings-label mb-0" for="homePopupEnabled">
+                                                Show popup on homepage
+                                            </label>
+                                        </div>
+                                        <p class="small text-muted mb-0 mt-2">When off, the image stays saved but visitors will not see the popup.</p>
+                                    </div>
+
+                                    <label class="settings-label">Popup image</label>
+                                    <label class="admin-popup-upload" for="popupImageInput">
+                                        <input type="file" name="popupImage" id="popupImageInput" class="admin-popup-upload-input"
+                                               form="homePopupSaveForm" accept="image/jpeg,image/png,image/webp,image/gif" />
+                                        <span class="admin-popup-upload-icon"><i class="bi bi-cloud-arrow-up"></i></span>
+                                        <span class="admin-popup-upload-title">Click to upload or replace image</span>
+                                        <span class="admin-popup-upload-hint">JPG, PNG, WEBP, GIF — max 3MB</span>
+                                        <span class="admin-popup-upload-name" id="popupFileName">No file selected yet</span>
+                                    </label>
+
+                                    <div class="d-flex flex-wrap gap-2 mt-4">
+                                        <button type="submit" form="homePopupSaveForm" class="btn settings-save-btn">
+                                            <i class="bi bi-check2-circle me-1"></i>Save popup
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <div class="admin-popup-preview-wrap">
+                                    <p class="admin-popup-preview-label mb-2"><i class="bi bi-phone me-1"></i>Visitor preview</p>
+                                    <div class="admin-popup-preview-frame">
+                                        <div class="admin-popup-preview-site">
+                                            <div class="admin-popup-preview-nav"></div>
+                                            <div class="admin-popup-preview-body">
+                                                <div class="admin-popup-preview-line w-75"></div>
+                                                <div class="admin-popup-preview-line w-50"></div>
+                                            </div>
+                                        </div>
+                                        <div class="admin-popup-preview-overlay" id="adminPopupPreviewOverlay" hidden>
+                                            <div class="admin-popup-preview-dialog">
+                                                <span class="admin-popup-preview-close"><i class="bi bi-x"></i></span>
+                                                    <img src="" alt="" id="adminPopupPreviewImg" class="admin-popup-preview-img" hidden />
+                                                    <div class="admin-popup-preview-empty" id="adminPopupPreviewEmpty">
+                                                        <i class="bi bi-image"></i>
+                                                        <span>Upload an image to preview</span>
+                                                    </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="small text-muted mt-2 mb-0">
+<i class="bi bi-info-circle me-1"></i>No popup configured yet — nothing shows on the homepage.                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade " id="content-smtp" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1">SMTP email</h5>
+                                <p class="text-muted small mb-0">Configure email server for sending alerts.</p>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#testEmailModal">
+                                <i class="bi bi-send me-1"></i>Test Email
+                            </button>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-8">
+                                <label class="settings-label">SMTP Host</label>
+                                <input type="text" class="form-control settings-input" placeholder="smtp.gmail.com" data-val="true" data-val-maxlength="The field SmtpHost must be a string or array type with a maximum length of &#x27;200&#x27;." data-val-maxlength-max="200" data-val-required="The SmtpHost field is required." id="Settings_SmtpHost" maxlength="200" name="Settings.SmtpHost" value="smtp.gmail.com" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="settings-label">Port</label>
+                                <input type="number" class="form-control settings-input" placeholder="587" data-val="true" data-val-required="The SmtpPort field is required." id="Settings_SmtpPort" name="Settings.SmtpPort" value="587" /><input name="__Invariant" type="hidden" value="Settings.SmtpPort" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Username</label>
+                                <input type="text" class="form-control settings-input" data-val="true" data-val-maxlength="The field SmtpUsername must be a string or array type with a maximum length of &#x27;200&#x27;." data-val-maxlength-max="200" data-val-required="The SmtpUsername field is required." id="Settings_SmtpUsername" maxlength="200" name="Settings.SmtpUsername" value="farziarrtist@gmail.com" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="settings-label">Password</label>
+                                <input type="password" class="form-control settings-input" data-val="true" data-val-maxlength="The field SmtpPassword must be a string or array type with a maximum length of &#x27;200&#x27;." data-val-maxlength-max="200" data-val-required="The SmtpPassword field is required." id="Settings_SmtpPassword" maxlength="200" name="Settings.SmtpPassword" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="SmtpEnableSsl" checked="checked" data-val="true" data-val-required="The SmtpEnableSsl field is required." name="Settings.SmtpEnableSsl" value="true">
+                                    <label class="form-check-label settings-label mb-0" for="SmtpEnableSsl">Enable SSL</label>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save SMTP settings</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade " id="content-sms" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">SMS gateway</h5>
+                            <p class="text-muted small mb-0">Connect a third-party SMS provider for OTPs and alerts.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">API URL</label>
+                            <input type="text" class="form-control settings-input" placeholder="https://api.smsprovider.com/send" data-val="true" data-val-maxlength="The field SmsApiUrl must be a string or array type with a maximum length of &#x27;500&#x27;." data-val-maxlength-max="500" data-val-required="The SmsApiUrl field is required." id="Settings_SmsApiUrl" maxlength="500" name="Settings.SmsApiUrl" value="" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">API Key / Auth Token</label>
+                            <input type="password" class="form-control settings-input" data-val="true" data-val-maxlength="The field SmsApiKey must be a string or array type with a maximum length of &#x27;500&#x27;." data-val-maxlength-max="500" data-val-required="The SmsApiKey field is required." id="Settings_SmsApiKey" maxlength="500" name="Settings.SmsApiKey" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Sender ID</label>
+                            <input type="text" class="form-control settings-input" placeholder="ELITE" data-val="true" data-val-maxlength="The field SmsSenderId must be a string or array type with a maximum length of &#x27;50&#x27;." data-val-maxlength-max="50" data-val-required="The SmsSenderId field is required." id="Settings_SmsSenderId" maxlength="50" name="Settings.SmsSenderId" value="" />
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save SMS gateway</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade " id="content-whatsapp" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">WhatsApp API</h5>
+                            <p class="text-muted small mb-0">Connect WhatsApp Business API for automated messaging.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Provider / Service</label>
+                            <select class="form-select settings-input" data-val="true" data-val-maxlength="The field WhatsAppProvider must be a string or array type with a maximum length of &#x27;100&#x27;." data-val-maxlength-max="100" data-val-required="The WhatsAppProvider field is required." id="Settings_WhatsAppProvider" name="Settings.WhatsAppProvider">
+                                <option value="" selected="selected">Select Provider...</option>
+                                <option value="Meta">Official Meta API</option>
+                                <option value="Twilio">Twilio</option>
+                                <option value="Wati">WATI</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Access Token</label>
+                            <input type="password" class="form-control settings-input" data-val="true" data-val-maxlength="The field WhatsAppAccessToken must be a string or array type with a maximum length of &#x27;500&#x27;." data-val-maxlength-max="500" data-val-required="The WhatsAppAccessToken field is required." id="Settings_WhatsAppAccessToken" maxlength="500" name="Settings.WhatsAppAccessToken" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Instance ID / Phone Number ID</label>
+                            <input type="text" class="form-control settings-input" data-val="true" data-val-maxlength="The field WhatsAppInstanceId must be a string or array type with a maximum length of &#x27;200&#x27;." data-val-maxlength-max="200" data-val-required="The WhatsAppInstanceId field is required." id="Settings_WhatsAppInstanceId" maxlength="200" name="Settings.WhatsAppInstanceId" value="" />
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save WhatsApp settings</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade " id="content-adminProfile" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">Admin profile</h5>
+                            <p class="text-muted small mb-0">Update your administrator account details.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Username</label>
+                            <input type="text" class="form-control settings-input" readonly disabled data-val="true" data-val-required="The AdminUsername field is required." id="AdminUsername" name="AdminUsername" value="ML000001" />
+                            <small class="text-muted d-block mt-1">Username cannot be changed.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">Full Name</label>
+                            <input type="text" class="form-control settings-input" required data-val="true" data-val-required="The AdminFullName field is required." id="AdminFullName" name="AdminFullName" value="System Administrator" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Email Address</label>
+                            <input type="email" class="form-control settings-input" required data-val="true" data-val-required="The AdminEmail field is required." id="AdminEmail" name="AdminEmail" value="admin@mlm.com" />
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Save profile details</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade " id="content-password" role="tabpanel">
+                    <div class="glass-card p-4 settings-panel">
+                        <div class="settings-panel-header">
+                            <h5 class="fw-bold text-dark mb-1">Security &amp; password</h5>
+                            <p class="text-muted small mb-0">Change your administrative access password securely.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="settings-label">New Password</label>
+                            <input type="password" class="form-control settings-input" placeholder="Leave blank to keep current" data-val="true" data-val-required="The NewPassword field is required." id="NewPassword" name="NewPassword" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="settings-label">Confirm New Password</label>
+                            <input type="password" class="form-control settings-input" placeholder="Confirm new password" data-val="true" data-val-required="The ConfirmPassword field is required." id="ConfirmPassword" name="ConfirmPassword" />
+                        </div>
+                        <button type="submit" class="btn settings-save-btn">Update password</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+<input name="__RequestVerificationToken" type="hidden" value="CfDJ8H0c-K3HQXBPnZ48XCwdEaV9Or_yQYVvKHh69Atw0cpzYd6Zud1ttsX25BAQD9Iuboq8FGJ4tcJSP13WJBk76riyPEC6air4CA-S-kZ-ozCFYal2yGQ2Lfov2XsycKGbU0jUaavuWtQrsCzyppM3ZInk1oc0FOXsINRX9fERUePzHjgM7vuPLPodqITwhQ9ICA" /><input name="Settings.SmtpEnableSsl" type="hidden" value="false"></form>
+
+<form method="post" id="homePopupSaveForm" enctype="multipart/form-data" class="visually-hidden" aria-hidden="true" action="/Admin/SaveHomePopup">
+    
+<input name="__RequestVerificationToken" type="hidden" value="CfDJ8H0c-K3HQXBPnZ48XCwdEaV9Or_yQYVvKHh69Atw0cpzYd6Zud1ttsX25BAQD9Iuboq8FGJ4tcJSP13WJBk76riyPEC6air4CA-S-kZ-ozCFYal2yGQ2Lfov2XsycKGbU0jUaavuWtQrsCzyppM3ZInk1oc0FOXsINRX9fERUePzHjgM7vuPLPodqITwhQ9ICA" /></form>
+
+<!-- Test Email Modal -->
+<div class="modal fade" id="testEmailModal" tabindex="-1" aria-labelledby="testEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="testEmailModalLabel">
+                    <i class="bi bi-envelope-check text-primary me-2"></i>Send Test Email
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="/Admin/TestEmail">
+                
+                <div class="modal-body p-4 pt-3">
+                    <p class="text-muted small mb-3">Save SMTP settings before sending a test email.</p>
+                    <label class="settings-label">Recipient Email</label>
+                    <input type="email" name="testEmail" class="form-control settings-input" required placeholder="admin@example.com" />
+                </div>
+                <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">Send Email</button>
+                </div>
+            <input name="__RequestVerificationToken" type="hidden" value="CfDJ8H0c-K3HQXBPnZ48XCwdEaV9Or_yQYVvKHh69Atw0cpzYd6Zud1ttsX25BAQD9Iuboq8FGJ4tcJSP13WJBk76riyPEC6air4CA-S-kZ-ozCFYal2yGQ2Lfov2XsycKGbU0jUaavuWtQrsCzyppM3ZInk1oc0FOXsINRX9fERUePzHjgM7vuPLPodqITwhQ9ICA" /></form>
+        </div>
+    </div>
+</div>
+
+
+            </main>
+        </div>
+    </div>
+
+    <script src="/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/site.js?v=_oxCUuz4T4M7ZrOU3V7kPCtNUbfqEhRyJhyMOtDYksQ"></script>
+    <script src="/js/admin-tables.js?v=qvlPW6XM71zcrV0IQsndAe4iSWk0jN3A19MV7-79IfY"></script>
+    
+<script>
+(function () {
+    var fileInput = document.getElementById('popupImageInput');
+    var fileNameEl = document.getElementById('popupFileName');
+    var previewImg = document.getElementById('adminPopupPreviewImg');
+    var previewEmpty = document.getElementById('adminPopupPreviewEmpty');
+    var previewOverlay = document.getElementById('adminPopupPreviewOverlay');
+    var enableSwitch = document.getElementById('homePopupEnabled');
+
+    if (!fileInput) return;
+
+    fileInput.addEventListener('change', function () {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+
+        fileNameEl.textContent = file.name;
+        if (enableSwitch) enableSwitch.checked = true;
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            if (previewImg) {
+                previewImg.src = e.target.result;
+                previewImg.hidden = false;
+            }
+            if (previewEmpty) previewEmpty.hidden = true;
+            if (previewOverlay) previewOverlay.hidden = false;
+        };
+        reader.readAsDataURL(file);
+    });
+})();
+</script>
+
+</body>
+</html>

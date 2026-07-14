@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MLM_Level.Models;
+using MLM_Level.Services;
 
 namespace MLM_Level.Data
 {
@@ -19,6 +20,12 @@ namespace MLM_Level.Data
             // Seed settings & packages & announcements if they don't exist
             SeedNewSystemData(context);
 
+            // Backfill ROI packages for activations approved before ROI was configured
+            BackfillUserPackages(context);
+
+            // Assign ML000001-style usernames to legacy accounts
+            MigrateLegacyMemberIds(context);
+
             // Register Stored Procedures
             RegisterStoredProcedures(context);
 
@@ -33,7 +40,7 @@ namespace MLM_Level.Data
             // 1. Seed Admin User
             var admin = new User
             {
-                Username = "admin",
+                Username = MemberIdFormatter.Format(1),
                 Email = "admin@mlm.com",
                 FullName = "System Administrator",
                 Phone = "9999999999",
@@ -42,7 +49,7 @@ namespace MLM_Level.Data
                 IsActive = true,
                 IsAdmin = true,
                 WalletBalance = 0.00m,
-                ReferralCode = "ADMINCODE"
+                ReferralCode = MemberIdFormatter.Format(1)
             };
             admin.PasswordHash = passwordHasher.HashPassword(admin, "Admin@123");
             context.Users.Add(admin);
@@ -51,7 +58,7 @@ namespace MLM_Level.Data
             // 2. Seed Root Member (Top level active user in the binary/placement tree)
             var root = new User
             {
-                Username = "root",
+                Username = MemberIdFormatter.Format(2),
                 Email = "root@mlm.com",
                 FullName = "Root Member",
                 Phone = "8888888888",
@@ -62,7 +69,7 @@ namespace MLM_Level.Data
                 IsActive = true,
                 IsAdmin = false,
                 WalletBalance = 0.00m,
-                ReferralCode = "ROOT123"
+                ReferralCode = MemberIdFormatter.Format(2)
             };
             root.PasswordHash = passwordHasher.HashPassword(root, "Root@123");
             context.Users.Add(root);
@@ -337,6 +344,111 @@ namespace MLM_Level.Data
                     END CATCH
                 END
             ");
+
+            // 5. sp_DistributeDailyROI
+            context.Database.ExecuteSqlRaw(@"
+                IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'sp_DistributeDailyROI')
+                    DROP PROCEDURE sp_DistributeDailyROI;
+            ");
+            context.Database.ExecuteSqlRaw(@"
+                CREATE PROCEDURE sp_DistributeDailyROI
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+
+                    DECLARE @ProcessedCount INT = 0;
+                    DECLARE @TotalDistributed DECIMAL(18,2) = 0;
+
+                    -- Start of today in IST, converted to UTC (matches AdminController logic)
+                    DECLARE @NowIst DATETIME = DATEADD(MINUTE, 330, GETUTCDATE());
+                    DECLARE @StartOfTodayIst DATE = CAST(@NowIst AS DATE);
+                    DECLARE @StartOfTodayUtc DATETIME = DATEADD(MINUTE, -330, CAST(@StartOfTodayIst AS DATETIME));
+
+                    BEGIN TRANSACTION;
+                    BEGIN TRY
+                        DECLARE @UserPackageId INT;
+                        DECLARE @UserId INT;
+                        DECLARE @Amount DECIMAL(18,2);
+                        DECLARE @RoiPercentage DECIMAL(18,2);
+                        DECLARE @RoiDurationDays INT;
+                        DECLARE @DaysPaid INT;
+                        DECLARE @RoiAmount DECIMAL(18,2);
+                        DECLARE @PackageName NVARCHAR(100);
+
+                        DECLARE roi_cursor CURSOR LOCAL FAST_FORWARD FOR
+                            SELECT
+                                up.Id,
+                                up.UserId,
+                                up.Amount,
+                                up.RoiPercentage,
+                                up.RoiDurationDays,
+                                up.DaysPaid,
+                                p.Name
+                            FROM UserPackages up
+                            INNER JOIN Users u ON up.UserId = u.Id
+                            INNER JOIN Packages p ON up.PackageId = p.Id
+                            WHERE up.IsActive = 1
+                              AND u.IsActive = 1
+                              AND up.RoiPercentage > 0
+                              AND up.RoiDurationDays > 0
+                              AND up.DaysPaid < up.RoiDurationDays
+                              AND (up.LastPaidDate IS NULL OR up.LastPaidDate < @StartOfTodayUtc);
+
+                        OPEN roi_cursor;
+                        FETCH NEXT FROM roi_cursor INTO @UserPackageId, @UserId, @Amount, @RoiPercentage, @RoiDurationDays, @DaysPaid, @PackageName;
+
+                        WHILE @@FETCH_STATUS = 0
+                        BEGIN
+                            SET @RoiAmount = (@Amount * @RoiPercentage) / 100.0;
+
+                            UPDATE Users
+                            SET IncomeWallet = IncomeWallet + @RoiAmount
+                            WHERE Id = @UserId;
+
+                            INSERT INTO CommissionTrans (UserId, FromUserId, Amount, Level, Timestamp, Description)
+                            VALUES (
+                                @UserId,
+                                @UserId,
+                                @RoiAmount,
+                                0,
+                                GETUTCDATE(),
+                                'Daily ROI on ' + @PackageName + ' - Day ' + CAST(@DaysPaid + 1 AS VARCHAR(10)) + '/' + CAST(@RoiDurationDays AS VARCHAR(10))
+                            );
+
+                            UPDATE UserPackages
+                            SET
+                                DaysPaid = DaysPaid + 1,
+                                LastPaidDate = GETUTCDATE(),
+                                IsActive = CASE WHEN DaysPaid + 1 >= RoiDurationDays THEN 0 ELSE 1 END
+                            WHERE Id = @UserPackageId;
+
+                            SET @ProcessedCount = @ProcessedCount + 1;
+                            SET @TotalDistributed = @TotalDistributed + @RoiAmount;
+
+                            FETCH NEXT FROM roi_cursor INTO @UserPackageId, @UserId, @Amount, @RoiPercentage, @RoiDurationDays, @DaysPaid, @PackageName;
+                        END
+
+                        CLOSE roi_cursor;
+                        DEALLOCATE roi_cursor;
+
+                        COMMIT TRANSACTION;
+                    END TRY
+                    BEGIN CATCH
+                        IF CURSOR_STATUS('local', 'roi_cursor') >= 0
+                        BEGIN
+                            CLOSE roi_cursor;
+                            DEALLOCATE roi_cursor;
+                        END
+
+                        IF @@TRANCOUNT > 0
+                            ROLLBACK TRANSACTION;
+
+                        THROW;
+                    END CATCH
+
+                    SELECT @ProcessedCount AS processedCount, @TotalDistributed AS totalDistributed;
+                END
+            ");
         }
 
         private static void CreateNewTablesIfNotExist(ApplicationDbContext context)
@@ -464,6 +576,120 @@ namespace MLM_Level.Data
                 IF COL_LENGTH('KycDetails', 'BankIfsc') IS NULL ALTER TABLE KycDetails ADD BankIfsc NVARCHAR(11) NOT NULL DEFAULT '';
                 IF COL_LENGTH('KycDetails', 'BankName') IS NULL ALTER TABLE KycDetails ADD BankName NVARCHAR(100) NOT NULL DEFAULT '';
             ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF COL_LENGTH('MlmSettings', 'HomePopupEnabled') IS NULL
+                    ALTER TABLE MlmSettings ADD HomePopupEnabled BIT NOT NULL DEFAULT 0;
+                IF COL_LENGTH('MlmSettings', 'HomePopupImageUrl') IS NULL
+                    ALTER TABLE MlmSettings ADD HomePopupImageUrl NVARCHAR(500) NOT NULL DEFAULT '';
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF COL_LENGTH('Packages', 'RoiPercentage') IS NULL
+                    ALTER TABLE Packages ADD RoiPercentage DECIMAL(18,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Packages', 'RoiDurationDays') IS NULL
+                    ALTER TABLE Packages ADD RoiDurationDays INT NOT NULL DEFAULT 0;
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF COL_LENGTH('Users', 'IncomeWallet') IS NULL
+                    ALTER TABLE Users ADD IncomeWallet DECIMAL(18,2) NOT NULL DEFAULT 0;
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF COL_LENGTH('ActivationRequests', 'PackageId') IS NULL
+                BEGIN
+                    ALTER TABLE ActivationRequests ADD PackageId INT NULL;
+                END
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='UserPackages' AND xtype='U')
+                BEGIN
+                    CREATE TABLE UserPackages (
+                        Id INT IDENTITY(1,1) PRIMARY KEY,
+                        UserId INT NOT NULL,
+                        PackageId INT NOT NULL,
+                        Amount DECIMAL(18,2) NOT NULL,
+                        RoiPercentage DECIMAL(18,2) NOT NULL,
+                        RoiDurationDays INT NOT NULL,
+                        DaysPaid INT NOT NULL DEFAULT 0,
+                        IsActive BIT NOT NULL DEFAULT 1,
+                        ActivationDate DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                        LastPaidDate DATETIME2 NULL,
+                        CONSTRAINT FK_UserPackages_Users_UserId
+                            FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE,
+                        CONSTRAINT FK_UserPackages_Packages_PackageId
+                            FOREIGN KEY (PackageId) REFERENCES Packages(Id) ON DELETE CASCADE
+                    );
+                    CREATE INDEX IX_UserPackages_UserId ON UserPackages(UserId);
+                    CREATE INDEX IX_UserPackages_PackageId ON UserPackages(PackageId);
+                END
+            ");
+
+            context.Database.ExecuteSqlRaw(@"
+                IF COL_LENGTH('UserPackages', 'LastPaidDate') IS NULL
+                    ALTER TABLE UserPackages ADD LastPaidDate DATETIME2 NULL;
+            ");
+        }
+
+        private static void BackfillUserPackages(ApplicationDbContext context)
+        {
+            var approvedActivations = context.ActivationRequests
+                .Include(r => r.Package)
+                .Where(r => r.Status == "Approved" && r.PackageId != null && r.Package != null && r.Package.RoiDurationDays > 0)
+                .ToList();
+
+            if (!approvedActivations.Any())
+                return;
+
+            var existingUserIds = context.UserPackages
+                .Select(up => up.UserId)
+                .ToHashSet();
+
+            var added = false;
+            foreach (var request in approvedActivations)
+            {
+                if (existingUserIds.Contains(request.UserId))
+                    continue;
+
+                context.UserPackages.Add(new UserPackage
+                {
+                    UserId = request.UserId,
+                    PackageId = request.PackageId!.Value,
+                    Amount = request.Amount,
+                    RoiPercentage = request.Package!.RoiPercentage,
+                    RoiDurationDays = request.Package.RoiDurationDays,
+                    DaysPaid = 0,
+                    IsActive = true,
+                    ActivationDate = request.ApprovedDate ?? request.CreatedDate
+                });
+                existingUserIds.Add(request.UserId);
+                added = true;
+            }
+
+            if (added)
+                context.SaveChanges();
+        }
+
+        private static void MigrateLegacyMemberIds(ApplicationDbContext context)
+        {
+            var users = context.Users.OrderBy(u => u.Id).ToList();
+            if (!users.Any())
+                return;
+
+            if (users.All(u => MemberIdFormatter.IsFormattedMemberId(u.Username)))
+                return;
+
+            var sequence = 1;
+            foreach (var user in users)
+            {
+                var memberId = MemberIdFormatter.Format(sequence++);
+                user.Username = memberId;
+                user.ReferralCode = memberId;
+            }
+
+            context.SaveChanges();
         }
 
         private static void SeedNewSystemData(ApplicationDbContext context)
@@ -488,11 +714,24 @@ namespace MLM_Level.Data
             if (!context.Packages.Any())
             {
                 context.Packages.AddRange(
-                    new Package { Name = "Starter Plan", Price = 1000.00m, Description = "Access level 1-5 commissions, binary node placement", IsActive = true },
-                    new Package { Name = "Silver Plan", Price = 2500.00m, Description = "Standard growth package with binary nodes unlocked", IsActive = true },
-                    new Package { Name = "Gold Plan", Price = 5000.00m, Description = "Premium level unlocks higher capping", IsActive = true }
+                    new Package { Name = "Starter Plan", Price = 1000.00m, Description = "Access level 1-5 commissions, binary node placement", RoiPercentage = 2.5m, RoiDurationDays = 100, IsActive = true },
+                    new Package { Name = "Silver Plan", Price = 2500.00m, Description = "Standard growth package with binary nodes unlocked", RoiPercentage = 2.5m, RoiDurationDays = 100, IsActive = true },
+                    new Package { Name = "Gold Plan", Price = 5000.00m, Description = "Premium level unlocks higher capping", RoiPercentage = 3.0m, RoiDurationDays = 120, IsActive = true }
                 );
                 context.SaveChanges();
+            }
+            else
+            {
+                var packagesWithoutRoi = context.Packages.Where(p => p.RoiDurationDays <= 0).ToList();
+                if (packagesWithoutRoi.Any())
+                {
+                    foreach (var package in packagesWithoutRoi)
+                    {
+                        package.RoiPercentage = 2.5m;
+                        package.RoiDurationDays = 100;
+                    }
+                    context.SaveChanges();
+                }
             }
 
             if (!context.Announcements.Any())

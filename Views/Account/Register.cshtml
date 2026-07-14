@@ -33,14 +33,14 @@
                     <i class="bi bi-person-plus-fill"></i>
                 </div>
                 <h2>Create Account</h2>
-                <p>Join under a sponsor and unlock your member dashboard</p>
+                <p>Your Member ID (e.g. ML000003) is assigned automatically after signup</p>
             </div>
 
             <form asp-controller="Account" asp-action="Register" method="post" class="auth-form">
                 <div asp-validation-summary="ModelOnly" class="auth-validation-summary"></div>
 
                 <div class="row g-3">
-                    <div class="col-sm-6">
+                    <div class="col-12">
                         <div class="auth-field">
                             <label asp-for="FullName">Full Name</label>
                             <div class="auth-input-wrap">
@@ -48,16 +48,6 @@
                                 <input asp-for="FullName" class="auth-input" placeholder="Your full name" />
                             </div>
                             <span asp-validation-for="FullName" class="auth-field-error"></span>
-                        </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="auth-field">
-                            <label asp-for="Username">Username</label>
-                            <div class="auth-input-wrap">
-                                <i class="bi bi-at auth-input-icon"></i>
-                                <input asp-for="Username" class="auth-input" placeholder="Choose username" autocomplete="username" />
-                            </div>
-                            <span asp-validation-for="Username" class="auth-field-error"></span>
                         </div>
                     </div>
                     <div class="col-sm-6">
@@ -83,12 +73,26 @@
                 </div>
 
                 <div class="auth-field auth-field-highlight">
-                    <label asp-for="SponsorCode">Sponsor / Referral Code</label>
-                    <div class="auth-input-wrap">
-                        <i class="bi bi-link-45deg auth-input-icon"></i>
-                        <input asp-for="SponsorCode" class="auth-input" placeholder="Referral code (optional)" />
+                    <div class="row g-3 auth-sponsor-row">
+                        <div class="col-sm-6">
+                            <label asp-for="SponsorCode">Sponsor / Referral Code</label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-link-45deg auth-input-icon"></i>
+                                <input asp-for="SponsorCode" class="auth-input" id="SponsorCode" placeholder="e.g. ML000001" autocomplete="off" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="sponsorNameDisplay">Sponsor Name</label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-person-check auth-input-icon"></i>
+                                <input type="text" id="sponsorNameDisplay" class="auth-input auth-input-readonly" readonly
+                                       value="@(ViewBag.SponsorDisplayName as string ?? string.Empty)"
+                                       placeholder="Auto-filled from code" tabindex="-1" aria-readonly="true" />
+                            </div>
+                        </div>
                     </div>
-                    <span class="auth-field-hint">Leave empty to join under the default root node.</span>
+                    <span class="auth-field-hint">Use sponsor Member ID (e.g. ML000001) or leave empty for default placement.</span>
+                    <span id="sponsorLookupStatus" class="auth-field-hint" aria-live="polite"></span>
                     <span asp-validation-for="SponsorCode" class="auth-field-error"></span>
                 </div>
 
@@ -136,4 +140,81 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const codeInput = document.getElementById('SponsorCode');
+            const nameInput = document.getElementById('sponsorNameDisplay');
+            const statusEl = document.getElementById('sponsorLookupStatus');
+            let lookupTimer = null;
+
+            function clearSponsorPreview() {
+                setSponsorName('');
+                statusEl.textContent = '';
+                statusEl.className = 'auth-field-hint';
+            }
+
+            function setSponsorName(name) {
+                nameInput.value = name || '';
+            }
+
+            function getSponsorPayload(data) {
+                return {
+                    found: data.found === true || data.Found === true,
+                    fullName: data.fullName || data.FullName || '',
+                    memberId: data.memberId || data.MemberId || '',
+                    message: data.message || data.Message || 'Sponsor code not found.'
+                };
+            }
+
+            async function lookupSponsor(code) {
+                const trimmed = (code || '').trim();
+                if (!trimmed) {
+                    clearSponsorPreview();
+                    return;
+                }
+
+                statusEl.textContent = 'Verifying sponsor…';
+                statusEl.className = 'auth-field-hint';
+
+                try {
+                    const response = await fetch('/Account/LookupSponsor?code=' + encodeURIComponent(trimmed));
+                    if (!response.ok) {
+                        throw new Error('lookup_failed');
+                    }
+                    const data = getSponsorPayload(await response.json());
+
+                    if (data.found) {
+                        setSponsorName(data.fullName);
+                        statusEl.textContent = 'Verified: ' + (data.memberId || trimmed);
+                        statusEl.className = 'auth-field-hint text-success';
+                    } else {
+                        setSponsorName('');
+                        statusEl.textContent = data.message;
+                        statusEl.className = 'auth-field-hint text-danger';
+                    }
+                } catch {
+                    setSponsorName('');
+                    statusEl.textContent = 'Could not verify sponsor. Refresh the page and try again.';
+                    statusEl.className = 'auth-field-hint text-danger';
+                }
+            }
+
+            function scheduleLookup() {
+                clearTimeout(lookupTimer);
+                lookupTimer = setTimeout(function () {
+                    lookupSponsor(codeInput.value);
+                }, 400);
+            }
+
+            codeInput.addEventListener('input', scheduleLookup);
+            codeInput.addEventListener('change', scheduleLookup);
+            codeInput.addEventListener('blur', function () {
+                lookupSponsor(codeInput.value);
+            });
+
+            if (codeInput.value.trim()) {
+                lookupSponsor(codeInput.value);
+            }
+        })();
+    </script>
 }
