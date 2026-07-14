@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Member Login - Elite MLM Level Network</title>
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="/css/site.css?v=s13z6aOmPeTzwmIFe0r0vcDJ4mLtYDDmckbT0WqDdU8" />
+        <link rel="stylesheet" href="/css/auth.css?v=WXpG48eFAVBBrNr74nwR7Z0vaVKTBjclTB9kwXzZz2U" />
+</head>
+<body>
+
+<div class="auth-shell">
+    <aside class="auth-shell-brand">
+        <div class="auth-shell-brand-inner">
+            <a class="auth-shell-logo" href="/">
+                <i class="bi bi-diagram-3-fill"></i>
+                <span>ELITE MLM</span>
+            </a>
+            <h1 class="auth-shell-title">Welcome back</h1>
+            <p class="auth-shell-lead">Sign in to manage your team, track level income, and request withdrawals from your E-Wallet.</p>
+            <ul class="auth-shell-perks">
+                <li><i class="bi bi-check-circle-fill"></i> Real-time commission ledger</li>
+                <li><i class="bi bi-check-circle-fill"></i> Genealogy tree & downline view</li>
+                <li><i class="bi bi-check-circle-fill"></i> Secure KYC verified payouts</li>
+            </ul>
+        </div>
+    </aside>
+
+    <div class="auth-shell-panel">
+        <a class="auth-shell-back" href="/">
+            <span class="auth-shell-back-icon" aria-hidden="true"><i class="bi bi-arrow-left"></i></span>
+            Back to home
+        </a>
+
+        <div class="auth-card">
+            <div class="auth-card-head">
+                <div class="auth-card-icon auth-card-icon-login">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <h2>Member Sign In</h2>
+                <p>Enter your credentials to access the portal</p>
+            </div>
+
+
+            <form method="post" class="auth-form" action="/Account/Login">
+                
+
+                <div class="auth-field">
+                    <label for="UsernameOrEmail">Username or Email</label>
+                    <div class="auth-input-wrap">
+                        <i class="bi bi-person auth-input-icon"></i>
+                        <input class="auth-input input-validation-error" placeholder="Enter username or email" autocomplete="username" type="text" data-val="true" data-val-required="Username or Email is required" id="UsernameOrEmail" name="UsernameOrEmail" value="" />
+                    </div>
+                    <span class="auth-field-error field-validation-error" data-valmsg-for="UsernameOrEmail" data-valmsg-replace="true">Username or Email is required</span>
+                </div>
+
+                <div class="auth-field">
+                    <label for="Password">Password</label>
+                    <div class="auth-input-wrap">
+                        <i class="bi bi-lock auth-input-icon"></i>
+                        <input class="auth-input auth-input-password" placeholder="Enter password" autocomplete="current-password" type="password" data-val="true" data-val-required="Password is required" id="Password" name="Password" />
+                        <button type="button" class="auth-password-toggle" onclick="togglePasswordVisibility(this)" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <span class="auth-field-error field-validation-valid" data-valmsg-for="Password" data-valmsg-replace="true"></span>
+                </div>
+
+                <div class="auth-row">
+                    <div class="form-check auth-check">
+                        <input class="form-check-input" id="rememberMe" type="checkbox" data-val="true" data-val-required="The RememberMe field is required." name="RememberMe" value="true" />
+                        <label class="form-check-label" for="rememberMe">Remember me</label>
+                    </div>
+                    <a class="auth-link" href="/Account/ForgotPassword">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-auth-primary w-100">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                </button>
+            <input name="__RequestVerificationToken" type="hidden" value="CfDJ8H0c-K3HQXBPnZ48XCwdEaWQIwfGixSArsKBoWQhKptQLF5zbXRZC1wxMGRQlCEVJlvjxIA-VD8oWFiMqzLr16URop7pQMEjneQxne0Y4jyE8cFcUmx7BS0EFNPPLJ9AzrcHYHBpkH8AgYcznngKxZ4" /><input name="RememberMe" type="hidden" value="false" /></form>
+
+            <div class="auth-card-foot">
+                <span>New member?</span>
+                <a class="auth-link auth-link-bold" href="/Account/Register">Create free account <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <script src="/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/site.js?v=_oxCUuz4T4M7ZrOU3V7kPCtNUbfqEhRyJhyMOtDYksQ"></script>
+    
+    <script src="/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+
+
+
+</body>
+</html>

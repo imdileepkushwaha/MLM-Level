@@ -1064,3 +1064,91 @@
     .landing-trust-inner { gap: 0.75rem 1.25rem; }
     .landing-mock-row { grid-template-columns: 1fr; }
 }
+
+/* Homepage promo popup */
+body.landing-popup-open { overflow: hidden; }
+.landing-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+.landing-popup.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+.landing-popup-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+}
+.landing-popup-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(520px, 92vw);
+    max-height: min(86vh, 680px);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow:
+        0 32px 64px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.08);
+    transform: translateY(20px) scale(0.94);
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    line-height: 0;
+}
+.landing-popup.is-visible .landing-popup-dialog {
+    transform: translateY(0) scale(1);
+}
+.landing-popup-close {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    z-index: 2;
+    width: 2.35rem;
+    height: 2.35rem;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    color: #0f172a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.28);
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.landing-popup-close:hover {
+    background: #dc2626;
+    color: #fff;
+    transform: scale(1.06);
+}
+.landing-popup-image {
+    display: block;
+    width: 100%;
+    max-height: min(86vh, 680px);
+    object-fit: contain;
+    background: #0f172a;
+}
+@media (max-width: 575.98px) {
+    .landing-popup { padding: 0.75rem; }
+    .landing-popup-dialog {
+        width: min(100%, 94vw);
+        border-radius: 14px;
+    }
+    .landing-popup-close {
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 2.1rem;
+        height: 2.1rem;
+    }
+}

@@ -312,6 +312,18 @@ body:has(.auth-shell)::after {
     border-color: #818cf8;
     box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
 }
+.auth-input:disabled,
+.auth-input[readonly],
+.auth-input-readonly {
+    background: #f8fafc;
+    color: #334155 !important;
+    cursor: default;
+    opacity: 1;
+    -webkit-text-fill-color: #334155;
+}
+.auth-input:disabled {
+    cursor: not-allowed;
+}
 .auth-input::placeholder { color: #94a3b8; }
 .auth-password-toggle {
     position: absolute;
@@ -342,6 +354,19 @@ body:has(.auth-shell)::after {
     border-radius: 14px;
     background: #f8fafc;
     border: 1px dashed rgba(99, 102, 241, 0.25);
+}
+.auth-field-highlight label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.4rem;
+}
+.auth-sponsor-row {
+    margin-bottom: 0.35rem;
+}
+.auth-field-highlight .auth-field-hint {
+    margin-top: 0.15rem;
 }
 .auth-row {
     display: flex;

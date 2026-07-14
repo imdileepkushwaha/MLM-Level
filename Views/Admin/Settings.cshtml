@@ -77,6 +77,9 @@
                     <button class="nav-link settings-nav-link @(Model.ActiveTab == "paymentSetup" ? "active" : "")" id="tab-paymentSetup" data-bs-toggle="pill" data-bs-target="#content-paymentSetup" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'paymentSetup'">
                         <span class="settings-nav-icon settings-nav-icon-red"><i class="bi bi-bank"></i></span>Payment Setup
                     </button>
+                    <button class="nav-link settings-nav-link @(Model.ActiveTab == "homePopup" ? "active" : "")" id="tab-homePopup" data-bs-toggle="pill" data-bs-target="#content-homePopup" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'homePopup'">
+                        <span class="settings-nav-icon settings-nav-icon-amber"><i class="bi bi-image"></i></span>Website Popup
+                    </button>
 
                     <span class="settings-nav-group">Integrations</span>
                     <button class="nav-link settings-nav-link @(Model.ActiveTab == "smtp" ? "active" : "")" id="tab-smtp" data-bs-toggle="pill" data-bs-target="#content-smtp" type="button" role="tab" onclick="document.getElementById('ActiveTabInput').value = 'smtp'">
@@ -105,241 +108,658 @@
             <div class="tab-content" id="v-pills-tabContent">
 
                 <div class="tab-pane fade @(Model.ActiveTab == "general" ? "show active" : "")" id="content-general" role="tabpanel">
-                    <div class="glass-card p-4 settings-panel">
-                        <div class="settings-panel-header">
-                            <h5 class="fw-bold text-dark mb-1">General settings</h5>
-                            <p class="text-muted small mb-0">Site identity, support contact, and maintenance mode.</p>
+                    <div class="glass-card settings-panel settings-panel--general">
+                        <div class="settings-panel-top">
+                            <div class="settings-panel-icon settings-panel-icon-red"><i class="bi bi-sliders"></i></div>
+                            <div class="settings-panel-heading">
+                                <h5 class="fw-bold text-dark mb-1">General settings</h5>
+                                <p class="text-muted small mb-0">Site identity, support contact, and maintenance mode.</p>
+                            </div>
+                            <span class="settings-panel-badge @(isOnline ? "is-success" : "is-warning")">
+                                <i class="bi @(isOnline ? "bi-check-circle" : "bi-tools") me-1"></i>@(isOnline ? "Online" : "Maintenance")
+                            </span>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">Site Name</label>
-                            <input asp-for="Settings.SiteName" type="text" class="form-control settings-input" />
+                        <div class="settings-panel-body">
+                            <div class="settings-section">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-indigo"><i class="bi bi-building"></i></span>
+                                    Site identity
+                                </p>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="settings-label">Site Name</label>
+                                        <input asp-for="Settings.SiteName" type="text" class="form-control settings-input" placeholder="Elite MLM Level Network" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="settings-label">Support Email</label>
+                                        <input asp-for="Settings.SupportEmail" type="email" class="form-control settings-input" placeholder="support@example.com" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="settings-section">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-green"><i class="bi bi-shield-check"></i></span>
+                                    Portal availability
+                                </p>
+                                <label class="settings-label">Maintenance Mode</label>
+                                <select asp-for="Settings.MaintenanceMode" class="form-select settings-input">
+                                    <option value="Online">Website Online — members can access the portal</option>
+                                    <option value="Offline">Maintenance Mode — member access paused</option>
+                                </select>
+                                <div class="settings-note mt-3">
+                                    <i class="bi bi-info-circle"></i>
+                                    <span>When maintenance mode is on, members see a maintenance message and cannot sign in. Admin portal stays available.</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">Support Email</label>
-                            <input asp-for="Settings.SupportEmail" type="email" class="form-control settings-input" />
+                        <div class="settings-panel-footer">
+                            <button type="submit" class="btn settings-save-btn"><i class="bi bi-check2-circle me-1"></i>Save general settings</button>
                         </div>
-                        <div class="mb-4">
-                            <label class="settings-label">Maintenance Mode</label>
-                            <select asp-for="Settings.MaintenanceMode" class="form-select settings-input">
-                                <option value="Online">Website Online — members can access the portal</option>
-                                <option value="Offline">Maintenance Mode — member access paused</option>
-                            </select>
-                            <small class="text-muted d-block mt-2">When maintenance mode is on, members see a maintenance popup and cannot sign in. Admin portal stays available.</small>
-                        </div>
-                        <button type="submit" class="btn settings-save-btn">Save general settings</button>
                     </div>
                 </div>
 
                 <div class="tab-pane fade @(Model.ActiveTab == "commission" ? "show active" : "")" id="content-commission" role="tabpanel">
-                    <div class="glass-card p-4 settings-panel">
-                        <div class="settings-panel-header">
-                            <h5 class="fw-bold text-dark mb-1">Commission setup</h5>
-                            <p class="text-muted small mb-0">Set commission percentages for multi-level hierarchy.</p>
+                    @{
+                        var totalCommission = Model.Settings.Level1Commission + Model.Settings.Level2Commission + Model.Settings.Level3Commission + Model.Settings.Level4Commission + Model.Settings.Level5Commission;
+                    }
+                    <div class="glass-card settings-panel settings-panel--commission">
+                        <div class="settings-panel-top">
+                            <div class="settings-panel-icon settings-panel-icon-blue"><i class="bi bi-diagram-3"></i></div>
+                            <div class="settings-panel-heading">
+                                <h5 class="fw-bold text-dark mb-1">Commission setup</h5>
+                                <p class="text-muted small mb-0">Set referral payout percentages across five levels.</p>
+                            </div>
+                            <span class="settings-panel-badge is-info">
+                                <i class="bi bi-percent me-1"></i>@totalCommission.ToString("0.##")% total
+                            </span>
                         </div>
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label class="settings-label">Level 1 Commission (%)</label>
-                                <input asp-for="Settings.Level1Commission" type="number" step="0.01" class="form-control settings-input" required />
+                        <div class="settings-panel-body">
+                            <div class="settings-level-grid">
+                                <div class="settings-level-card">
+                                    <span class="settings-level-badge">L1</span>
+                                    <label class="settings-label">Level 1</label>
+                                    <div class="settings-input-suffix-wrap">
+                                        <input asp-for="Settings.Level1Commission" type="number" step="0.01" class="form-control settings-input" required />
+                                        <span class="settings-input-suffix">%</span>
+                                    </div>
+                                </div>
+                                <div class="settings-level-card">
+                                    <span class="settings-level-badge">L2</span>
+                                    <label class="settings-label">Level 2</label>
+                                    <div class="settings-input-suffix-wrap">
+                                        <input asp-for="Settings.Level2Commission" type="number" step="0.01" class="form-control settings-input" required />
+                                        <span class="settings-input-suffix">%</span>
+                                    </div>
+                                </div>
+                                <div class="settings-level-card">
+                                    <span class="settings-level-badge">L3</span>
+                                    <label class="settings-label">Level 3</label>
+                                    <div class="settings-input-suffix-wrap">
+                                        <input asp-for="Settings.Level3Commission" type="number" step="0.01" class="form-control settings-input" required />
+                                        <span class="settings-input-suffix">%</span>
+                                    </div>
+                                </div>
+                                <div class="settings-level-card">
+                                    <span class="settings-level-badge">L4</span>
+                                    <label class="settings-label">Level 4</label>
+                                    <div class="settings-input-suffix-wrap">
+                                        <input asp-for="Settings.Level4Commission" type="number" step="0.01" class="form-control settings-input" required />
+                                        <span class="settings-input-suffix">%</span>
+                                    </div>
+                                </div>
+                                <div class="settings-level-card">
+                                    <span class="settings-level-badge">L5</span>
+                                    <label class="settings-label">Level 5</label>
+                                    <div class="settings-input-suffix-wrap">
+                                        <input asp-for="Settings.Level5Commission" type="number" step="0.01" class="form-control settings-input" required />
+                                        <span class="settings-input-suffix">%</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="settings-label">Level 2 Commission (%)</label>
-                                <input asp-for="Settings.Level2Commission" type="number" step="0.01" class="form-control settings-input" required />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="settings-label">Level 3 Commission (%)</label>
-                                <input asp-for="Settings.Level3Commission" type="number" step="0.01" class="form-control settings-input" required />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="settings-label">Level 4 Commission (%)</label>
-                                <input asp-for="Settings.Level4Commission" type="number" step="0.01" class="form-control settings-input" required />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="settings-label">Level 5 Commission (%)</label>
-                                <input asp-for="Settings.Level5Commission" type="number" step="0.01" class="form-control settings-input" required />
+                            <div class="settings-note mt-2">
+                                <i class="bi bi-lightbulb"></i>
+                                <span>Commissions are calculated on package activation amount and paid to active sponsors up the chain.</span>
                             </div>
                         </div>
-                        <button type="submit" class="btn settings-save-btn">Save commission setup</button>
+                        <div class="settings-panel-footer">
+                            <button type="submit" class="btn settings-save-btn"><i class="bi bi-check2-circle me-1"></i>Save commission setup</button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="tab-pane fade @(Model.ActiveTab == "withdrawals" ? "show active" : "")" id="content-withdrawals" role="tabpanel">
-                    <div class="glass-card p-4 settings-panel">
-                        <div class="settings-panel-header">
-                            <h5 class="fw-bold text-dark mb-1">Withdrawal rules</h5>
-                            <p class="text-muted small mb-0">Minimum thresholds and withdrawal fees.</p>
+                    <div class="glass-card settings-panel settings-panel--withdrawals">
+                        <div class="settings-panel-top">
+                            <div class="settings-panel-icon settings-panel-icon-purple"><i class="bi bi-receipt"></i></div>
+                            <div class="settings-panel-heading">
+                                <h5 class="fw-bold text-dark mb-1">Withdrawal rules</h5>
+                                <p class="text-muted small mb-0">Minimum thresholds, fees, and tax deductions for payouts.</p>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">Minimum Payout Threshold (&#8377;)</label>
-                            <input asp-for="Settings.MinWithdrawalLimit" type="number" step="0.01" class="form-control settings-input" required />
+                        <div class="settings-panel-body">
+                            <div class="settings-field-grid">
+                                <div class="settings-field-card">
+                                    <div class="settings-field-card-icon is-green"><i class="bi bi-cash-stack"></i></div>
+                                    <label class="settings-label">Minimum payout (&#8377;)</label>
+                                    <input asp-for="Settings.MinWithdrawalLimit" type="number" step="0.01" class="form-control settings-input" required />
+                                </div>
+                                <div class="settings-field-card">
+                                    <div class="settings-field-card-icon is-blue"><i class="bi bi-percent"></i></div>
+                                    <label class="settings-label">Processing fee (%)</label>
+                                    <input asp-for="Settings.WithdrawalFeePercent" type="number" step="0.01" class="form-control settings-input" required />
+                                </div>
+                                <div class="settings-field-card">
+                                    <div class="settings-field-card-icon is-amber"><i class="bi bi-receipt-cutoff"></i></div>
+                                    <label class="settings-label">TDS deduction (%)</label>
+                                    <input asp-for="Settings.TdsPercent" type="number" step="0.01" class="form-control settings-input" required />
+                                </div>
+                                <div class="settings-field-card">
+                                    <div class="settings-field-card-icon is-purple"><i class="bi bi-moon-stars"></i></div>
+                                    <label class="settings-label">Daily closing admin charge (%)</label>
+                                    <input asp-for="Settings.AdminChargePercent" type="number" step="0.01" class="form-control settings-input" required />
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">Withdrawal Processing Fee (%)</label>
-                            <input asp-for="Settings.WithdrawalFeePercent" type="number" step="0.01" class="form-control settings-input" required />
+                        <div class="settings-panel-footer">
+                            <button type="submit" class="btn settings-save-btn"><i class="bi bi-check2-circle me-1"></i>Save withdrawal rules</button>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">TDS Tax Deduction (%)</label>
-                            <input asp-for="Settings.TdsPercent" type="number" step="0.01" class="form-control settings-input" required />
-                        </div>
-                        <div class="mb-4">
-                            <label class="settings-label">Daily Closing Admin Charge (%)</label>
-                            <input asp-for="Settings.AdminChargePercent" type="number" step="0.01" class="form-control settings-input" required />
-                        </div>
-                        <button type="submit" class="btn settings-save-btn">Save rules</button>
                     </div>
                 </div>
 
                 <div class="tab-pane fade @(Model.ActiveTab == "paymentSetup" ? "show active" : "")" id="content-paymentSetup" role="tabpanel">
-                    <div class="glass-card p-4 settings-panel">
-                        <div class="settings-panel-header">
-                            <h5 class="fw-bold text-dark mb-1">Payment setup</h5>
-                            <p class="text-muted small mb-0">Manual payment instructions for members.</p>
+                    <div class="glass-card settings-panel settings-panel--payment">
+                        <div class="settings-panel-top">
+                            <div class="settings-panel-icon settings-panel-icon-red"><i class="bi bi-bank"></i></div>
+                            <div class="settings-panel-heading">
+                                <h5 class="fw-bold text-dark mb-1">Payment setup</h5>
+                                <p class="text-muted small mb-0">Manual payment instructions shown to members during activation.</p>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">UPI ID / Address</label>
-                            <input asp-for="Settings.CompanyQrCodeUrl" type="text" class="form-control settings-input" placeholder="e.g. elitemlm@paytm" />
-                            <small class="text-muted d-block mt-1">Direct UPI ID shown to members on activation view.</small>
+                        <div class="settings-panel-body">
+                            <div class="settings-section">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-violet"><i class="bi bi-qr-code"></i></span>
+                                    UPI payment
+                                </p>
+                                <label class="settings-label">UPI ID / Address</label>
+                                <input asp-for="Settings.CompanyQrCodeUrl" type="text" class="form-control settings-input" placeholder="e.g. elitemlm@paytm" />
+                                <small class="text-muted d-block mt-2">Shown on the member activation screen for quick UPI transfers.</small>
+                            </div>
+                            <div class="settings-section settings-section--bank">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-red"><i class="bi bi-bank2"></i></span>
+                                    Bank deposit
+                                </p>
+                                <div class="settings-bank-card">
+                                    <div class="settings-bank-card-head">
+                                        <div class="settings-bank-card-icon"><i class="bi bi-bank2"></i></div>
+                                        <div>
+                                            <p class="settings-bank-card-title mb-0">Offline bank transfer</p>
+                                            <p class="settings-bank-card-sub mb-0">Members copy these details on the activation page.</p>
+                                        </div>
+                                    </div>
+                                    <label class="settings-label">Transfer instructions</label>
+                                    <textarea asp-for="Settings.BankDetails" rows="6" class="form-control settings-input settings-bank-textarea" placeholder="Bank Name&#10;Account Holder Name&#10;Account Number&#10;IFSC Code&#10;Branch (optional)"></textarea>
+                                    <div class="settings-bank-checklist">
+                                        <span><i class="bi bi-check-circle-fill"></i> Bank name</span>
+                                        <span><i class="bi bi-check-circle-fill"></i> Account holder</span>
+                                        <span><i class="bi bi-check-circle-fill"></i> Account number</span>
+                                        <span><i class="bi bi-check-circle-fill"></i> IFSC code</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-4">
-                            <label class="settings-label">Bank Deposit Information</label>
-                            <textarea asp-for="Settings.BankDetails" rows="4" class="form-control settings-input" placeholder="Enter bank transfer instructions..."></textarea>
-                            <small class="text-muted d-block mt-1">Bank Name, IFSC, Account Number, etc.</small>
+                        <div class="settings-panel-footer">
+                            <button type="submit" class="btn settings-save-btn"><i class="bi bi-check2-circle me-1"></i>Save payment setup</button>
                         </div>
-                        <button type="submit" class="btn settings-save-btn">Save payment setup</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade @(Model.ActiveTab == "homePopup" ? "show active" : "")" id="content-homePopup" role="tabpanel">
+                    @{
+                        var hasPopupImage = !string.IsNullOrWhiteSpace(Model.Settings.HomePopupImageUrl);
+                        var popupIsLive = Model.Settings.HomePopupEnabled && hasPopupImage;
+                    }
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="glass-card admin-popup-stat h-100">
+                                <div class="admin-popup-stat-icon @(popupIsLive ? "is-live" : (hasPopupImage ? "is-ready" : "is-off"))">
+                                    <i class="bi @(popupIsLive ? "bi-broadcast" : (hasPopupImage ? "bi-pause-circle" : "bi-eye-slash"))"></i>
+                                </div>
+                                <div>
+                                    <p class="admin-popup-stat-label">Homepage status</p>
+                                    <p class="admin-popup-stat-value mb-0">
+                                        @(popupIsLive ? "Live" : (hasPopupImage ? "Saved, hidden" : "Not configured"))
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="glass-card admin-popup-stat h-100">
+                                <div class="admin-popup-stat-icon is-image">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                                <div>
+                                    <p class="admin-popup-stat-label">Popup image</p>
+                                    <p class="admin-popup-stat-value mb-0">@(hasPopupImage ? "Uploaded" : "Missing")</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="glass-card admin-popup-stat h-100">
+                                <div class="admin-popup-stat-icon is-visit">
+                                    <i class="bi bi-people"></i>
+                                </div>
+                                <div>
+                                    <p class="admin-popup-stat-label">Visitor experience</p>
+                                    <p class="admin-popup-stat-value mb-0">@(popupIsLive ? "Auto popup" : "No popup")</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 align-items-stretch">
+                        <div class="col-xl-7">
+                            <div class="glass-card p-4 settings-panel admin-popup-config h-100">
+                                <div class="admin-popup-config-head mb-4">
+                                    <div>
+                                        <h5 class="fw-bold text-dark mb-1">Configure popup</h5>
+                                        <p class="text-muted small mb-0">Upload a banner and choose when visitors see it on the homepage.</p>
+                                    </div>
+                                    @if (popupIsLive)
+                                    {
+                                        <span class="admin-popup-status admin-popup-status-live"><i class="bi bi-broadcast me-1"></i>Live</span>
+                                    }
+                                    else if (hasPopupImage)
+                                    {
+                                        <span class="admin-popup-status admin-popup-status-ready"><i class="bi bi-pause-circle me-1"></i>Ready</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="admin-popup-status admin-popup-status-off"><i class="bi bi-eye-slash me-1"></i>Setup needed</span>
+                                    }
+                                </div>
+
+                                <div class="admin-popup-progress mb-4">
+                                    <div class="admin-popup-progress-step @(hasPopupImage ? "is-done" : "is-active")">
+                                        <span class="admin-popup-progress-dot">1</span>
+                                        <span class="admin-popup-progress-text">Upload</span>
+                                    </div>
+                                    <div class="admin-popup-progress-line @(hasPopupImage ? "is-done" : "")"></div>
+                                    <div class="admin-popup-progress-step @(popupIsLive ? "is-done" : (hasPopupImage ? "is-active" : ""))">
+                                        <span class="admin-popup-progress-dot">2</span>
+                                        <span class="admin-popup-progress-text">Enable</span>
+                                    </div>
+                                    <div class="admin-popup-progress-line @(popupIsLive ? "is-done" : "")"></div>
+                                    <div class="admin-popup-progress-step @(popupIsLive ? "is-active is-done" : "")">
+                                        <span class="admin-popup-progress-dot">3</span>
+                                        <span class="admin-popup-progress-text">Go live</span>
+                                    </div>
+                                </div>
+
+                                <div id="homePopupFields">
+                                    <div class="admin-popup-toggle-card mb-4">
+                                        <div class="admin-popup-toggle-main">
+                                            <div class="admin-popup-toggle-icon">
+                                                <i class="bi bi-megaphone"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="form-check form-switch m-0">
+                                                    <input type="hidden" name="homePopupEnabled" value="false" form="homePopupSaveForm" />
+                                                    <input class="form-check-input" type="checkbox" name="homePopupEnabled" id="homePopupEnabled" value="true"
+                                                           form="homePopupSaveForm" @(Model.Settings.HomePopupEnabled ? "checked" : null) />
+                                                    <label class="form-check-label settings-label mb-0" for="homePopupEnabled">
+                                                        Show popup on homepage
+                                                    </label>
+                                                </div>
+                                                <p class="small text-muted mb-0 mt-1">Turn off to keep the image saved without showing it to visitors.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <label class="settings-label d-block mb-2">Popup image</label>
+                                    <div class="admin-popup-current mb-3 @(hasPopupImage ? "" : "d-none")" id="adminPopupCurrentWrap">
+                                        <img src="@(hasPopupImage ? Model.Settings.HomePopupImageUrl : "")" alt="Current popup" class="admin-popup-current-img" id="adminPopupCurrentImg" />
+                                        <div class="admin-popup-current-meta">
+                                            <strong>Current image</strong>
+                                            <span class="small text-muted d-block">Upload a new file below to replace it.</span>
+                                        </div>
+                                    </div>
+
+                                    <label class="admin-popup-upload" for="popupImageInput">
+                                        <input type="file" name="popupImage" id="popupImageInput" class="admin-popup-upload-input"
+                                               form="homePopupSaveForm" accept="image/jpeg,image/png,image/webp,image/gif" />
+                                        <span class="admin-popup-upload-icon"><i class="bi bi-cloud-arrow-up"></i></span>
+                                        <span class="admin-popup-upload-title">@(hasPopupImage ? "Replace popup image" : "Upload popup image")</span>
+                                        <span class="admin-popup-upload-hint">JPG, PNG, WEBP, GIF — max 3MB · Recommended 900×1200px</span>
+                                        <span class="admin-popup-upload-name" id="popupFileName">@(hasPopupImage ? "Current image is saved" : "No file selected yet")</span>
+                                    </label>
+
+                                    <div class="admin-popup-actions mt-4">
+                                        <button type="submit" form="homePopupSaveForm" class="btn settings-save-btn">
+                                            <i class="bi bi-check2-circle me-1"></i>Save popup
+                                        </button>
+                                        @if (hasPopupImage)
+                                        {
+                                            <a href="/" target="_blank" rel="noopener" class="btn btn-outline-primary rounded-pill px-4">
+                                                <i class="bi bi-box-arrow-up-right me-1"></i>Open homepage
+                                            </a>
+                                            <button type="submit" form="homePopupSaveForm" name="removePopup" value="true"
+                                                    class="btn btn-outline-danger rounded-pill px-4 ms-auto"
+                                                    onclick="return confirm('Remove popup image and disable homepage popup?');">
+                                                <i class="bi bi-trash me-1"></i>Remove
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-5">
+                            <div class="glass-card p-4 admin-popup-preview-panel h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <p class="admin-popup-preview-label mb-0"><i class="bi bi-display me-1"></i>Live preview</p>
+                                    <span class="admin-popup-preview-badge" id="adminPopupPreviewBadge">
+                                        @(popupIsLive ? "Live" : (hasPopupImage ? "Preview" : "Empty"))
+                                    </span>
+                                </div>
+
+                                <div class="admin-popup-browser">
+                                    <div class="admin-popup-browser-bar">
+                                        <span class="admin-popup-browser-dot"></span>
+                                        <span class="admin-popup-browser-dot"></span>
+                                        <span class="admin-popup-browser-dot"></span>
+                                        <span class="admin-popup-browser-url">yoursite.com</span>
+                                    </div>
+                                    <div class="admin-popup-preview-frame" id="adminPopupPreviewFrame">
+                                        <div class="admin-popup-preview-site">
+                                            <div class="admin-popup-preview-nav"></div>
+                                            <div class="admin-popup-preview-hero"></div>
+                                            <div class="admin-popup-preview-line w-75"></div>
+                                            <div class="admin-popup-preview-line w-50"></div>
+                                        </div>
+                                        <div class="admin-popup-preview-overlay @(popupIsLive || hasPopupImage ? "" : "is-empty")" id="adminPopupPreviewOverlay">
+                                            <div class="admin-popup-preview-dialog">
+                                                <span class="admin-popup-preview-close"><i class="bi bi-x-lg"></i></span>
+                                                @if (hasPopupImage)
+                                                {
+                                                    <img src="@Model.Settings.HomePopupImageUrl" alt="Popup preview" id="adminPopupPreviewImg" class="admin-popup-preview-img" />
+                                                }
+                                                else
+                                                {
+                                                    <img src="" alt="" id="adminPopupPreviewImg" class="admin-popup-preview-img" hidden />
+                                                    <div class="admin-popup-preview-empty" id="adminPopupPreviewEmpty">
+                                                        <i class="bi bi-image"></i>
+                                                        <span>Upload an image to preview</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="admin-popup-tip mt-3" id="adminPopupTip">
+                                    @if (popupIsLive)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                        <span>Visitors see this popup once per browser session until they close it.</span>
+                                    }
+                                    else if (hasPopupImage)
+                                    {
+                                        <i class="bi bi-info-circle text-primary"></i>
+                                        <span>Image saved. Enable the switch and click Save to publish on the homepage.</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-lightbulb text-warning"></i>
+                                        <span>Upload a festival offer, promo banner, or announcement image to get started.</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="tab-pane fade @(Model.ActiveTab == "smtp" ? "show active" : "")" id="content-smtp" role="tabpanel">
-                    <div class="glass-card p-4 settings-panel">
-                        <div class="settings-panel-header d-flex justify-content-between align-items-start flex-wrap gap-2">
-                            <div>
+                    <div class="glass-card settings-panel settings-panel--smtp">
+                        <div class="settings-panel-top">
+                            <div class="settings-panel-icon settings-panel-icon-cyan"><i class="bi bi-envelope"></i></div>
+                            <div class="settings-panel-heading">
                                 <h5 class="fw-bold text-dark mb-1">SMTP email</h5>
-                                <p class="text-muted small mb-0">Configure email server for sending alerts.</p>
+                                <p class="text-muted small mb-0">Configure the mail server used for alerts and notifications.</p>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#testEmailModal">
-                                <i class="bi bi-send me-1"></i>Test Email
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill settings-panel-action" data-bs-toggle="modal" data-bs-target="#testEmailModal">
+                                <i class="bi bi-send me-1"></i>Test email
                             </button>
                         </div>
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-8">
-                                <label class="settings-label">SMTP Host</label>
-                                <input asp-for="Settings.SmtpHost" type="text" class="form-control settings-input" placeholder="smtp.gmail.com" />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="settings-label">Port</label>
-                                <input asp-for="Settings.SmtpPort" type="number" class="form-control settings-input" placeholder="587" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="settings-label">Username</label>
-                                <input asp-for="Settings.SmtpUsername" type="text" class="form-control settings-input" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="settings-label">Password</label>
-                                <input asp-for="Settings.SmtpPassword" type="password" class="form-control settings-input" />
-                            </div>
-                            <div class="col-12">
-                                <div class="form-check form-switch">
-                                    <input asp-for="Settings.SmtpEnableSsl" class="form-check-input" type="checkbox" id="SmtpEnableSsl">
-                                    <label class="form-check-label settings-label mb-0" for="SmtpEnableSsl">Enable SSL</label>
+                        <div class="settings-panel-body">
+                            <div class="settings-section">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-cyan"><i class="bi bi-hdd-network"></i></span>
+                                    Server connection
+                                </p>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label class="settings-label">SMTP Host</label>
+                                        <input asp-for="Settings.SmtpHost" type="text" class="form-control settings-input" placeholder="smtp.gmail.com" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="settings-label">Port</label>
+                                        <input asp-for="Settings.SmtpPort" type="number" class="form-control settings-input" placeholder="587" />
+                                    </div>
                                 </div>
                             </div>
+                            <div class="settings-section">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-amber"><i class="bi bi-key"></i></span>
+                                    Authentication
+                                </p>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="settings-label">Username</label>
+                                        <input asp-for="Settings.SmtpUsername" type="text" class="form-control settings-input" placeholder="email@example.com" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="settings-label">Password</label>
+                                        <input asp-for="Settings.SmtpPassword" type="password" class="form-control settings-input" placeholder="App password or SMTP secret" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="settings-toggle-card">
+                                <div class="form-check form-switch m-0">
+                                    <input asp-for="Settings.SmtpEnableSsl" class="form-check-input" type="checkbox" id="SmtpEnableSsl">
+                                    <label class="form-check-label settings-label mb-0" for="SmtpEnableSsl">Enable SSL / TLS encryption</label>
+                                </div>
+                                <p class="small text-muted mb-0 mt-1">Recommended for Gmail, Outlook, and most modern SMTP providers.</p>
+                            </div>
                         </div>
-                        <button type="submit" class="btn settings-save-btn">Save SMTP settings</button>
+                        <div class="settings-panel-footer">
+                            <button type="submit" class="btn settings-save-btn"><i class="bi bi-check2-circle me-1"></i>Save SMTP settings</button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="tab-pane fade @(Model.ActiveTab == "sms" ? "show active" : "")" id="content-sms" role="tabpanel">
-                    <div class="glass-card p-4 settings-panel">
-                        <div class="settings-panel-header">
-                            <h5 class="fw-bold text-dark mb-1">SMS gateway</h5>
-                            <p class="text-muted small mb-0">Connect a third-party SMS provider for OTPs and alerts.</p>
+                    <div class="glass-card settings-panel settings-panel--sms">
+                        <div class="settings-panel-top">
+                            <div class="settings-panel-icon settings-panel-icon-pink"><i class="bi bi-chat-text"></i></div>
+                            <div class="settings-panel-heading">
+                                <h5 class="fw-bold text-dark mb-1">SMS gateway</h5>
+                                <p class="text-muted small mb-0">Connect a third-party SMS provider for OTPs and alerts.</p>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">API URL</label>
-                            <input asp-for="Settings.SmsApiUrl" type="text" class="form-control settings-input" placeholder="https://api.smsprovider.com/send" />
+                        <div class="settings-panel-body">
+                            <div class="settings-section">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-pink"><i class="bi bi-link-45deg"></i></span>
+                                    API credentials
+                                </p>
+                                <div class="mb-3">
+                                    <label class="settings-label">API URL</label>
+                                    <input asp-for="Settings.SmsApiUrl" type="text" class="form-control settings-input" placeholder="https://api.smsprovider.com/send" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="settings-label">API Key / Auth Token</label>
+                                    <input asp-for="Settings.SmsApiKey" type="password" class="form-control settings-input" placeholder="Your provider API key" />
+                                </div>
+                                <div class="mb-0">
+                                    <label class="settings-label">Sender ID</label>
+                                    <input asp-for="Settings.SmsSenderId" type="text" class="form-control settings-input" placeholder="ELITE" />
+                                </div>
+                            </div>
+                            <div class="settings-note">
+                                <i class="bi bi-shield-lock"></i>
+                                <span>Store only the credentials from your SMS vendor. Messages are sent server-side when OTP or alert features are enabled.</span>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">API Key / Auth Token</label>
-                            <input asp-for="Settings.SmsApiKey" type="password" class="form-control settings-input" />
+                        <div class="settings-panel-footer">
+                            <button type="submit" class="btn settings-save-btn"><i class="bi bi-check2-circle me-1"></i>Save SMS gateway</button>
                         </div>
-                        <div class="mb-4">
-                            <label class="settings-label">Sender ID</label>
-                            <input asp-for="Settings.SmsSenderId" type="text" class="form-control settings-input" placeholder="ELITE" />
-                        </div>
-                        <button type="submit" class="btn settings-save-btn">Save SMS gateway</button>
                     </div>
                 </div>
 
                 <div class="tab-pane fade @(Model.ActiveTab == "whatsapp" ? "show active" : "")" id="content-whatsapp" role="tabpanel">
-                    <div class="glass-card p-4 settings-panel">
-                        <div class="settings-panel-header">
-                            <h5 class="fw-bold text-dark mb-1">WhatsApp API</h5>
-                            <p class="text-muted small mb-0">Connect WhatsApp Business API for automated messaging.</p>
+                    <div class="glass-card settings-panel settings-panel--whatsapp">
+                        <div class="settings-panel-top">
+                            <div class="settings-panel-icon settings-panel-icon-green"><i class="bi bi-whatsapp"></i></div>
+                            <div class="settings-panel-heading">
+                                <h5 class="fw-bold text-dark mb-1">WhatsApp API</h5>
+                                <p class="text-muted small mb-0">Connect WhatsApp Business API for automated messaging.</p>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">Provider / Service</label>
-                            <select asp-for="Settings.WhatsAppProvider" class="form-select settings-input">
-                                <option value="">Select Provider...</option>
-                                <option value="Meta">Official Meta API</option>
-                                <option value="Twilio">Twilio</option>
-                                <option value="Wati">WATI</option>
-                            </select>
+                        <div class="settings-panel-body">
+                            <div class="settings-section">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-green"><i class="bi bi-plug"></i></span>
+                                    Provider
+                                </p>
+                                <label class="settings-label">Service</label>
+                                <select asp-for="Settings.WhatsAppProvider" class="form-select settings-input">
+                                    <option value="">Select provider...</option>
+                                    <option value="Meta">Official Meta API</option>
+                                    <option value="Twilio">Twilio</option>
+                                    <option value="Wati">WATI</option>
+                                </select>
+                            </div>
+                            <div class="settings-section">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-amber"><i class="bi bi-key"></i></span>
+                                    Connection details
+                                </p>
+                                <div class="mb-3">
+                                    <label class="settings-label">Access Token</label>
+                                    <input asp-for="Settings.WhatsAppAccessToken" type="password" class="form-control settings-input" placeholder="Permanent or temporary access token" />
+                                </div>
+                                <div class="mb-0">
+                                    <label class="settings-label">Instance ID / Phone Number ID</label>
+                                    <input asp-for="Settings.WhatsAppInstanceId" type="text" class="form-control settings-input" placeholder="From your WhatsApp Business dashboard" />
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">Access Token</label>
-                            <input asp-for="Settings.WhatsAppAccessToken" type="password" class="form-control settings-input" />
+                        <div class="settings-panel-footer">
+                            <button type="submit" class="btn settings-save-btn"><i class="bi bi-check2-circle me-1"></i>Save WhatsApp settings</button>
                         </div>
-                        <div class="mb-4">
-                            <label class="settings-label">Instance ID / Phone Number ID</label>
-                            <input asp-for="Settings.WhatsAppInstanceId" type="text" class="form-control settings-input" />
-                        </div>
-                        <button type="submit" class="btn settings-save-btn">Save WhatsApp settings</button>
                     </div>
                 </div>
 
                 <div class="tab-pane fade @(Model.ActiveTab == "adminProfile" ? "show active" : "")" id="content-adminProfile" role="tabpanel">
-                    <div class="glass-card p-4 settings-panel">
-                        <div class="settings-panel-header">
-                            <h5 class="fw-bold text-dark mb-1">Admin profile</h5>
-                            <p class="text-muted small mb-0">Update your administrator account details.</p>
+                    <div class="glass-card settings-panel settings-panel--profile">
+                        <div class="settings-panel-top">
+                            <div class="settings-panel-icon settings-panel-icon-indigo"><i class="bi bi-person-badge"></i></div>
+                            <div class="settings-panel-heading">
+                                <h5 class="fw-bold text-dark mb-1">Admin profile</h5>
+                                <p class="text-muted small mb-0">Update your administrator account details.</p>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">Username</label>
-                            <input asp-for="AdminUsername" type="text" class="form-control settings-input" readonly disabled />
-                            <small class="text-muted d-block mt-1">Username cannot be changed.</small>
+                        <div class="settings-panel-body">
+                            <div class="settings-profile-banner">
+                                <div class="settings-profile-avatar"><i class="bi bi-person-fill"></i></div>
+                                <div>
+                                    <p class="settings-profile-name mb-0">@(string.IsNullOrWhiteSpace(Model.AdminFullName) ? Model.AdminUsername : Model.AdminFullName)</p>
+                                    <p class="settings-profile-id mb-0">@Model.AdminUsername</p>
+                                </div>
+                            </div>
+                            <div class="settings-section">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-indigo"><i class="bi bi-pencil-square"></i></span>
+                                    Account details
+                                </p>
+                                <div class="mb-3">
+                                    <label class="settings-label">Username</label>
+                                    <input asp-for="AdminUsername" type="text" class="form-control settings-input" readonly disabled />
+                                    <small class="text-muted d-block mt-1">Username cannot be changed.</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="settings-label">Full Name</label>
+                                    <input asp-for="AdminFullName" type="text" class="form-control settings-input" required placeholder="Administrator name" />
+                                </div>
+                                <div class="mb-0">
+                                    <label class="settings-label">Email Address</label>
+                                    <input asp-for="AdminEmail" type="email" class="form-control settings-input" required placeholder="admin@example.com" />
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">Full Name</label>
-                            <input asp-for="AdminFullName" type="text" class="form-control settings-input" required />
+                        <div class="settings-panel-footer">
+                            <button type="submit" class="btn settings-save-btn"><i class="bi bi-check2-circle me-1"></i>Save profile details</button>
                         </div>
-                        <div class="mb-4">
-                            <label class="settings-label">Email Address</label>
-                            <input asp-for="AdminEmail" type="email" class="form-control settings-input" required />
-                        </div>
-                        <button type="submit" class="btn settings-save-btn">Save profile details</button>
                     </div>
                 </div>
 
                 <div class="tab-pane fade @(Model.ActiveTab == "password" ? "show active" : "")" id="content-password" role="tabpanel">
-                    <div class="glass-card p-4 settings-panel">
-                        <div class="settings-panel-header">
-                            <h5 class="fw-bold text-dark mb-1">Security &amp; password</h5>
-                            <p class="text-muted small mb-0">Change your administrative access password securely.</p>
+                    <div class="glass-card settings-panel settings-panel--password">
+                        <div class="settings-panel-top">
+                            <div class="settings-panel-icon settings-panel-icon-green"><i class="bi bi-shield-lock"></i></div>
+                            <div class="settings-panel-heading">
+                                <h5 class="fw-bold text-dark mb-1">Security &amp; password</h5>
+                                <p class="text-muted small mb-0">Change your administrative access password securely.</p>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="settings-label">New Password</label>
-                            <input asp-for="NewPassword" type="password" class="form-control settings-input" placeholder="Leave blank to keep current" />
+                        <div class="settings-panel-body">
+                            <div class="settings-note settings-note--warning mb-4">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <span>Use a strong password with letters, numbers, and symbols. Leave fields blank to keep your current password.</span>
+                            </div>
+                            <div class="settings-section">
+                                <p class="settings-section-title">
+                                    <span class="settings-section-title-icon is-green"><i class="bi bi-lock"></i></span>
+                                    New password
+                                </p>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="settings-label">New Password</label>
+                                        <div class="settings-password-wrap">
+                                            <input asp-for="NewPassword" type="password" class="form-control settings-input" placeholder="Enter new password" autocomplete="new-password" />
+                                            <button type="button" class="settings-password-toggle" onclick="togglePasswordVisibility(this)" aria-label="Show password">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="settings-label">Confirm Password</label>
+                                        <div class="settings-password-wrap">
+                                            <input asp-for="ConfirmPassword" type="password" class="form-control settings-input" placeholder="Re-enter new password" autocomplete="new-password" />
+                                            <button type="button" class="settings-password-toggle" onclick="togglePasswordVisibility(this)" aria-label="Show password">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-4">
-                            <label class="settings-label">Confirm New Password</label>
-                            <input asp-for="ConfirmPassword" type="password" class="form-control settings-input" placeholder="Confirm new password" />
+                        <div class="settings-panel-footer">
+                            <button type="submit" class="btn settings-save-btn"><i class="bi bi-shield-check me-1"></i>Update password</button>
                         </div>
-                        <button type="submit" class="btn settings-save-btn">Update password</button>
                     </div>
                 </div>
 
             </div>
         </div>
     </div>
+</form>
+
+<form asp-controller="Admin" asp-action="SaveHomePopup" method="post" id="homePopupSaveForm" enctype="multipart/form-data" class="visually-hidden" aria-hidden="true">
+    @Html.AntiForgeryToken()
 </form>
 
 <!-- Test Email Modal -->
@@ -367,3 +787,61 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+(function () {
+    var fileInput = document.getElementById('popupImageInput');
+    var fileNameEl = document.getElementById('popupFileName');
+    var previewImg = document.getElementById('adminPopupPreviewImg');
+    var previewEmpty = document.getElementById('adminPopupPreviewEmpty');
+    var previewOverlay = document.getElementById('adminPopupPreviewOverlay');
+    var previewBadge = document.getElementById('adminPopupPreviewBadge');
+    var currentWrap = document.getElementById('adminPopupCurrentWrap');
+    var currentImg = document.getElementById('adminPopupCurrentImg');
+    var enableSwitch = document.getElementById('homePopupEnabled');
+
+    if (!fileInput) return;
+
+    function refreshPreviewState(hasImage) {
+        if (previewOverlay) {
+            previewOverlay.classList.toggle('is-empty', !hasImage);
+        }
+        if (previewBadge) {
+            previewBadge.textContent = hasImage ? (enableSwitch && enableSwitch.checked ? 'Live' : 'Preview') : 'Empty';
+        }
+    }
+
+    fileInput.addEventListener('change', function () {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+
+        fileNameEl.textContent = file.name;
+        if (enableSwitch) enableSwitch.checked = true;
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            if (previewImg) {
+                previewImg.src = e.target.result;
+                previewImg.hidden = false;
+            }
+            if (previewEmpty) previewEmpty.hidden = true;
+            if (currentImg) {
+                currentImg.src = e.target.result;
+            }
+            if (currentWrap) currentWrap.classList.remove('d-none');
+            refreshPreviewState(true);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    if (enableSwitch) {
+        enableSwitch.addEventListener('change', function () {
+            refreshPreviewState(!!(previewImg && previewImg.src));
+        });
+    }
+
+    refreshPreviewState(!!(previewImg && previewImg.src && !previewImg.hidden));
+})();
+</script>
+}

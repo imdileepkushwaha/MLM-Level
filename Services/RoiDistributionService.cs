@@ -27,7 +27,7 @@ namespace MLM_Level.Services
             _logger.LogInformation("Auto ROI Distribution Service started.");
 
             // Let startup DB initialization finish before the first sweep.
-            await Task.Delay(TimeSpan.FromSeconds(8), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(20), stoppingToken);
 
             using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
 

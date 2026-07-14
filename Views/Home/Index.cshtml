@@ -471,7 +471,62 @@
     </footer>
 </div>
 
+@if (s.HomePopupEnabled && !string.IsNullOrWhiteSpace(s.HomePopupImageUrl))
+{
+    <div id="homePromoPopup" class="landing-popup" aria-hidden="true">
+        <div class="landing-popup-backdrop" data-home-popup-close></div>
+        <div class="landing-popup-dialog" role="dialog" aria-modal="true" aria-label="Announcement">
+            <div class="landing-popup-header">
+                <div class="landing-popup-title">
+                    <div class="landing-popup-icon"><i class="bi bi-bell-fill"></i></div>
+                    Important Update
+                </div>
+                <button type="button" class="landing-popup-close" data-home-popup-close aria-label="Close popup">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="landing-popup-body">
+                <img src="@s.HomePopupImageUrl" alt="Announcement" class="landing-popup-image" />
+            </div>
+            <div class="landing-popup-footer">
+                <button type="button" class="btn btn-landing-gold w-100" data-home-popup-close>Continue to Website <i class="bi bi-arrow-right ms-2"></i></button>
+            </div>
+        </div>
+    </div>
+}
+
 @section Scripts {
+<script>
+(function () {
+    var popup = document.getElementById('homePromoPopup');
+    if (popup) {
+        var popupVersion = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(s.HomePopupImageUrl));
+        var storageKey = 'mlm-home-popup-dismissed';
+        var showPopup = function () {
+            popup.classList.add('is-visible');
+            popup.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('landing-popup-open');
+        };
+        var hidePopup = function () {
+            popup.classList.remove('is-visible');
+            popup.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('landing-popup-open');
+            try { sessionStorage.setItem(storageKey, popupVersion); } catch (e) { }
+        };
+        var dismissed = '';
+        try { dismissed = sessionStorage.getItem(storageKey) || ''; } catch (e) { }
+        if (dismissed !== popupVersion) {
+            window.setTimeout(showPopup, 350);
+        }
+        popup.querySelectorAll('[data-home-popup-close]').forEach(function (el) {
+            el.addEventListener('click', hidePopup);
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && popup.classList.contains('is-visible')) hidePopup();
+        });
+    }
+})();
+</script>
 <script>
 (function () {
     var nav = document.querySelector('.landing-nav');

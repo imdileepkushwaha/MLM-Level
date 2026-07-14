@@ -92,6 +92,12 @@ namespace MLM_Level.Models
 
         [MaxLength(100)]
         public string WhatsAppProvider { get; set; } = string.Empty;
+
+        // --- Homepage promo popup ---
+        public bool HomePopupEnabled { get; set; } = false;
+
+        [MaxLength(500)]
+        public string HomePopupImageUrl { get; set; } = string.Empty;
     }
 }
 

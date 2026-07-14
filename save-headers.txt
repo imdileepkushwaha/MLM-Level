@@ -1,0 +1,6 @@
+HTTP/1.1 302 Found
+Content-Length: 0
+Date: Sat, 23 May 2026 18:56:54 GMT
+Server: Kestrel
+Location: http://localhost:5173/Admin/Login?ReturnUrl=%2FAdmin%2FSaveHomePopup
+
